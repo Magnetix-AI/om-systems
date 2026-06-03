@@ -13,6 +13,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedTechRouteImport } from './routes/_authenticated/tech'
+import { Route as AuthenticatedTechJobIdRouteImport } from './routes/_authenticated/tech.$jobId'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -33,30 +34,44 @@ const AuthenticatedTechRoute = AuthenticatedTechRouteImport.update({
   path: '/tech',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedTechJobIdRoute = AuthenticatedTechJobIdRouteImport.update({
+  id: '/$jobId',
+  path: '/$jobId',
+  getParentRoute: () => AuthenticatedTechRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/tech': typeof AuthenticatedTechRoute
+  '/tech': typeof AuthenticatedTechRouteWithChildren
+  '/tech/$jobId': typeof AuthenticatedTechJobIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/tech': typeof AuthenticatedTechRoute
+  '/tech': typeof AuthenticatedTechRouteWithChildren
+  '/tech/$jobId': typeof AuthenticatedTechJobIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
-  '/_authenticated/tech': typeof AuthenticatedTechRoute
+  '/_authenticated/tech': typeof AuthenticatedTechRouteWithChildren
+  '/_authenticated/tech/$jobId': typeof AuthenticatedTechJobIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/tech'
+  fullPaths: '/' | '/auth' | '/tech' | '/tech/$jobId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/tech'
-  id: '__root__' | '/' | '/_authenticated' | '/auth' | '/_authenticated/tech'
+  to: '/' | '/auth' | '/tech' | '/tech/$jobId'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/tech'
+    | '/_authenticated/tech/$jobId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -95,15 +110,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTechRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/tech/$jobId': {
+      id: '/_authenticated/tech/$jobId'
+      path: '/$jobId'
+      fullPath: '/tech/$jobId'
+      preLoaderRoute: typeof AuthenticatedTechJobIdRouteImport
+      parentRoute: typeof AuthenticatedTechRoute
+    }
   }
 }
 
+interface AuthenticatedTechRouteChildren {
+  AuthenticatedTechJobIdRoute: typeof AuthenticatedTechJobIdRoute
+}
+
+const AuthenticatedTechRouteChildren: AuthenticatedTechRouteChildren = {
+  AuthenticatedTechJobIdRoute: AuthenticatedTechJobIdRoute,
+}
+
+const AuthenticatedTechRouteWithChildren =
+  AuthenticatedTechRoute._addFileChildren(AuthenticatedTechRouteChildren)
+
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedTechRoute: typeof AuthenticatedTechRoute
+  AuthenticatedTechRoute: typeof AuthenticatedTechRouteWithChildren
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedTechRoute: AuthenticatedTechRoute,
+  AuthenticatedTechRoute: AuthenticatedTechRouteWithChildren,
 }
 
 const AuthenticatedRouteRouteWithChildren =
