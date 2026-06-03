@@ -234,14 +234,30 @@ function JobDetail() {
 
         <Card>
           <CardHeader><CardTitle className="text-lg">הערות טכנאי</CardTitle></CardHeader>
-          <CardContent>
-            <Textarea
-              value={notes}
-              disabled={completed}
-              onChange={e => setNotes(e.target.value)}
-              placeholder="פרט את העבודה שבוצעה..."
-              rows={4}
-            />
+          <CardContent className="space-y-2">
+            <div className="relative">
+              <Textarea
+                value={notes}
+                disabled={completed}
+                onChange={e => setNotes(e.target.value)}
+                placeholder="פרט את העבודה שבוצעה... או לחץ על המיקרופון להקלטה"
+                rows={4}
+                className="pl-12"
+              />
+              {!completed && (
+                <Button
+                  type="button"
+                  variant={recording ? "destructive" : "secondary"}
+                  size="icon"
+                  onClick={toggleRecording}
+                  className={`absolute bottom-2 left-2 h-9 w-9 rounded-full ${recording ? "animate-pulse" : ""}`}
+                  title={recording ? "עצור הקלטה" : "הקלט תמלול"}
+                >
+                  {recording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                </Button>
+              )}
+            </div>
+            {recording && <p className="text-xs text-muted-foreground text-center">🎙️ מקליט... דבר בעברית</p>}
           </CardContent>
         </Card>
 
