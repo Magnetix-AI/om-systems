@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell, statusLabel, statusColor } from "@/components/app-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -52,8 +52,7 @@ function JobDetail() {
   const [draft, setDraft] = useState<DraftItem[]>([]);
   const [saving, setSaving] = useState(false);
 
-  // Hydrate notes once
-  useMemo(() => { if (job?.technician_notes) setNotes(job.technician_notes); }, [job?.id]);
+  useEffect(() => { if (job?.technician_notes) setNotes(job.technician_notes); }, [job?.id]);
 
   const completed = job?.status === "completed";
   const existing = (job?.items ?? []) as any[];
