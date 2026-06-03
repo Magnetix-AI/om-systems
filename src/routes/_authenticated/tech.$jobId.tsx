@@ -199,8 +199,9 @@ function JobDetail() {
             )}
             <Button onClick={handleSubmit} disabled={saving} className="flex-1 bg-success hover:bg-success/90 text-success-foreground">
               <CheckCircle2 className="h-4 w-4 ml-1" />
-              {saving ? "שומר..." : "שלח וסגור קריאה"}
+              {saving ? "שומר..." : "סופק — סגור קריאה"}
             </Button>
+
           </div>
         )}
         {completed && (
