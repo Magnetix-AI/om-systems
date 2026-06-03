@@ -50,7 +50,6 @@ function JobDetail() {
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [recording, setRecording] = useState(false);
-  const recognitionRef = useState<any>(null)[0] as any;
   const recRef = React.useRef<any>(null);
 
   useEffect(() => { if (job?.technician_notes) setNotes(job.technician_notes); }, [job?.id]);
