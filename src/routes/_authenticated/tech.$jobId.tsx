@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell, statusLabel, statusColor } from "@/components/app-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
