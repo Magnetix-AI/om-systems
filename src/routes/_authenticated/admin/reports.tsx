@@ -61,7 +61,7 @@ function AdminReports() {
         r.completed_at ? new Date(r.completed_at).toLocaleString("he-IL") : "",
         r.title,
         r.client?.name ?? "",
-        r.technician?.full_name ?? "",
+        r.technician_name ?? "",
         (r.items ?? []).map((it: any) => `${it.product?.name} x${it.quantity}`).join("; "),
         computeTotal(r.items).toFixed(2),
         r.sent_to_invoicing ? "כן" : "לא",
@@ -125,7 +125,7 @@ function ReportRow({ report, total, onSend }: { report: any; total: number; onSe
           <div className="flex-1">
             <div className="font-semibold">{report.title}</div>
             <div className="text-xs text-muted-foreground">
-              {report.client?.name} • טכנאי: {report.technician?.full_name ?? "—"} • {report.completed_at && new Date(report.completed_at).toLocaleDateString("he-IL")}
+              {report.client?.name} • טכנאי: {report.technician_name ?? "—"} • {report.completed_at && new Date(report.completed_at).toLocaleDateString("he-IL")}
             </div>
           </div>
           <div className="text-lg font-bold text-success">₪{total.toFixed(2)}</div>
