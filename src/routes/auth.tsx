@@ -7,8 +7,15 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Cable, ShieldCheck } from "lucide-react";
+import { Cable, ScanFace, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
+import {
+  getStoredFaceCred,
+  isFaceAuthSupported,
+  registerFaceCred,
+  verifyFaceCred,
+} from "@/lib/face-auth";
+
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -36,15 +43,66 @@ function AuthPage() {
   const [adminPass, setAdminPass] = useState("");
   const [adminLoading, setAdminLoading] = useState(false);
 
+  const [faceLoading, setFaceLoading] = useState(false);
+  const [faceSetupOpen, setFaceSetupOpen] = useState(false);
+  const [pendingCreds, setPendingCreds] = useState<{ email: string; password: string } | null>(null);
+  const faceSupported = typeof window !== "undefined" && isFaceAuthSupported();
+  const hasFaceCred = typeof window !== "undefined" && !!getStoredFaceCred();
+
+  const finishLogin = () => {
+    toast.success("התחברת בהצלחה");
+    navigate({ to: "/" });
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) return toast.error("שגיאה בהתחברות", { description: error.message });
-    toast.success("התחברת בהצלחה");
-    navigate({ to: "/" });
+    // First successful login on this device → offer Face ID setup
+    if (faceSupported && !hasFaceCred) {
+      setPendingCreds({ email, password });
+      setFaceSetupOpen(true);
+      return;
+    }
+    finishLogin();
   };
+
+  const handleFaceLogin = async () => {
+    setFaceLoading(true);
+    try {
+      const { email: e2, password: p2 } = await verifyFaceCred();
+      const { error } = await supabase.auth.signInWithPassword({ email: e2, password: p2 });
+      if (error) throw new Error(error.message);
+      finishLogin();
+    } catch (err: any) {
+      toast.error("כניסה עם זיהוי פנים נכשלה", { description: err.message });
+    } finally {
+      setFaceLoading(false);
+    }
+  };
+
+  const handleEnableFace = async () => {
+    if (!pendingCreds) return;
+    setFaceLoading(true);
+    try {
+      await registerFaceCred(pendingCreds.email, pendingCreds.password);
+      toast.success("זיהוי פנים הופעל בהצלחה");
+      setFaceSetupOpen(false);
+      finishLogin();
+    } catch (err: any) {
+      toast.error("הגדרת זיהוי פנים נכשלה", { description: err.message });
+    } finally {
+      setFaceLoading(false);
+    }
+  };
+
+  const skipFaceSetup = () => {
+    setFaceSetupOpen(false);
+    finishLogin();
+  };
+
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,6 +173,17 @@ function AuthPage() {
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "מתחבר..." : "התחבר כטכנאי"}
                 </Button>
+                {faceSupported && hasFaceCred && (
+                  <button
+                    type="button"
+                    onClick={handleFaceLogin}
+                    disabled={faceLoading}
+                    className="w-full flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                  >
+                    <ScanFace className="h-3.5 w-3.5" />
+                    {faceLoading ? "מאמת..." : "כניסה עם זיהוי פנים"}
+                  </button>
+                )}
               </form>
               <div className="relative my-5">
                 <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
@@ -125,6 +194,7 @@ function AuthPage() {
                 כניסה למערכת כאדמין
               </Button>
             </TabsContent>
+
             <TabsContent value="signup">
               <form onSubmit={handleSignup} className="space-y-4 mt-4">
                 <div className="rounded-md bg-secondary px-3 py-2 text-xs text-muted-foreground text-center">
@@ -172,6 +242,28 @@ function AuthPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={faceSetupOpen} onOpenChange={(o) => { if (!o) skipFaceSetup(); }}>
+        <DialogContent dir="rtl" className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-right flex items-center gap-2">
+              <ScanFace className="h-5 w-5" /> הפעלת זיהוי פנים
+            </DialogTitle>
+            <DialogDescription className="text-right">
+              להפעלת כניסה מהירה במכשיר זה באמצעות זיהוי פנים / טביעת אצבע. בכניסות הבאות לא תידרש להזין סיסמה.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-2">
+            <Button className="flex-1" onClick={handleEnableFace} disabled={faceLoading}>
+              {faceLoading ? "מגדיר..." : "הפעל זיהוי פנים"}
+            </Button>
+            <Button variant="outline" className="flex-1" onClick={skipFaceSetup} disabled={faceLoading}>
+              דלג
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
