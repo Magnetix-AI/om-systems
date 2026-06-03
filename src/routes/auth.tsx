@@ -242,6 +242,28 @@ function AuthPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={faceSetupOpen} onOpenChange={(o) => { if (!o) skipFaceSetup(); }}>
+        <DialogContent dir="rtl" className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-right flex items-center gap-2">
+              <ScanFace className="h-5 w-5" /> הפעלת זיהוי פנים
+            </DialogTitle>
+            <DialogDescription className="text-right">
+              להפעלת כניסה מהירה במכשיר זה באמצעות זיהוי פנים / טביעת אצבע. בכניסות הבאות לא תידרש להזין סיסמה.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-2">
+            <Button className="flex-1" onClick={handleEnableFace} disabled={faceLoading}>
+              {faceLoading ? "מגדיר..." : "הפעל זיהוי פנים"}
+            </Button>
+            <Button variant="outline" className="flex-1" onClick={skipFaceSetup} disabled={faceLoading}>
+              דלג
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
