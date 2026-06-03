@@ -8,8 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Trash2, Plus, ArrowRight, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -18,7 +16,6 @@ export const Route = createFileRoute("/_authenticated/tech/$jobId")({
   component: JobDetail,
 });
 
-type DraftItem = { id: string; product_id: string; quantity: number };
 
 function JobDetail() {
   const { jobId } = Route.useParams();
