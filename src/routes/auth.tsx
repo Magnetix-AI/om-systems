@@ -43,15 +43,66 @@ function AuthPage() {
   const [adminPass, setAdminPass] = useState("");
   const [adminLoading, setAdminLoading] = useState(false);
 
+  const [faceLoading, setFaceLoading] = useState(false);
+  const [faceSetupOpen, setFaceSetupOpen] = useState(false);
+  const [pendingCreds, setPendingCreds] = useState<{ email: string; password: string } | null>(null);
+  const faceSupported = typeof window !== "undefined" && isFaceAuthSupported();
+  const hasFaceCred = typeof window !== "undefined" && !!getStoredFaceCred();
+
+  const finishLogin = () => {
+    toast.success("התחברת בהצלחה");
+    navigate({ to: "/" });
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) return toast.error("שגיאה בהתחברות", { description: error.message });
-    toast.success("התחברת בהצלחה");
-    navigate({ to: "/" });
+    // First successful login on this device → offer Face ID setup
+    if (faceSupported && !hasFaceCred) {
+      setPendingCreds({ email, password });
+      setFaceSetupOpen(true);
+      return;
+    }
+    finishLogin();
   };
+
+  const handleFaceLogin = async () => {
+    setFaceLoading(true);
+    try {
+      const { email: e2, password: p2 } = await verifyFaceCred();
+      const { error } = await supabase.auth.signInWithPassword({ email: e2, password: p2 });
+      if (error) throw new Error(error.message);
+      finishLogin();
+    } catch (err: any) {
+      toast.error("כניסה עם זיהוי פנים נכשלה", { description: err.message });
+    } finally {
+      setFaceLoading(false);
+    }
+  };
+
+  const handleEnableFace = async () => {
+    if (!pendingCreds) return;
+    setFaceLoading(true);
+    try {
+      await registerFaceCred(pendingCreds.email, pendingCreds.password);
+      toast.success("זיהוי פנים הופעל בהצלחה");
+      setFaceSetupOpen(false);
+      finishLogin();
+    } catch (err: any) {
+      toast.error("הגדרת זיהוי פנים נכשלה", { description: err.message });
+    } finally {
+      setFaceLoading(false);
+    }
+  };
+
+  const skipFaceSetup = () => {
+    setFaceSetupOpen(false);
+    finishLogin();
+  };
+
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
