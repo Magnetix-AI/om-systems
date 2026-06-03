@@ -173,6 +173,17 @@ function AuthPage() {
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "מתחבר..." : "התחבר כטכנאי"}
                 </Button>
+                {faceSupported && hasFaceCred && (
+                  <button
+                    type="button"
+                    onClick={handleFaceLogin}
+                    disabled={faceLoading}
+                    className="w-full flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                  >
+                    <ScanFace className="h-3.5 w-3.5" />
+                    {faceLoading ? "מאמת..." : "כניסה עם זיהוי פנים"}
+                  </button>
+                )}
               </form>
               <div className="relative my-5">
                 <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
@@ -183,6 +194,7 @@ function AuthPage() {
                 כניסה למערכת כאדמין
               </Button>
             </TabsContent>
+
             <TabsContent value="signup">
               <form onSubmit={handleSignup} className="space-y-4 mt-4">
                 <div className="rounded-md bg-secondary px-3 py-2 text-xs text-muted-foreground text-center">
