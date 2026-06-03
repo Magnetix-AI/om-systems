@@ -94,7 +94,7 @@ function AdminJobs() {
                   <TableRow key={j.id}>
                     <TableCell className="font-medium">{j.title}</TableCell>
                     <TableCell>{j.client?.name ?? "—"}</TableCell>
-                    <TableCell>{j.technician?.full_name ?? <span className="text-muted-foreground">לא משויך</span>}</TableCell>
+                    <TableCell>{j.technician_name ?? <span className="text-muted-foreground">לא משויך</span>}</TableCell>
                     <TableCell><Badge variant="outline" className={statusColor(j.status)}>{statusLabel(j.status)}</Badge></TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {j.scheduled_date ? new Date(j.scheduled_date).toLocaleDateString("he-IL") : "—"}

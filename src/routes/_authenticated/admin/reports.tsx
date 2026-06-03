@@ -24,15 +24,20 @@ function AdminReports() {
       const { data, error } = await supabase
         .from("jobs")
         .select(`
-          id, title, completed_at, sent_to_invoicing, sent_to_invoicing_at, technician_notes,
+          id, title, completed_at, sent_to_invoicing, sent_to_invoicing_at, technician_notes, technician_id,
           client:clients(name, address, phone),
-          technician:profiles!jobs_technician_id_fkey(full_name),
           items:job_items(quantity, unit_price, product:products(name, unit))
         `)
         .eq("status", "completed")
         .order("completed_at", { ascending: false });
       if (error) throw error;
-      return data;
+      const techIds = Array.from(new Set((data ?? []).map((j: any) => j.technician_id).filter(Boolean)));
+      let techMap: Record<string, string> = {};
+      if (techIds.length) {
+        const { data: profs } = await supabase.from("profiles").select("id, full_name").in("id", techIds);
+        techMap = Object.fromEntries((profs ?? []).map((p: any) => [p.id, p.full_name]));
+      }
+      return (data ?? []).map((j: any) => ({ ...j, technician_name: j.technician_id ? techMap[j.technician_id] : null }));
     },
   });
 
