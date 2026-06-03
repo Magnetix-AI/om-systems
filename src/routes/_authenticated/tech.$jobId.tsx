@@ -125,56 +125,62 @@ function JobDetail() {
           </CardContent>
         </Card>
 
+        {existing.length > 0 && (
+          <Card>
+            <CardHeader><CardTitle className="text-lg">פריטים שכבר דווחו</CardTitle></CardHeader>
+            <CardContent className="space-y-2">
+              {existing.map((it: any) => (
+                <div key={it.id} className="flex items-center justify-between text-sm border-b pb-1">
+                  <span>{it.product?.name}</span>
+                  <span className="text-muted-foreground">{Number(it.quantity)} {it.product?.unit}</span>
+                  <span className="font-medium">₪{(Number(it.quantity) * Number(it.unit_price)).toFixed(2)}</span>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
+        {!completed && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">מאגר ציוד — סמן כמויות שסופקו</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 max-h-96 overflow-y-auto">
+              {products.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">אין פריטים במלאי</p>}
+              {products.map((p: any) => {
+                const qty = quantities[p.id] || 0;
+                const active = qty > 0;
+                return (
+                  <div key={p.id} className={`flex items-center gap-2 rounded-lg p-2 border transition-colors ${active ? "bg-success/10 border-success/40" : "bg-secondary/30"}`}>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">{p.name}</div>
+                      <div className="text-xs text-muted-foreground">₪{Number(p.price).toFixed(2)} / {p.unit}{p.category ? ` · ${p.category}` : ""}</div>
+                    </div>
+                    <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setQty(p.id, qty - 1)} disabled={qty <= 0}>
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                    <Input
+                      type="number" min={0} step="1" value={qty}
+                      onChange={e => setQty(p.id, Number(e.target.value))}
+                      className="w-16 h-8 text-center"
+                    />
+                    <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setQty(p.id, qty + 1)}>
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">חומרים וציוד</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {allItems.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">לא נוספו פריטים עדיין</p>}
-            {allItems.map((it, idx) => (
-              <div key={it.key} className="flex items-center gap-2">
-                {it.existing || completed ? (
-                  <div className="flex-1 text-sm">{it.name}</div>
-                ) : (
-                  <Select
-                    value={it.product_id}
-                    onValueChange={(v) => setDraft(d => d.map(x => x.id === it.key ? { ...x, product_id: v } : x))}
-                  >
-                    <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {products.map((p: any) => (
-                        <SelectItem key={p.id} value={p.id}>{p.name} — ₪{Number(p.price).toFixed(2)}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-                <Input
-                  type="number" min={0} step="0.5"
-                  value={it.quantity}
-                  disabled={it.existing || completed}
-                  onChange={e => setDraft(d => d.map(x => x.id === it.key ? { ...x, quantity: Number(e.target.value) } : x))}
-                  className="w-20"
-                />
-                <span className="text-xs text-muted-foreground w-10">{it.unit}</span>
-                <span className="text-sm w-20 text-left">₪{(it.quantity * it.unit_price).toFixed(2)}</span>
-                {!it.existing && !completed && (
-                  <Button variant="ghost" size="icon" onClick={() => setDraft(d => d.filter(x => x.id !== it.key))}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                )}
-              </div>
-            ))}
-            {!completed && (
-              <Button variant="outline" onClick={addRow} className="w-full" disabled={products.length === 0}>
-                <Plus className="h-4 w-4 ml-1" /> הוסף פריט
-              </Button>
-            )}
-            <div className="border-t pt-3 flex justify-between font-semibold">
-              <span>סה״כ</span>
-              <span>₪{total.toFixed(2)}</span>
-            </div>
+          <CardContent className="p-4 flex justify-between font-semibold">
+            <span>סה״כ לחיוב</span>
+            <span>₪{total.toFixed(2)}</span>
           </CardContent>
         </Card>
+
 
         <Card>
           <CardHeader><CardTitle className="text-lg">הערות טכנאי</CardTitle></CardHeader>
