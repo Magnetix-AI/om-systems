@@ -6,8 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { Cable } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Cable, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth")({
@@ -19,6 +19,10 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
+const ADMIN_EMAIL = "admin@fieldops.local";
+const ADMIN_USERNAME = "admin";
+const ADMIN_PASSWORD = "Maorh1803!";
+
 function AuthPage() {
   const navigate = useNavigate();
   const [tab, setTab] = useState("login");
@@ -26,7 +30,11 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [role, setRole] = useState<"admin" | "technician">("technician");
+
+  const [adminOpen, setAdminOpen] = useState(false);
+  const [adminUser, setAdminUser] = useState("");
+  const [adminPass, setAdminPass] = useState("");
+  const [adminLoading, setAdminLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,11 +51,38 @@ function AuthPage() {
     setLoading(true);
     const { error } = await supabase.auth.signUp({
       email, password,
-      options: { data: { full_name: fullName, role }, emailRedirectTo: window.location.origin },
+      options: { data: { full_name: fullName, role: "technician" }, emailRedirectTo: window.location.origin },
     });
     setLoading(false);
     if (error) return toast.error("שגיאה בהרשמה", { description: error.message });
-    toast.success("נרשמת בהצלחה");
+    toast.success("נרשמת בהצלחה כטכנאי");
+    navigate({ to: "/" });
+  };
+
+  const handleAdminLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (adminUser !== ADMIN_USERNAME || adminPass !== ADMIN_PASSWORD) {
+      return toast.error("פרטי כניסה שגויים");
+    }
+    setAdminLoading(true);
+    let { error } = await supabase.auth.signInWithPassword({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD });
+    if (error) {
+      // First-time bootstrap: create the admin account, then sign in.
+      const { error: signUpErr } = await supabase.auth.signUp({
+        email: ADMIN_EMAIL,
+        password: ADMIN_PASSWORD,
+        options: { data: { full_name: "מנהל מערכת", role: "admin" }, emailRedirectTo: window.location.origin },
+      });
+      if (signUpErr) {
+        setAdminLoading(false);
+        return toast.error("שגיאה ביצירת חשבון מנהל", { description: signUpErr.message });
+      }
+      ({ error } = await supabase.auth.signInWithPassword({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD }));
+    }
+    setAdminLoading(false);
+    if (error) return toast.error("שגיאה בהתחברות מנהל", { description: error.message });
+    toast.success("התחברת כמנהל");
+    setAdminOpen(false);
     navigate({ to: "/" });
   };
 
@@ -78,12 +113,23 @@ function AuthPage() {
                   <Input id="password" type="password" required value={password} onChange={e => setPassword(e.target.value)} dir="ltr" />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "מתחבר..." : "התחבר"}
+                  {loading ? "מתחבר..." : "התחבר כטכנאי"}
                 </Button>
               </form>
+              <div className="relative my-5">
+                <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+                <div className="relative flex justify-center text-xs"><span className="bg-card px-2 text-muted-foreground">או</span></div>
+              </div>
+              <Button type="button" variant="outline" className="w-full gap-2" onClick={() => setAdminOpen(true)}>
+                <ShieldCheck className="h-4 w-4" />
+                כניסה למערכת כאדמין
+              </Button>
             </TabsContent>
             <TabsContent value="signup">
               <form onSubmit={handleSignup} className="space-y-4 mt-4">
+                <div className="rounded-md bg-secondary px-3 py-2 text-xs text-muted-foreground text-center">
+                  הרשמה מיועדת לטכנאים בלבד
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="name">שם מלא</Label>
                   <Input id="name" required value={fullName} onChange={e => setFullName(e.target.value)} />
@@ -96,24 +142,36 @@ function AuthPage() {
                   <Label htmlFor="password2">סיסמה</Label>
                   <Input id="password2" type="password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)} dir="ltr" />
                 </div>
-                <div className="space-y-2">
-                  <Label>תפקיד</Label>
-                  <Select value={role} onValueChange={(v: "admin" | "technician") => setRole(v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="technician">טכנאי</SelectItem>
-                      <SelectItem value="admin">מנהל</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "נרשם..." : "צור חשבון"}
+                  {loading ? "נרשם..." : "צור חשבון טכנאי"}
                 </Button>
               </form>
             </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
+
+      <Dialog open={adminOpen} onOpenChange={setAdminOpen}>
+        <DialogContent dir="rtl" className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-right">כניסת מנהל</DialogTitle>
+            <DialogDescription className="text-right">הזן שם משתמש וסיסמה לכניסה לממשק הניהול</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleAdminLogin} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="adminUser">שם משתמש</Label>
+              <Input id="adminUser" required value={adminUser} onChange={e => setAdminUser(e.target.value)} dir="ltr" autoFocus />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="adminPass">סיסמה</Label>
+              <Input id="adminPass" type="password" required value={adminPass} onChange={e => setAdminPass(e.target.value)} dir="ltr" />
+            </div>
+            <Button type="submit" className="w-full" disabled={adminLoading}>
+              {adminLoading ? "מתחבר..." : "כניסה כמנהל"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
