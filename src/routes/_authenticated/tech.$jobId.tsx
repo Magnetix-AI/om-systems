@@ -183,31 +183,43 @@ function JobDetail() {
             <CardHeader>
               <CardTitle className="text-lg">מאגר ציוד — סמן כמויות שסופקו</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 max-h-96 overflow-y-auto">
-              {products.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">אין פריטים במלאי</p>}
-              {products.map((p: any) => {
-                const qty = quantities[p.id] || 0;
-                const active = qty > 0;
-                return (
-                  <div key={p.id} className={`flex items-center gap-2 rounded-lg p-2 border transition-colors ${active ? "bg-success/10 border-success/40" : "bg-secondary/30"}`}>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium truncate">{p.name}</div>
-                      <div className="text-xs text-muted-foreground">₪{Number(p.price).toFixed(2)} / {p.unit}{p.category ? ` · ${p.category}` : ""}</div>
+            <CardContent className="space-y-2">
+              <div className="relative">
+                <Search className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  placeholder="חיפוש במאגר ציוד..."
+                  className="pr-8"
+                />
+              </div>
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {products.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">אין פריטים במלאי</p>}
+                {products.length > 0 && filteredProducts.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">לא נמצאו תוצאות</p>}
+                {filteredProducts.map((p: any) => {
+                  const qty = quantities[p.id] || 0;
+                  const active = qty > 0;
+                  return (
+                    <div key={p.id} className={`flex items-center gap-2 rounded-lg p-2 border transition-colors ${active ? "bg-success/10 border-success/40" : "bg-secondary/30"}`}>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium truncate">{p.name}</div>
+                        <div className="text-xs text-muted-foreground">₪{Number(p.price).toFixed(2)} / {p.unit}{p.category ? ` · ${p.category}` : ""}</div>
+                      </div>
+                      <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setQty(p.id, qty - 1)} disabled={qty <= 0}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                      <Input
+                        type="number" min={0} step="1" value={qty}
+                        onChange={e => setQty(p.id, Number(e.target.value))}
+                        className="w-16 h-8 text-center"
+                      />
+                      <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setQty(p.id, qty + 1)}>
+                        <Plus className="h-3 w-3" />
+                      </Button>
                     </div>
-                    <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setQty(p.id, qty - 1)} disabled={qty <= 0}>
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                    <Input
-                      type="number" min={0} step="1" value={qty}
-                      onChange={e => setQty(p.id, Number(e.target.value))}
-                      className="w-16 h-8 text-center"
-                    />
-                    <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setQty(p.id, qty + 1)}>
-                      <Plus className="h-3 w-3" />
-                    </Button>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </CardContent>
           </Card>
         )}
