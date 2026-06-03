@@ -48,8 +48,49 @@ function JobDetail() {
   const [notes, setNotes] = useState("");
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState("");
+  const [recording, setRecording] = useState(false);
+  const recognitionRef = useState<any>(null)[0] as any;
+  const recRef = React.useRef<any>(null);
 
   useEffect(() => { if (job?.technician_notes) setNotes(job.technician_notes); }, [job?.id]);
+
+  const filteredProducts = products.filter((p: any) => {
+    if (!search.trim()) return true;
+    const q = search.trim().toLowerCase();
+    return (p.name?.toLowerCase().includes(q)) || (p.sku?.toLowerCase().includes(q)) || (p.category?.toLowerCase().includes(q));
+  });
+
+  const toggleRecording = () => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) {
+      toast.error("הדפדפן לא תומך בהקלטה קולית");
+      return;
+    }
+    if (recording) {
+      recRef.current?.stop();
+      return;
+    }
+    const rec = new SR();
+    rec.lang = "he-IL";
+    rec.continuous = true;
+    rec.interimResults = true;
+    let finalText = notes ? notes + " " : "";
+    rec.onresult = (e: any) => {
+      let interim = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) finalText += t + " ";
+        else interim += t;
+      }
+      setNotes((finalText + interim).trim());
+    };
+    rec.onerror = (e: any) => { toast.error("שגיאת הקלטה", { description: e.error }); setRecording(false); };
+    rec.onend = () => setRecording(false);
+    recRef.current = rec;
+    rec.start();
+    setRecording(true);
+  };
 
   const completed = job?.status === "completed";
   const existing = (job?.items ?? []) as any[];
