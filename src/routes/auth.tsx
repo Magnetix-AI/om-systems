@@ -7,8 +7,15 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Cable, ShieldCheck } from "lucide-react";
+import { Cable, ScanFace, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
+import {
+  getStoredFaceCred,
+  isFaceAuthSupported,
+  registerFaceCred,
+  verifyFaceCred,
+} from "@/lib/face-auth";
+
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
