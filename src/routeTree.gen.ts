@@ -12,8 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedTechRouteImport } from './routes/_authenticated/tech'
 import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
+import { Route as AuthenticatedTechIndexRouteImport } from './routes/_authenticated/tech.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as AuthenticatedTechJobIdRouteImport } from './routes/_authenticated/tech.$jobId'
 import { Route as AuthenticatedAdminReportsRouteImport } from './routes/_authenticated/admin/reports'
@@ -33,14 +33,14 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedTechRoute = AuthenticatedTechRouteImport.update({
-  id: '/tech',
-  path: '/tech',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedAdminRouteRoute = AuthenticatedAdminRouteRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedTechIndexRoute = AuthenticatedTechIndexRouteImport.update({
+  id: '/tech/',
+  path: '/tech/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
@@ -49,9 +49,9 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   getParentRoute: () => AuthenticatedAdminRouteRoute,
 } as any)
 const AuthenticatedTechJobIdRoute = AuthenticatedTechJobIdRouteImport.update({
-  id: '/$jobId',
-  path: '/$jobId',
-  getParentRoute: () => AuthenticatedTechRoute,
+  id: '/tech/$jobId',
+  path: '/tech/$jobId',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAdminReportsRoute =
   AuthenticatedAdminReportsRouteImport.update({
@@ -70,20 +70,20 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
-  '/tech': typeof AuthenticatedTechRouteWithChildren
   '/admin/products': typeof AuthenticatedAdminProductsRoute
   '/admin/reports': typeof AuthenticatedAdminReportsRoute
   '/tech/$jobId': typeof AuthenticatedTechJobIdRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
+  '/tech/': typeof AuthenticatedTechIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/tech': typeof AuthenticatedTechRouteWithChildren
   '/admin/products': typeof AuthenticatedAdminProductsRoute
   '/admin/reports': typeof AuthenticatedAdminReportsRoute
   '/tech/$jobId': typeof AuthenticatedTechJobIdRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
+  '/tech': typeof AuthenticatedTechIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -91,11 +91,11 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
-  '/_authenticated/tech': typeof AuthenticatedTechRouteWithChildren
   '/_authenticated/admin/products': typeof AuthenticatedAdminProductsRoute
   '/_authenticated/admin/reports': typeof AuthenticatedAdminReportsRoute
   '/_authenticated/tech/$jobId': typeof AuthenticatedTechJobIdRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
+  '/_authenticated/tech/': typeof AuthenticatedTechIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -103,31 +103,31 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/admin'
-    | '/tech'
     | '/admin/products'
     | '/admin/reports'
     | '/tech/$jobId'
     | '/admin/'
+    | '/tech/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
-    | '/tech'
     | '/admin/products'
     | '/admin/reports'
     | '/tech/$jobId'
     | '/admin'
+    | '/tech'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/admin'
-    | '/_authenticated/tech'
     | '/_authenticated/admin/products'
     | '/_authenticated/admin/reports'
     | '/_authenticated/tech/$jobId'
     | '/_authenticated/admin/'
+    | '/_authenticated/tech/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -159,18 +159,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/tech': {
-      id: '/_authenticated/tech'
-      path: '/tech'
-      fullPath: '/tech'
-      preLoaderRoute: typeof AuthenticatedTechRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/admin': {
       id: '/_authenticated/admin'
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AuthenticatedAdminRouteRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/tech/': {
+      id: '/_authenticated/tech/'
+      path: '/tech'
+      fullPath: '/tech/'
+      preLoaderRoute: typeof AuthenticatedTechIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/admin/': {
@@ -182,10 +182,10 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/tech/$jobId': {
       id: '/_authenticated/tech/$jobId'
-      path: '/$jobId'
+      path: '/tech/$jobId'
       fullPath: '/tech/$jobId'
       preLoaderRoute: typeof AuthenticatedTechJobIdRouteImport
-      parentRoute: typeof AuthenticatedTechRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/admin/reports': {
       id: '/_authenticated/admin/reports'
@@ -222,25 +222,16 @@ const AuthenticatedAdminRouteRouteWithChildren =
     AuthenticatedAdminRouteRouteChildren,
   )
 
-interface AuthenticatedTechRouteChildren {
-  AuthenticatedTechJobIdRoute: typeof AuthenticatedTechJobIdRoute
-}
-
-const AuthenticatedTechRouteChildren: AuthenticatedTechRouteChildren = {
-  AuthenticatedTechJobIdRoute: AuthenticatedTechJobIdRoute,
-}
-
-const AuthenticatedTechRouteWithChildren =
-  AuthenticatedTechRoute._addFileChildren(AuthenticatedTechRouteChildren)
-
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRouteRoute: typeof AuthenticatedAdminRouteRouteWithChildren
-  AuthenticatedTechRoute: typeof AuthenticatedTechRouteWithChildren
+  AuthenticatedTechJobIdRoute: typeof AuthenticatedTechJobIdRoute
+  AuthenticatedTechIndexRoute: typeof AuthenticatedTechIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRouteRoute: AuthenticatedAdminRouteRouteWithChildren,
-  AuthenticatedTechRoute: AuthenticatedTechRouteWithChildren,
+  AuthenticatedTechJobIdRoute: AuthenticatedTechJobIdRoute,
+  AuthenticatedTechIndexRoute: AuthenticatedTechIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

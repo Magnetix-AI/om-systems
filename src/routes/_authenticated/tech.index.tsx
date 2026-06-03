@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, Calendar, ChevronLeft, Briefcase } from "lucide-react";
 import { format } from "date-fns";
 
-export const Route = createFileRoute("/_authenticated/tech")({
+export const Route = createFileRoute("/_authenticated/tech/")({
   ssr: false,
   component: TechDashboard,
 });
