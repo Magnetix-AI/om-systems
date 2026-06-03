@@ -41,7 +41,7 @@ function JobDetail() {
     queryKey: ["products-active"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("products").select("id, name, sku, price, unit")
+        .from("products").select("id, name, sku, price, unit, category")
         .eq("is_active", true).order("name");
       if (error) throw error;
       return data;
@@ -49,41 +49,27 @@ function JobDetail() {
   });
 
   const [notes, setNotes] = useState("");
-  const [draft, setDraft] = useState<DraftItem[]>([]);
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
 
   useEffect(() => { if (job?.technician_notes) setNotes(job.technician_notes); }, [job?.id]);
 
   const completed = job?.status === "completed";
   const existing = (job?.items ?? []) as any[];
-  const allItems = [
-    ...existing.map(it => ({
-      key: it.id, product_id: it.product_id, quantity: Number(it.quantity),
-      unit_price: Number(it.unit_price),
-      name: it.product?.name, unit: it.product?.unit, existing: true,
-    })),
-    ...draft.map(d => {
-      const p = products.find((x: any) => x.id === d.product_id);
-      return { key: d.id, product_id: d.product_id, quantity: d.quantity,
-        unit_price: Number(p?.price ?? 0), name: p?.name, unit: p?.unit, existing: false };
-    }),
-  ];
-  const total = allItems.reduce((s, it) => s + it.quantity * it.unit_price, 0);
+  const existingTotal = existing.reduce((s, it) => s + Number(it.quantity) * Number(it.unit_price), 0);
+  const newTotal = products.reduce((s: number, p: any) => s + (quantities[p.id] || 0) * Number(p.price), 0);
+  const total = existingTotal + newTotal;
 
-  const addRow = () => {
-    if (products.length === 0) return;
-    setDraft(d => [...d, { id: crypto.randomUUID(), product_id: products[0].id, quantity: 1 }]);
-  };
+  const setQty = (id: string, v: number) => setQuantities(q => ({ ...q, [id]: Math.max(0, v) }));
 
   const handleSubmit = async () => {
     if (!job) return;
     setSaving(true);
     try {
-      if (draft.length) {
-        const rows = draft.map(d => {
-          const p = products.find((x: any) => x.id === d.product_id);
-          return { job_id: job.id, product_id: d.product_id, quantity: d.quantity, unit_price: Number(p?.price ?? 0) };
-        });
+      const rows = products
+        .filter((p: any) => (quantities[p.id] || 0) > 0)
+        .map((p: any) => ({ job_id: job.id, product_id: p.id, quantity: quantities[p.id], unit_price: Number(p.price) }));
+      if (rows.length) {
         const { error: itemsErr } = await supabase.from("job_items").insert(rows);
         if (itemsErr) throw itemsErr;
       }
@@ -93,7 +79,7 @@ function JobDetail() {
         technician_notes: notes,
       }).eq("id", job.id);
       if (error) throw error;
-      toast.success("הקריאה נסגרה בהצלחה");
+      toast.success("הקריאה סומנה כסופקה");
       qc.invalidateQueries({ queryKey: ["job", jobId] });
       qc.invalidateQueries({ queryKey: ["tech-jobs"] });
       navigate({ to: "/tech" });
