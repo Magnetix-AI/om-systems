@@ -6,7 +6,7 @@ import { useCurrentUser } from "@/hooks/use-current-user";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Calendar, ChevronLeft, Briefcase } from "lucide-react";
+import { MapPin, Calendar, ChevronLeft, Briefcase, FolderKanban } from "lucide-react";
 import { format } from "date-fns";
 
 export const Route = createFileRoute("/_authenticated/tech/")({
@@ -32,25 +32,52 @@ function TechDashboard() {
     },
   });
 
+  const { data: projects = [] } = useQuery({
+    queryKey: ["tech-projects", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("id, title, description, status, start_date, client:clients(name, address, phone)")
+        .eq("technician_id", userId!)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const active = jobs.filter((j: any) => j.status !== "completed");
   const completed = jobs.filter((j: any) => j.status === "completed");
+  const activeProjects = projects.filter((p: any) => p.status === "open");
+  const closedProjects = projects.filter((p: any) => p.status === "closed");
 
   return (
     <AppShell>
       <div className="max-w-2xl mx-auto p-4 space-y-4">
         <div>
           <h1 className="text-2xl font-bold">שלום, {user?.fullName}</h1>
-          <p className="text-sm text-muted-foreground">להלן הקריאות המשויכות אליך</p>
+          <p className="text-sm text-muted-foreground">קריאות ופרוייקטים המשויכים אליך</p>
         </div>
         <Tabs defaultValue="active">
-          <TabsList className="grid grid-cols-2 w-full">
-            <TabsTrigger value="active">פעילות ({active.length})</TabsTrigger>
+          <TabsList className="grid grid-cols-3 w-full">
+            <TabsTrigger value="active">קריאות ({active.length})</TabsTrigger>
+            <TabsTrigger value="projects">פרוייקטים ({activeProjects.length})</TabsTrigger>
             <TabsTrigger value="history">היסטוריה ({completed.length})</TabsTrigger>
           </TabsList>
           <TabsContent value="active" className="space-y-3 mt-4">
             {isLoading && <p className="text-center text-muted-foreground py-8">טוען...</p>}
             {!isLoading && active.length === 0 && <EmptyState text="אין כרגע קריאות פעילות" />}
             {active.map((j: any) => <JobCard key={j.id} job={j} />)}
+          </TabsContent>
+          <TabsContent value="projects" className="space-y-3 mt-4">
+            {activeProjects.length === 0 && <EmptyState text="אין פרוייקטים פעילים" />}
+            {activeProjects.map((p: any) => <ProjectCard key={p.id} project={p} />)}
+            {closedProjects.length > 0 && (
+              <>
+                <div className="text-sm font-medium text-muted-foreground mt-6">פרוייקטים שנסגרו</div>
+                {closedProjects.map((p: any) => <ProjectCard key={p.id} project={p} />)}
+              </>
+            )}
           </TabsContent>
           <TabsContent value="history" className="space-y-3 mt-4">
             {!isLoading && completed.length === 0 && <EmptyState text="אין קריאות שהושלמו עדיין" />}
@@ -98,6 +125,32 @@ function JobCard({ job }: { job: any }) {
           )}
           <div className="flex justify-end mt-2 text-primary text-sm font-medium">
             פתח קריאה <ChevronLeft className="h-4 w-4" />
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
+
+function ProjectCard({ project }: { project: any }) {
+  return (
+    <Link to="/tech/projects/$projectId" params={{ projectId: project.id }}>
+      <Card className="hover:shadow-[var(--shadow-card)] transition-all hover:border-primary/40 cursor-pointer">
+        <CardContent className="p-4">
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <h3 className="font-semibold leading-tight flex items-center gap-2"><FolderKanban className="h-4 w-4 text-primary" />{project.title}</h3>
+            <Badge variant="outline" className={project.status === "open" ? "bg-primary/10 text-primary border-primary/30" : "bg-success/10 text-success border-success/30"}>
+              {project.status === "open" ? "פעיל" : "סגור"}
+            </Badge>
+          </div>
+          {project.client && (
+            <div className="text-sm text-muted-foreground space-y-1">
+              <div className="font-medium text-foreground">{project.client.name}</div>
+              {project.client.address && (<div className="flex items-center gap-1"><MapPin className="h-3 w-3" />{project.client.address}</div>)}
+            </div>
+          )}
+          <div className="flex justify-end mt-2 text-primary text-sm font-medium">
+            פתח פרוייקט <ChevronLeft className="h-4 w-4" />
           </div>
         </CardContent>
       </Card>
