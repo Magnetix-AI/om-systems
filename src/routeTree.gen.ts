@@ -20,6 +20,7 @@ import { Route as AuthenticatedAdminReportsRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminProductsRouteImport } from './routes/_authenticated/admin/products'
 import { Route as AuthenticatedAdminProjectsIndexRouteImport } from './routes/_authenticated/admin/projects.index'
 import { Route as AuthenticatedAdminClientsIndexRouteImport } from './routes/_authenticated/admin/clients.index'
+import { Route as AuthenticatedTechProjectsProjectIdRouteImport } from './routes/_authenticated/tech.projects.$projectId'
 import { Route as AuthenticatedAdminProjectsProjectIdRouteImport } from './routes/_authenticated/admin/projects.$projectId'
 import { Route as AuthenticatedAdminClientsClientIdRouteImport } from './routes/_authenticated/admin/clients.$clientId'
 
@@ -81,6 +82,12 @@ const AuthenticatedAdminClientsIndexRoute =
     path: '/clients/',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedTechProjectsProjectIdRoute =
+  AuthenticatedTechProjectsProjectIdRouteImport.update({
+    id: '/tech/projects/$projectId',
+    path: '/tech/projects/$projectId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminProjectsProjectIdRoute =
   AuthenticatedAdminProjectsProjectIdRouteImport.update({
     id: '/projects/$projectId',
@@ -105,6 +112,7 @@ export interface FileRoutesByFullPath {
   '/tech/': typeof AuthenticatedTechIndexRoute
   '/admin/clients/$clientId': typeof AuthenticatedAdminClientsClientIdRoute
   '/admin/projects/$projectId': typeof AuthenticatedAdminProjectsProjectIdRoute
+  '/tech/projects/$projectId': typeof AuthenticatedTechProjectsProjectIdRoute
   '/admin/clients/': typeof AuthenticatedAdminClientsIndexRoute
   '/admin/projects/': typeof AuthenticatedAdminProjectsIndexRoute
 }
@@ -118,6 +126,7 @@ export interface FileRoutesByTo {
   '/tech': typeof AuthenticatedTechIndexRoute
   '/admin/clients/$clientId': typeof AuthenticatedAdminClientsClientIdRoute
   '/admin/projects/$projectId': typeof AuthenticatedAdminProjectsProjectIdRoute
+  '/tech/projects/$projectId': typeof AuthenticatedTechProjectsProjectIdRoute
   '/admin/clients': typeof AuthenticatedAdminClientsIndexRoute
   '/admin/projects': typeof AuthenticatedAdminProjectsIndexRoute
 }
@@ -134,6 +143,7 @@ export interface FileRoutesById {
   '/_authenticated/tech/': typeof AuthenticatedTechIndexRoute
   '/_authenticated/admin/clients/$clientId': typeof AuthenticatedAdminClientsClientIdRoute
   '/_authenticated/admin/projects/$projectId': typeof AuthenticatedAdminProjectsProjectIdRoute
+  '/_authenticated/tech/projects/$projectId': typeof AuthenticatedTechProjectsProjectIdRoute
   '/_authenticated/admin/clients/': typeof AuthenticatedAdminClientsIndexRoute
   '/_authenticated/admin/projects/': typeof AuthenticatedAdminProjectsIndexRoute
 }
@@ -150,6 +160,7 @@ export interface FileRouteTypes {
     | '/tech/'
     | '/admin/clients/$clientId'
     | '/admin/projects/$projectId'
+    | '/tech/projects/$projectId'
     | '/admin/clients/'
     | '/admin/projects/'
   fileRoutesByTo: FileRoutesByTo
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/tech'
     | '/admin/clients/$clientId'
     | '/admin/projects/$projectId'
+    | '/tech/projects/$projectId'
     | '/admin/clients'
     | '/admin/projects'
   id:
@@ -178,6 +190,7 @@ export interface FileRouteTypes {
     | '/_authenticated/tech/'
     | '/_authenticated/admin/clients/$clientId'
     | '/_authenticated/admin/projects/$projectId'
+    | '/_authenticated/tech/projects/$projectId'
     | '/_authenticated/admin/clients/'
     | '/_authenticated/admin/projects/'
   fileRoutesById: FileRoutesById
@@ -267,6 +280,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminClientsIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/tech/projects/$projectId': {
+      id: '/_authenticated/tech/projects/$projectId'
+      path: '/tech/projects/$projectId'
+      fullPath: '/tech/projects/$projectId'
+      preLoaderRoute: typeof AuthenticatedTechProjectsProjectIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/projects/$projectId': {
       id: '/_authenticated/admin/projects/$projectId'
       path: '/projects/$projectId'
@@ -316,12 +336,15 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRouteRoute: typeof AuthenticatedAdminRouteRouteWithChildren
   AuthenticatedTechJobIdRoute: typeof AuthenticatedTechJobIdRoute
   AuthenticatedTechIndexRoute: typeof AuthenticatedTechIndexRoute
+  AuthenticatedTechProjectsProjectIdRoute: typeof AuthenticatedTechProjectsProjectIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRouteRoute: AuthenticatedAdminRouteRouteWithChildren,
   AuthenticatedTechJobIdRoute: AuthenticatedTechJobIdRoute,
   AuthenticatedTechIndexRoute: AuthenticatedTechIndexRoute,
+  AuthenticatedTechProjectsProjectIdRoute:
+    AuthenticatedTechProjectsProjectIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -335,3 +358,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
