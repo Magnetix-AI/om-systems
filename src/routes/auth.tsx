@@ -123,29 +123,23 @@ function AuthPage() {
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAdminLoading(true);
-    const { data: signInData, error } = await supabase.auth.signInWithPassword({
-      email: adminUser,
-      password: adminPass,
-    });
-    if (error || !signInData.user) {
+    try {
+      // Server validates username+password against env secrets and returns
+      // a real Supabase session for the admin account. Nothing sensitive
+      // lives in the client bundle.
+      const { access_token, refresh_token } = await adminLoginFn({
+        data: { username: adminUser, password: adminPass },
+      });
+      const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+      if (error) throw new Error(error.message);
+      toast.success("התחברת כמנהל");
+      setAdminOpen(false);
+      navigate({ to: "/" });
+    } catch (err: any) {
+      toast.error("שגיאה בהתחברות מנהל", { description: err?.message });
+    } finally {
       setAdminLoading(false);
-      return toast.error("שגיאה בהתחברות מנהל", { description: error?.message });
     }
-    // Verify admin role server-side via user_roles (RLS enforced).
-    const { data: roleRow } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", signInData.user.id)
-      .eq("role", "admin")
-      .maybeSingle();
-    setAdminLoading(false);
-    if (!roleRow) {
-      await supabase.auth.signOut();
-      return toast.error("חשבון זה אינו חשבון מנהל");
-    }
-    toast.success("התחברת כמנהל");
-    setAdminOpen(false);
-    navigate({ to: "/" });
   };
 
   return (
