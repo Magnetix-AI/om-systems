@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import {
   registerFaceCred,
   verifyFaceCred,
 } from "@/lib/face-auth";
+import { adminLogin } from "@/lib/admin-auth.functions";
 
 
 export const Route = createFileRoute("/auth")({
