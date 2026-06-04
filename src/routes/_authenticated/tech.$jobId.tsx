@@ -50,9 +50,15 @@ function JobDetail() {
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [recording, setRecording] = useState(false);
+  const [arrival, setArrival] = useState("");
+  const [departure, setDeparture] = useState("");
   const recRef = React.useRef<any>(null);
 
-  useEffect(() => { if (job?.technician_notes) setNotes(job.technician_notes); }, [job?.id]);
+  useEffect(() => {
+    if (job?.technician_notes) setNotes(job.technician_notes);
+    if (job?.arrival_time) setArrival(new Date(job.arrival_time).toTimeString().slice(0, 5));
+    if (job?.departure_time) setDeparture(new Date(job.departure_time).toTimeString().slice(0, 5));
+  }, [job?.id]);
 
   const filteredProducts = products.filter((p: any) => {
     if (!search.trim()) return true;
@@ -99,6 +105,14 @@ function JobDetail() {
 
   const setQty = (id: string, v: number) => setQuantities(q => ({ ...q, [id]: Math.max(0, v) }));
 
+  const toTs = (hhmm: string) => {
+    if (!hhmm) return null;
+    const [h, m] = hhmm.split(":").map(Number);
+    const d = new Date();
+    d.setHours(h, m, 0, 0);
+    return d.toISOString();
+  };
+
   const handleSubmit = async () => {
     if (!job) return;
     setSaving(true);
@@ -114,6 +128,8 @@ function JobDetail() {
         status: "completed",
         completed_at: new Date().toISOString(),
         technician_notes: notes,
+        arrival_time: toTs(arrival),
+        departure_time: toTs(departure),
       }).eq("id", job.id);
       if (error) throw error;
       toast.success("הקריאה סומנה כסופקה");
