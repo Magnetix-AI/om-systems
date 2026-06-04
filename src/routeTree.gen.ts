@@ -18,7 +18,10 @@ import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedTechJobIdRouteImport } from './routes/_authenticated/tech.$jobId'
 import { Route as AuthenticatedAdminReportsRouteImport } from './routes/_authenticated/admin/reports'
 import { Route as AuthenticatedAdminProductsRouteImport } from './routes/_authenticated/admin/products'
+import { Route as AuthenticatedAdminProjectsIndexRouteImport } from './routes/_authenticated/admin/projects.index'
 import { Route as AuthenticatedAdminClientsIndexRouteImport } from './routes/_authenticated/admin/clients.index'
+import { Route as AuthenticatedTechProjectsProjectIdRouteImport } from './routes/_authenticated/tech.projects.$projectId'
+import { Route as AuthenticatedAdminProjectsProjectIdRouteImport } from './routes/_authenticated/admin/projects.$projectId'
 import { Route as AuthenticatedAdminClientsClientIdRouteImport } from './routes/_authenticated/admin/clients.$clientId'
 
 const AuthRoute = AuthRouteImport.update({
@@ -67,10 +70,28 @@ const AuthenticatedAdminProductsRoute =
     path: '/products',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminProjectsIndexRoute =
+  AuthenticatedAdminProjectsIndexRouteImport.update({
+    id: '/projects/',
+    path: '/projects/',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminClientsIndexRoute =
   AuthenticatedAdminClientsIndexRouteImport.update({
     id: '/clients/',
     path: '/clients/',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedTechProjectsProjectIdRoute =
+  AuthenticatedTechProjectsProjectIdRouteImport.update({
+    id: '/tech/projects/$projectId',
+    path: '/tech/projects/$projectId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminProjectsProjectIdRoute =
+  AuthenticatedAdminProjectsProjectIdRouteImport.update({
+    id: '/projects/$projectId',
+    path: '/projects/$projectId',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
 const AuthenticatedAdminClientsClientIdRoute =
@@ -90,7 +111,10 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/tech/': typeof AuthenticatedTechIndexRoute
   '/admin/clients/$clientId': typeof AuthenticatedAdminClientsClientIdRoute
+  '/admin/projects/$projectId': typeof AuthenticatedAdminProjectsProjectIdRoute
+  '/tech/projects/$projectId': typeof AuthenticatedTechProjectsProjectIdRoute
   '/admin/clients/': typeof AuthenticatedAdminClientsIndexRoute
+  '/admin/projects/': typeof AuthenticatedAdminProjectsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -101,7 +125,10 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/tech': typeof AuthenticatedTechIndexRoute
   '/admin/clients/$clientId': typeof AuthenticatedAdminClientsClientIdRoute
+  '/admin/projects/$projectId': typeof AuthenticatedAdminProjectsProjectIdRoute
+  '/tech/projects/$projectId': typeof AuthenticatedTechProjectsProjectIdRoute
   '/admin/clients': typeof AuthenticatedAdminClientsIndexRoute
+  '/admin/projects': typeof AuthenticatedAdminProjectsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -115,7 +142,10 @@ export interface FileRoutesById {
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/tech/': typeof AuthenticatedTechIndexRoute
   '/_authenticated/admin/clients/$clientId': typeof AuthenticatedAdminClientsClientIdRoute
+  '/_authenticated/admin/projects/$projectId': typeof AuthenticatedAdminProjectsProjectIdRoute
+  '/_authenticated/tech/projects/$projectId': typeof AuthenticatedTechProjectsProjectIdRoute
   '/_authenticated/admin/clients/': typeof AuthenticatedAdminClientsIndexRoute
+  '/_authenticated/admin/projects/': typeof AuthenticatedAdminProjectsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -129,7 +159,10 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/tech/'
     | '/admin/clients/$clientId'
+    | '/admin/projects/$projectId'
+    | '/tech/projects/$projectId'
     | '/admin/clients/'
+    | '/admin/projects/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -140,7 +173,10 @@ export interface FileRouteTypes {
     | '/admin'
     | '/tech'
     | '/admin/clients/$clientId'
+    | '/admin/projects/$projectId'
+    | '/tech/projects/$projectId'
     | '/admin/clients'
+    | '/admin/projects'
   id:
     | '__root__'
     | '/'
@@ -153,7 +189,10 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/'
     | '/_authenticated/tech/'
     | '/_authenticated/admin/clients/$clientId'
+    | '/_authenticated/admin/projects/$projectId'
+    | '/_authenticated/tech/projects/$projectId'
     | '/_authenticated/admin/clients/'
+    | '/_authenticated/admin/projects/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -227,11 +266,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminProductsRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/projects/': {
+      id: '/_authenticated/admin/projects/'
+      path: '/projects'
+      fullPath: '/admin/projects/'
+      preLoaderRoute: typeof AuthenticatedAdminProjectsIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/clients/': {
       id: '/_authenticated/admin/clients/'
       path: '/clients'
       fullPath: '/admin/clients/'
       preLoaderRoute: typeof AuthenticatedAdminClientsIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/tech/projects/$projectId': {
+      id: '/_authenticated/tech/projects/$projectId'
+      path: '/tech/projects/$projectId'
+      fullPath: '/tech/projects/$projectId'
+      preLoaderRoute: typeof AuthenticatedTechProjectsProjectIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/projects/$projectId': {
+      id: '/_authenticated/admin/projects/$projectId'
+      path: '/projects/$projectId'
+      fullPath: '/admin/projects/$projectId'
+      preLoaderRoute: typeof AuthenticatedAdminProjectsProjectIdRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
     '/_authenticated/admin/clients/$clientId': {
@@ -249,7 +309,9 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminReportsRoute: typeof AuthenticatedAdminReportsRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAdminClientsClientIdRoute: typeof AuthenticatedAdminClientsClientIdRoute
+  AuthenticatedAdminProjectsProjectIdRoute: typeof AuthenticatedAdminProjectsProjectIdRoute
   AuthenticatedAdminClientsIndexRoute: typeof AuthenticatedAdminClientsIndexRoute
+  AuthenticatedAdminProjectsIndexRoute: typeof AuthenticatedAdminProjectsIndexRoute
 }
 
 const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren =
@@ -259,7 +321,10 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
     AuthenticatedAdminClientsClientIdRoute:
       AuthenticatedAdminClientsClientIdRoute,
+    AuthenticatedAdminProjectsProjectIdRoute:
+      AuthenticatedAdminProjectsProjectIdRoute,
     AuthenticatedAdminClientsIndexRoute: AuthenticatedAdminClientsIndexRoute,
+    AuthenticatedAdminProjectsIndexRoute: AuthenticatedAdminProjectsIndexRoute,
   }
 
 const AuthenticatedAdminRouteRouteWithChildren =
@@ -271,12 +336,15 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRouteRoute: typeof AuthenticatedAdminRouteRouteWithChildren
   AuthenticatedTechJobIdRoute: typeof AuthenticatedTechJobIdRoute
   AuthenticatedTechIndexRoute: typeof AuthenticatedTechIndexRoute
+  AuthenticatedTechProjectsProjectIdRoute: typeof AuthenticatedTechProjectsProjectIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRouteRoute: AuthenticatedAdminRouteRouteWithChildren,
   AuthenticatedTechJobIdRoute: AuthenticatedTechJobIdRoute,
   AuthenticatedTechIndexRoute: AuthenticatedTechIndexRoute,
+  AuthenticatedTechProjectsProjectIdRoute:
+    AuthenticatedTechProjectsProjectIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
