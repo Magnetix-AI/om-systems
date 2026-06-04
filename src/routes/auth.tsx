@@ -26,9 +26,9 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
-const ADMIN_EMAIL = "admin@fieldops.local";
-const ADMIN_USERNAME = "admin";
-const ADMIN_PASSWORD = "Maorh1803!";
+// Admin credentials are NOT stored client-side. Admins sign in with their
+// own email/password; the `admin` role is granted server-side via the
+// `user_roles` table and enforced by RLS / `has_role()`.
 
 function AuthPage() {
   const navigate = useNavigate();
@@ -72,9 +72,9 @@ function AuthPage() {
   const handleFaceLogin = async () => {
     setFaceLoading(true);
     try {
-      const { email: e2, password: p2 } = await verifyFaceCred();
-      const { error } = await supabase.auth.signInWithPassword({ email: e2, password: p2 });
-      if (error) throw new Error(error.message);
+      // verifyFaceCred() internally refreshes the Supabase session via a
+      // stored refresh token — no password is involved.
+      await verifyFaceCred();
       finishLogin();
     } catch (err: any) {
       toast.error("כניסה עם זיהוי פנים נכשלה", { description: err.message });
@@ -119,26 +119,27 @@ function AuthPage() {
 
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (adminUser !== ADMIN_USERNAME || adminPass !== ADMIN_PASSWORD) {
-      return toast.error("פרטי כניסה שגויים");
-    }
     setAdminLoading(true);
-    let { error } = await supabase.auth.signInWithPassword({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD });
-    if (error) {
-      // First-time bootstrap: create the admin account, then sign in.
-      const { error: signUpErr } = await supabase.auth.signUp({
-        email: ADMIN_EMAIL,
-        password: ADMIN_PASSWORD,
-        options: { data: { full_name: "מנהל מערכת", role: "admin" }, emailRedirectTo: window.location.origin },
-      });
-      if (signUpErr) {
-        setAdminLoading(false);
-        return toast.error("שגיאה ביצירת חשבון מנהל", { description: signUpErr.message });
-      }
-      ({ error } = await supabase.auth.signInWithPassword({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD }));
+    const { data: signInData, error } = await supabase.auth.signInWithPassword({
+      email: adminUser,
+      password: adminPass,
+    });
+    if (error || !signInData.user) {
+      setAdminLoading(false);
+      return toast.error("שגיאה בהתחברות מנהל", { description: error?.message });
     }
+    // Verify admin role server-side via user_roles (RLS enforced).
+    const { data: roleRow } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", signInData.user.id)
+      .eq("role", "admin")
+      .maybeSingle();
     setAdminLoading(false);
-    if (error) return toast.error("שגיאה בהתחברות מנהל", { description: error.message });
+    if (!roleRow) {
+      await supabase.auth.signOut();
+      return toast.error("חשבון זה אינו חשבון מנהל");
+    }
     toast.success("התחברת כמנהל");
     setAdminOpen(false);
     navigate({ to: "/" });
@@ -225,12 +226,12 @@ function AuthPage() {
         <DialogContent dir="rtl" className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="text-right">כניסת מנהל</DialogTitle>
-            <DialogDescription className="text-right">הזן שם משתמש וסיסמה לכניסה לממשק הניהול</DialogDescription>
+            <DialogDescription className="text-right">הזן דוא״ל וסיסמה של חשבון מנהל</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleAdminLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="adminUser">שם משתמש</Label>
-              <Input id="adminUser" required value={adminUser} onChange={e => setAdminUser(e.target.value)} dir="ltr" autoFocus />
+              <Label htmlFor="adminUser">דוא״ל</Label>
+              <Input id="adminUser" type="email" required value={adminUser} onChange={e => setAdminUser(e.target.value)} dir="ltr" autoFocus />
             </div>
             <div className="space-y-2">
               <Label htmlFor="adminPass">סיסמה</Label>
