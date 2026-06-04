@@ -99,9 +99,6 @@ function JobDetail() {
 
   const completed = job?.status === "completed";
   const existing = (job?.items ?? []) as any[];
-  const existingTotal = existing.reduce((s, it) => s + Number(it.quantity) * Number(it.unit_price), 0);
-  const newTotal = products.reduce((s: number, p: any) => s + (quantities[p.id] || 0) * Number(p.price), 0);
-  const total = existingTotal + newTotal;
 
   const setQty = (id: string, v: number) => setQuantities(q => ({ ...q, [id]: Math.max(0, v) }));
 
