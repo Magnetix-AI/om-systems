@@ -151,7 +151,7 @@ function AuthPage() {
           <div className="mx-auto h-14 w-14 rounded-2xl bg-[var(--gradient-primary)] grid place-items-center text-primary-foreground">
             <Cable className="h-7 w-7" />
           </div>
-          <CardTitle className="text-2xl">FieldOps</CardTitle>
+          <CardTitle className="text-2xl">O.M Systems LTD.</CardTitle>
           <CardDescription>מערכת לניהול קריאות שירות — מתח נמוך ותקשורת</CardDescription>
         </CardHeader>
         <CardContent>
