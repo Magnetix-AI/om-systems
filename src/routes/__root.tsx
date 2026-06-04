@@ -63,10 +63,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "O.M Systems LTD. — ניהול קריאות שירות" },
+      { title: "O.M Systems LTD — ניהול קריאות שירות" },
       { name: "description", content: "מערכת לניהול טכנאי שטח בתחום מתח נמוך ותקשורת" },
-      { property: "og:title", content: "O.M Systems LTD. — ניהול קריאות שירות" },
-      { name: "twitter:title", content: "O.M Systems LTD. — ניהול קריאות שירות" },
+      { property: "og:title", content: "O.M Systems LTD — ניהול קריאות שירות" },
+      { name: "twitter:title", content: "O.M Systems LTD — ניהול קריאות שירות" },
       { property: "og:description", content: "מערכת לניהול טכנאי שטח בתחום מתח נמוך ותקשורת" },
       { name: "twitter:description", content: "מערכת לניהול טכנאי שטח בתחום מתח נמוך ותקשורת" },
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/1d045899-cb34-4ed2-bb18-8968653ea2cc/id-preview-4db58e40--68bad57d-b0c3-43bd-8151-a51ee448749c.lovable.app-1780465570233.png" },
