@@ -186,9 +186,26 @@ function JobDetail() {
                 <div key={it.id} className="flex items-center justify-between text-sm border-b pb-1">
                   <span>{it.product?.name}</span>
                   <span className="text-muted-foreground">{Number(it.quantity)} {it.product?.unit}</span>
-                  <span className="font-medium">₪{(Number(it.quantity) * Number(it.unit_price)).toFixed(2)}</span>
                 </div>
               ))}
+            </CardContent>
+          </Card>
+        )}
+
+        {!completed && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">שעות עבודה באתר</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">שעת כניסה</label>
+                <Input type="time" step={300} value={arrival} onChange={e => setArrival(e.target.value)} dir="ltr" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">שעת יציאה</label>
+                <Input type="time" step={300} value={departure} onChange={e => setDeparture(e.target.value)} dir="ltr" />
+              </div>
             </CardContent>
           </Card>
         )}
@@ -218,7 +235,7 @@ function JobDetail() {
                     <div key={p.id} className={`flex items-center gap-2 rounded-lg p-2 border transition-colors ${active ? "bg-success/10 border-success/40" : "bg-secondary/30"}`}>
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium truncate">{p.name}</div>
-                        <div className="text-xs text-muted-foreground">₪{Number(p.price).toFixed(2)} / {p.unit}{p.category ? ` · ${p.category}` : ""}</div>
+                        <div className="text-xs text-muted-foreground">{p.unit}{p.category ? ` · ${p.category}` : ""}</div>
                       </div>
                       <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setQty(p.id, qty - 1)} disabled={qty <= 0}>
                         <Trash2 className="h-3 w-3" />
