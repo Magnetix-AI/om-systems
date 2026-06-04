@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { statusLabel, statusColor } from "@/components/app-shell";
-import { ArrowRight, Phone, MapPin, User } from "lucide-react";
+import { ArrowRight, Phone, MapPin, User, Briefcase, Wrench } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/clients/$clientId")({
   ssr: false,
