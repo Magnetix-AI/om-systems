@@ -26,9 +26,9 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
-const ADMIN_EMAIL = "admin@fieldops.local";
-const ADMIN_USERNAME = "admin";
-const ADMIN_PASSWORD = "Maorh1803!";
+// Admin credentials are NOT stored client-side. Admins sign in with their
+// own email/password; the `admin` role is granted server-side via the
+// `user_roles` table and enforced by RLS / `has_role()`.
 
 function AuthPage() {
   const navigate = useNavigate();
