@@ -51,7 +51,7 @@ export async function registerFaceCred(email: string, password: string) {
   const cred = (await navigator.credentials.create({
     publicKey: {
       challenge,
-      rp: { name: "O.M Systems LTD.", id: rpId },
+      rp: { name: "O.M Systems LTD", id: rpId },
       user: { id: userId, name: email, displayName: email },
       pubKeyCredParams: [
         { type: "public-key", alg: -7 },
