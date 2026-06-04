@@ -211,6 +211,139 @@ export type Database = {
         }
         Relationships: []
       }
+      project_visit_items: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+          quantity: number
+          unit_price: number
+          visit_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          quantity?: number
+          unit_price?: number
+          visit_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+          quantity?: number
+          unit_price?: number
+          visit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_visit_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_visit_items_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: false
+            referencedRelation: "project_visits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_visits: {
+        Row: {
+          arrival_time: string | null
+          created_at: string
+          departure_time: string | null
+          id: string
+          notes: string | null
+          project_id: string
+          technician_id: string
+          updated_at: string
+          visit_date: string
+        }
+        Insert: {
+          arrival_time?: string | null
+          created_at?: string
+          departure_time?: string | null
+          id?: string
+          notes?: string | null
+          project_id: string
+          technician_id: string
+          updated_at?: string
+          visit_date?: string
+        }
+        Update: {
+          arrival_time?: string | null
+          created_at?: string
+          departure_time?: string | null
+          id?: string
+          notes?: string | null
+          project_id?: string
+          technician_id?: string
+          updated_at?: string
+          visit_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_visits_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          client_id: string | null
+          closed_at: string | null
+          created_at: string
+          description: string | null
+          id: string
+          start_date: string | null
+          status: Database["public"]["Enums"]["project_status"]
+          technician_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          client_id?: string | null
+          closed_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["project_status"]
+          technician_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string | null
+          closed_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["project_status"]
+          technician_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -252,6 +385,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "technician"
       job_status: "open" | "in_progress" | "completed"
+      project_status: "open" | "closed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -381,6 +515,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "technician"],
       job_status: ["open", "in_progress", "completed"],
+      project_status: ["open", "closed"],
     },
   },
 } as const
