@@ -226,12 +226,12 @@ function AuthPage() {
         <DialogContent dir="rtl" className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="text-right">כניסת מנהל</DialogTitle>
-            <DialogDescription className="text-right">הזן שם משתמש וסיסמה לכניסה לממשק הניהול</DialogDescription>
+            <DialogDescription className="text-right">הזן דוא״ל וסיסמה של חשבון מנהל</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleAdminLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="adminUser">שם משתמש</Label>
-              <Input id="adminUser" required value={adminUser} onChange={e => setAdminUser(e.target.value)} dir="ltr" autoFocus />
+              <Label htmlFor="adminUser">דוא״ל</Label>
+              <Input id="adminUser" type="email" required value={adminUser} onChange={e => setAdminUser(e.target.value)} dir="ltr" autoFocus />
             </div>
             <div className="space-y-2">
               <Label htmlFor="adminPass">סיסמה</Label>
