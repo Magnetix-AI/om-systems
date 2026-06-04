@@ -1,0 +1,100 @@
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+
+// Server-side admin login. The fixed username/password live ONLY in server
+// secrets (ADMIN_USERNAME / ADMIN_PASSWORD / ADMIN_EMAIL) — never in the
+// client bundle. If the credentials match, we sign in as the admin user
+// via Supabase Auth and return the session tokens for the client to install
+// with `supabase.auth.setSession(...)`.
+
+const InputSchema = z.object({
+  username: z.string().min(1).max(128),
+  password: z.string().min(1).max(256),
+});
+
+// Constant-time string compare to avoid timing leaks on the username/password.
+function safeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < a.length; i++) {
+    mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return mismatch === 0;
+}
+
+export const adminLogin = createServerFn({ method: "POST" })
+  .inputValidator((input) => InputSchema.parse(input))
+  .handler(async ({ data }) => {
+    const expectedUser = process.env.ADMIN_USERNAME;
+    const expectedPass = process.env.ADMIN_PASSWORD;
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (!expectedUser || !expectedPass || !adminEmail) {
+      throw new Error("Admin credentials are not configured on the server");
+    }
+
+    const userOk = safeEqual(data.username, expectedUser);
+    const passOk = safeEqual(data.password, expectedPass);
+    if (!userOk || !passOk) {
+      // Generic message — don't reveal which field was wrong.
+      throw new Error("פרטי כניסה שגויים");
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Try to sign in as the admin user. If the account doesn't exist yet
+    // (first-time bootstrap), create it then sign in.
+    let signIn = await supabaseAdmin.auth.signInWithPassword({
+      email: adminEmail,
+      password: expectedPass,
+    });
+
+    if (signIn.error || !signIn.data.session) {
+      // Bootstrap: create admin user and grant the admin role.
+      const created = await supabaseAdmin.auth.admin.createUser({
+        email: adminEmail,
+        password: expectedPass,
+        email_confirm: true,
+        user_metadata: { full_name: "מנהל מערכת" },
+      });
+      if (created.error || !created.data.user) {
+        throw new Error(created.error?.message || "Failed to bootstrap admin user");
+      }
+      // Promote to admin role (the handle_new_user trigger only ever assigns 'technician').
+      await supabaseAdmin
+        .from("user_roles")
+        .upsert(
+          { user_id: created.data.user.id, role: "admin" },
+          { onConflict: "user_id,role" },
+        );
+
+      signIn = await supabaseAdmin.auth.signInWithPassword({
+        email: adminEmail,
+        password: expectedPass,
+      });
+      if (signIn.error || !signIn.data.session) {
+        throw new Error(signIn.error?.message || "Failed to sign in as admin");
+      }
+    } else {
+      // Make sure the existing admin account actually has the admin role.
+      const userId = signIn.data.user!.id;
+      const { data: roleRow } = await supabaseAdmin
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .eq("role", "admin")
+        .maybeSingle();
+      if (!roleRow) {
+        await supabaseAdmin
+          .from("user_roles")
+          .upsert(
+            { user_id: userId, role: "admin" },
+            { onConflict: "user_id,role" },
+          );
+      }
+    }
+
+    return {
+      access_token: signIn.data.session.access_token,
+      refresh_token: signIn.data.session.refresh_token,
+    };
+  });
