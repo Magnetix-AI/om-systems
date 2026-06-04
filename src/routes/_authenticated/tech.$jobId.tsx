@@ -256,12 +256,6 @@ function JobDetail() {
           </Card>
         )}
 
-        <Card>
-          <CardContent className="p-4 flex justify-between font-semibold">
-            <span>סה״כ לחיוב</span>
-            <span>₪{total.toFixed(2)}</span>
-          </CardContent>
-        </Card>
 
 
         <Card>
