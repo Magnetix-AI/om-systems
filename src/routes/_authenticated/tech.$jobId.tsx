@@ -50,9 +50,15 @@ function JobDetail() {
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [recording, setRecording] = useState(false);
+  const [arrival, setArrival] = useState("");
+  const [departure, setDeparture] = useState("");
   const recRef = React.useRef<any>(null);
 
-  useEffect(() => { if (job?.technician_notes) setNotes(job.technician_notes); }, [job?.id]);
+  useEffect(() => {
+    if (job?.technician_notes) setNotes(job.technician_notes);
+    if (job?.arrival_time) setArrival(new Date(job.arrival_time).toTimeString().slice(0, 5));
+    if (job?.departure_time) setDeparture(new Date(job.departure_time).toTimeString().slice(0, 5));
+  }, [job?.id]);
 
   const filteredProducts = products.filter((p: any) => {
     if (!search.trim()) return true;
@@ -93,11 +99,16 @@ function JobDetail() {
 
   const completed = job?.status === "completed";
   const existing = (job?.items ?? []) as any[];
-  const existingTotal = existing.reduce((s, it) => s + Number(it.quantity) * Number(it.unit_price), 0);
-  const newTotal = products.reduce((s: number, p: any) => s + (quantities[p.id] || 0) * Number(p.price), 0);
-  const total = existingTotal + newTotal;
 
   const setQty = (id: string, v: number) => setQuantities(q => ({ ...q, [id]: Math.max(0, v) }));
+
+  const toTs = (hhmm: string) => {
+    if (!hhmm) return null;
+    const [h, m] = hhmm.split(":").map(Number);
+    const d = new Date();
+    d.setHours(h, m, 0, 0);
+    return d.toISOString();
+  };
 
   const handleSubmit = async () => {
     if (!job) return;
@@ -114,6 +125,8 @@ function JobDetail() {
         status: "completed",
         completed_at: new Date().toISOString(),
         technician_notes: notes,
+        arrival_time: toTs(arrival),
+        departure_time: toTs(departure),
       }).eq("id", job.id);
       if (error) throw error;
       toast.success("הקריאה סומנה כסופקה");
@@ -170,9 +183,26 @@ function JobDetail() {
                 <div key={it.id} className="flex items-center justify-between text-sm border-b pb-1">
                   <span>{it.product?.name}</span>
                   <span className="text-muted-foreground">{Number(it.quantity)} {it.product?.unit}</span>
-                  <span className="font-medium">₪{(Number(it.quantity) * Number(it.unit_price)).toFixed(2)}</span>
                 </div>
               ))}
+            </CardContent>
+          </Card>
+        )}
+
+        {!completed && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">שעות עבודה באתר</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">שעת כניסה</label>
+                <Input type="time" step={300} value={arrival} onChange={e => setArrival(e.target.value)} dir="ltr" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">שעת יציאה</label>
+                <Input type="time" step={300} value={departure} onChange={e => setDeparture(e.target.value)} dir="ltr" />
+              </div>
             </CardContent>
           </Card>
         )}
@@ -202,7 +232,7 @@ function JobDetail() {
                     <div key={p.id} className={`flex items-center gap-2 rounded-lg p-2 border transition-colors ${active ? "bg-success/10 border-success/40" : "bg-secondary/30"}`}>
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium truncate">{p.name}</div>
-                        <div className="text-xs text-muted-foreground">₪{Number(p.price).toFixed(2)} / {p.unit}{p.category ? ` · ${p.category}` : ""}</div>
+                        <div className="text-xs text-muted-foreground">{p.unit}{p.category ? ` · ${p.category}` : ""}</div>
                       </div>
                       <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setQty(p.id, qty - 1)} disabled={qty <= 0}>
                         <Trash2 className="h-3 w-3" />
@@ -223,12 +253,6 @@ function JobDetail() {
           </Card>
         )}
 
-        <Card>
-          <CardContent className="p-4 flex justify-between font-semibold">
-            <span>סה״כ לחיוב</span>
-            <span>₪{total.toFixed(2)}</span>
-          </CardContent>
-        </Card>
 
 
         <Card>
