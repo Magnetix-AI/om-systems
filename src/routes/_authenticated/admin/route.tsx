@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, Link, redirect, useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell";
-import { Briefcase, Package, FileText } from "lucide-react";
+import { Briefcase, Package, FileText, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -20,6 +20,7 @@ function AdminLayout() {
   const pathname = useRouterState({ select: s => s.location.pathname });
   const tabs = [
     { to: "/admin", label: "קריאות", icon: Briefcase },
+    { to: "/admin/clients", label: "מאגר לקוחות", icon: Users },
     { to: "/admin/products", label: "מלאי ומחירון", icon: Package },
     { to: "/admin/reports", label: "דוחות וחיוב", icon: FileText },
   ];
