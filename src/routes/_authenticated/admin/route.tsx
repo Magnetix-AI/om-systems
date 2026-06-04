@@ -21,6 +21,7 @@ function AdminLayout() {
   const tabs = [
     { to: "/admin", label: "קריאות", icon: Briefcase },
     { to: "/admin/projects", label: "פרוייקטים", icon: FolderKanban },
+    { to: "/admin/history", label: "היסטוריה", icon: History },
     { to: "/admin/clients", label: "מאגר לקוחות", icon: Users },
     { to: "/admin/products", label: "מלאי ומחירון", icon: Package },
     { to: "/admin/reports", label: "דוחות וחיוב", icon: FileText },
