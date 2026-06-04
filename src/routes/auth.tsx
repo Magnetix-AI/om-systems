@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import {
   registerFaceCred,
   verifyFaceCred,
 } from "@/lib/face-auth";
+import { adminLogin } from "@/lib/admin-auth.functions";
 
 
 export const Route = createFileRoute("/auth")({
@@ -42,6 +44,7 @@ function AuthPage() {
   const [adminUser, setAdminUser] = useState("");
   const [adminPass, setAdminPass] = useState("");
   const [adminLoading, setAdminLoading] = useState(false);
+  const adminLoginFn = useServerFn(adminLogin);
 
   const [faceLoading, setFaceLoading] = useState(false);
   const [faceSetupOpen, setFaceSetupOpen] = useState(false);
@@ -120,29 +123,23 @@ function AuthPage() {
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAdminLoading(true);
-    const { data: signInData, error } = await supabase.auth.signInWithPassword({
-      email: adminUser,
-      password: adminPass,
-    });
-    if (error || !signInData.user) {
+    try {
+      // Server validates username+password against env secrets and returns
+      // a real Supabase session for the admin account. Nothing sensitive
+      // lives in the client bundle.
+      const { access_token, refresh_token } = await adminLoginFn({
+        data: { username: adminUser, password: adminPass },
+      });
+      const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+      if (error) throw new Error(error.message);
+      toast.success("התחברת כמנהל");
+      setAdminOpen(false);
+      navigate({ to: "/" });
+    } catch (err: any) {
+      toast.error("שגיאה בהתחברות מנהל", { description: err?.message });
+    } finally {
       setAdminLoading(false);
-      return toast.error("שגיאה בהתחברות מנהל", { description: error?.message });
     }
-    // Verify admin role server-side via user_roles (RLS enforced).
-    const { data: roleRow } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", signInData.user.id)
-      .eq("role", "admin")
-      .maybeSingle();
-    setAdminLoading(false);
-    if (!roleRow) {
-      await supabase.auth.signOut();
-      return toast.error("חשבון זה אינו חשבון מנהל");
-    }
-    toast.success("התחברת כמנהל");
-    setAdminOpen(false);
-    navigate({ to: "/" });
   };
 
   return (
@@ -226,12 +223,12 @@ function AuthPage() {
         <DialogContent dir="rtl" className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="text-right">כניסת מנהל</DialogTitle>
-            <DialogDescription className="text-right">הזן דוא״ל וסיסמה של חשבון מנהל</DialogDescription>
+            <DialogDescription className="text-right">הזן שם משתמש וסיסמה לכניסה לממשק הניהול</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleAdminLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="adminUser">דוא״ל</Label>
-              <Input id="adminUser" type="email" required value={adminUser} onChange={e => setAdminUser(e.target.value)} dir="ltr" autoFocus />
+              <Label htmlFor="adminUser">שם משתמש</Label>
+              <Input id="adminUser" required value={adminUser} onChange={e => setAdminUser(e.target.value)} dir="ltr" autoFocus />
             </div>
             <div className="space-y-2">
               <Label htmlFor="adminPass">סיסמה</Label>
