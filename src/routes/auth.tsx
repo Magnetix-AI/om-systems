@@ -44,6 +44,7 @@ function AuthPage() {
   const [adminUser, setAdminUser] = useState("");
   const [adminPass, setAdminPass] = useState("");
   const [adminLoading, setAdminLoading] = useState(false);
+  const adminLoginFn = useServerFn(adminLogin);
 
   const [faceLoading, setFaceLoading] = useState(false);
   const [faceSetupOpen, setFaceSetupOpen] = useState(false);
