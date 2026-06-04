@@ -24,7 +24,7 @@ export function AppShell({ children, nav }: { children?: ReactNode; nav?: ReactN
             <div className="h-8 w-8 rounded-lg bg-[var(--gradient-primary)] grid place-items-center text-primary-foreground">
               <Cable className="h-4 w-4" />
             </div>
-            <span>FieldOps</span>
+            <span>O.M Systems LTD.</span>
           </Link>
           <div className="flex-1">{nav}</div>
           <div className="flex items-center gap-3">
