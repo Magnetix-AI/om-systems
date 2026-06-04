@@ -48,24 +48,49 @@ export const adminLogin = createServerFn({ method: "POST" })
       password: expectedPass,
     });
 
-    if (signIn.error || !signIn.data.session) {
-      // Bootstrap: create admin user and grant the admin role.
-      const created = await supabaseAdmin.auth.admin.createUser({
-        email: adminEmail,
-        password: expectedPass,
-        email_confirm: true,
-        user_metadata: { full_name: "מנהל מערכת" },
+    // Helper: find an existing auth user by email via the admin API.
+    const findUserByEmail = async (email: string) => {
+      // listUsers is paginated; the admin email is unique so first page is enough.
+      const { data, error } = await supabaseAdmin.auth.admin.listUsers({
+        page: 1,
+        perPage: 200,
       });
-      if (created.error || !created.data.user) {
-        throw new Error(created.error?.message || "Failed to bootstrap admin user");
+      if (error) throw new Error(error.message);
+      const normalized = email.toLowerCase();
+      return data.users.find((u) => (u.email ?? "").toLowerCase() === normalized) ?? null;
+    };
+
+    let adminUserId: string | null = null;
+
+    if (signIn.error || !signIn.data.session) {
+      // Either the user doesn't exist yet, or its password drifted from the
+      // configured secret. Resolve both cases.
+      const existing = await findUserByEmail(adminEmail);
+
+      if (!existing) {
+        // First-time bootstrap: create the admin user.
+        const created = await supabaseAdmin.auth.admin.createUser({
+          email: adminEmail,
+          password: expectedPass,
+          email_confirm: true,
+          user_metadata: { full_name: "מנהל מערכת" },
+        });
+        if (created.error || !created.data.user) {
+          throw new Error(created.error?.message || "Failed to bootstrap admin user");
+        }
+        adminUserId = created.data.user.id;
+      } else {
+        // Account exists but the stored password no longer matches the
+        // configured secret — re-sync it so the fixed credentials work again.
+        const updated = await supabaseAdmin.auth.admin.updateUserById(existing.id, {
+          password: expectedPass,
+          email_confirm: true,
+        });
+        if (updated.error) {
+          throw new Error(updated.error.message);
+        }
+        adminUserId = existing.id;
       }
-      // Promote to admin role (the handle_new_user trigger only ever assigns 'technician').
-      await supabaseAdmin
-        .from("user_roles")
-        .upsert(
-          { user_id: created.data.user.id, role: "admin" },
-          { onConflict: "user_id,role" },
-        );
 
       signIn = await supabaseAdmin.auth.signInWithPassword({
         email: adminEmail,
@@ -75,22 +100,23 @@ export const adminLogin = createServerFn({ method: "POST" })
         throw new Error(signIn.error?.message || "Failed to sign in as admin");
       }
     } else {
-      // Make sure the existing admin account actually has the admin role.
-      const userId = signIn.data.user!.id;
-      const { data: roleRow } = await supabaseAdmin
+      adminUserId = signIn.data.user!.id;
+    }
+
+    // Ensure the admin role is granted (handle_new_user only assigns 'technician').
+    const { data: roleRow } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", adminUserId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (!roleRow) {
+      await supabaseAdmin
         .from("user_roles")
-        .select("role")
-        .eq("user_id", userId)
-        .eq("role", "admin")
-        .maybeSingle();
-      if (!roleRow) {
-        await supabaseAdmin
-          .from("user_roles")
-          .upsert(
-            { user_id: userId, role: "admin" },
-            { onConflict: "user_id,role" },
-          );
-      }
+        .upsert(
+          { user_id: adminUserId, role: "admin" },
+          { onConflict: "user_id,role" },
+        );
     }
 
     return {
