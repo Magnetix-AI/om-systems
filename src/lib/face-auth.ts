@@ -1,15 +1,20 @@
-// Lightweight Face ID / biometric login using WebAuthn platform authenticator.
-// We register a credential bound to this device, then gate access to stored
-// email+password (kept in localStorage) on a successful biometric assertion.
-// This is a client-side convenience flow — the actual sign-in still goes
-// through Supabase email/password.
+// Biometric (Face ID / fingerprint) login via WebAuthn platform authenticator.
+//
+// SECURITY: We DO NOT store the user's password. After a successful sign-in
+// we capture the Supabase refresh token and store it in localStorage,
+// gated behind a WebAuthn assertion. To sign back in we call
+// `supabase.auth.refreshSession({ refresh_token })`. Refresh tokens are
+// rotated and can be revoked from the auth dashboard, unlike a password.
 
-const STORAGE_KEY = "fieldops.faceCred.v1";
+import { supabase } from "@/integrations/supabase/client";
+
+const STORAGE_KEY = "fieldops.faceCred.v2";
+const LEGACY_KEY = "fieldops.faceCred.v1"; // old key that stored a plaintext password
 
 type StoredCred = {
   credentialId: string; // base64url
   email: string;
-  password: string; // obfuscated (base64) — convenience only
+  refreshToken: string;
   rpId: string;
 };
 
@@ -35,15 +40,30 @@ export const isFaceAuthSupported = () =>
 
 export const getStoredFaceCred = (): StoredCred | null => {
   try {
+    // Purge any legacy credential that contained a plaintext password.
+    if (typeof localStorage !== "undefined" && localStorage.getItem(LEGACY_KEY)) {
+      localStorage.removeItem(LEGACY_KEY);
+    }
     const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? (JSON.parse(raw) as StoredCred) : null;
   } catch { return null; }
 };
 
-export const clearFaceCred = () => localStorage.removeItem(STORAGE_KEY);
+export const clearFaceCred = () => {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(LEGACY_KEY);
+  } catch { /* ignore */ }
+};
 
-export async function registerFaceCred(email: string, password: string) {
+export async function registerFaceCred(email: string, _passwordIgnored?: string) {
   if (!isFaceAuthSupported()) throw new Error("המכשיר אינו תומך בזיהוי ביומטרי");
+
+  // Require an active session — we store its refresh token, not the password.
+  const { data: sessionData } = await supabase.auth.getSession();
+  const refreshToken = sessionData.session?.refresh_token;
+  if (!refreshToken) throw new Error("נדרשת התחברות פעילה כדי להפעיל זיהוי פנים");
+
   const rpId = window.location.hostname;
   const challenge = crypto.getRandomValues(new Uint8Array(32));
   const userId = crypto.getRandomValues(new Uint8Array(16));
@@ -71,13 +91,15 @@ export async function registerFaceCred(email: string, password: string) {
   const stored: StoredCred = {
     credentialId: b64uEncode(cred.rawId),
     email,
-    password: btoa(unescape(encodeURIComponent(password))),
+    refreshToken,
     rpId,
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+  // Make sure the old plaintext-password credential is gone.
+  localStorage.removeItem(LEGACY_KEY);
 }
 
-export async function verifyFaceCred(): Promise<{ email: string; password: string }> {
+export async function verifyFaceCred(): Promise<{ email: string }> {
   const stored = getStoredFaceCred();
   if (!stored) throw new Error("לא הוגדר זיהוי פנים במכשיר זה");
   if (!isFaceAuthSupported()) throw new Error("המכשיר אינו תומך בזיהוי ביומטרי");
@@ -94,8 +116,17 @@ export async function verifyFaceCred(): Promise<{ email: string; password: strin
   });
   if (!assertion) throw new Error("האימות נכשל");
 
-  return {
-    email: stored.email,
-    password: decodeURIComponent(escape(atob(stored.password))),
-  };
+  // Exchange the stored refresh token for a fresh Supabase session.
+  const { data, error } = await supabase.auth.refreshSession({ refresh_token: stored.refreshToken });
+  if (error || !data.session) {
+    // Refresh token is invalid/expired — clear and require password login again.
+    clearFaceCred();
+    throw new Error("פג תוקף ההרשאה הביומטרית, נדרשת התחברות מחדש");
+  }
+
+  // Rotate: persist the new refresh token for next time.
+  const updated: StoredCred = { ...stored, refreshToken: data.session.refresh_token };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+
+  return { email: stored.email };
 }
