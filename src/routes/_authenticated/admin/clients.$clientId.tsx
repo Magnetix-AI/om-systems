@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { statusLabel, statusColor } from "@/components/app-shell";
-import { ArrowRight, Phone, MapPin, User } from "lucide-react";
+import { ArrowRight, Phone, MapPin, User, Briefcase, Wrench } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/clients/$clientId")({
   ssr: false,
@@ -42,6 +42,25 @@ function ClientDetail() {
     },
   });
 
+  const { data: projects = [], isLoading: projectsLoading } = useQuery({
+    queryKey: ["client-projects", clientId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("id, title, status, start_date, created_at, closed_at, technician_id")
+        .eq("client_id", clientId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      const techIds = Array.from(new Set((data ?? []).map((p: any) => p.technician_id).filter(Boolean)));
+      let techMap: Record<string, string> = {};
+      if (techIds.length) {
+        const { data: profs } = await supabase.from("profiles").select("id, full_name").in("id", techIds);
+        techMap = Object.fromEntries((profs ?? []).map((p: any) => [p.id, p.full_name]));
+      }
+      return (data ?? []).map((p: any) => ({ ...p, technician_name: p.technician_id ? techMap[p.technician_id] : null }));
+    },
+  });
+
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-4">
       <Link to="/admin/clients" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
@@ -59,7 +78,7 @@ function ClientDetail() {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-lg">היסטוריית קריאות ({jobs.length})</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Wrench className="h-5 w-5" /> היסטוריית קריאות ({jobs.length})</CardTitle></CardHeader>
         <CardContent>
           {isLoading ? (
             <p className="text-center text-muted-foreground py-8">טוען...</p>
@@ -79,6 +98,40 @@ function ClientDetail() {
                   </div>
                   <Badge variant="outline" className={statusColor(j.status)}>{statusLabel(j.status)}</Badge>
                 </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Briefcase className="h-5 w-5" /> פרוייקטים ({projects.length})</CardTitle></CardHeader>
+        <CardContent>
+          {projectsLoading ? (
+            <p className="text-center text-muted-foreground py-8">טוען...</p>
+          ) : projects.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">אין פרוייקטים ללקוח זה</p>
+          ) : (
+            <div className="divide-y">
+              {projects.map((p: any) => (
+                <Link
+                  key={p.id}
+                  to="/admin/projects/$projectId"
+                  params={{ projectId: p.id }}
+                  className="py-3 flex items-start justify-between gap-3 hover:bg-secondary/40 rounded px-2 transition-colors"
+                >
+                  <div className="min-w-0">
+                    <div className="font-medium">{p.title}</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      נוצר: {new Date(p.created_at).toLocaleString("he-IL")}
+                      {p.closed_at && ` · נסגר: ${new Date(p.closed_at).toLocaleString("he-IL")}`}
+                      {p.technician_name && ` · טכנאי: ${p.technician_name}`}
+                    </div>
+                  </div>
+                  <Badge variant="outline" className={p.status === "open" ? "border-emerald-500 text-emerald-600" : "border-muted text-muted-foreground"}>
+                    {p.status === "open" ? "פתוח" : "סגור"}
+                  </Badge>
+                </Link>
               ))}
             </div>
           )}
