@@ -109,12 +109,20 @@ function AdminProjects() {
 }
 
 function NewProjectDialog({ onClose }: { onClose: () => void }) {
+  const qc = useQueryClient();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [clientId, setClientId] = useState("");
   const [techId, setTechId] = useState<string>("__none");
   const [startDate, setStartDate] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // New client fields
+  const [isNewClient, setIsNewClient] = useState(false);
+  const [newClientName, setNewClientName] = useState("");
+  const [newClientPhone, setNewClientPhone] = useState("");
+  const [newClientAddress, setNewClientAddress] = useState("");
+  const [newClientContact, setNewClientContact] = useState("");
 
   const { data: clients = [] } = useQuery({
     queryKey: ["clients"],
@@ -133,9 +141,28 @@ function NewProjectDialog({ onClose }: { onClose: () => void }) {
   const handleCreate = async () => {
     setSaving(true);
     try {
+      let finalClientId = clientId || null;
+
+      // Create new client if needed
+      if (isNewClient && newClientName.trim()) {
+        const { data: newClient, error: clientError } = await supabase
+          .from("clients")
+          .insert({
+            name: newClientName.trim(),
+            phone: newClientPhone.trim() || null,
+            address: newClientAddress.trim() || null,
+            contact_name: newClientContact.trim() || null,
+          })
+          .select("id")
+          .single();
+        if (clientError) throw clientError;
+        finalClientId = newClient.id;
+        qc.invalidateQueries({ queryKey: ["clients"] });
+      }
+
       const { error } = await supabase.from("projects").insert({
         title, description,
-        client_id: clientId || null,
+        client_id: finalClientId,
         technician_id: techId === "__none" ? null : techId,
         start_date: startDate || null,
       });
@@ -153,13 +180,58 @@ function NewProjectDialog({ onClose }: { onClose: () => void }) {
       <div className="space-y-3">
         <div className="space-y-1.5"><Label>שם הפרוייקט</Label><Input value={title} onChange={e => setTitle(e.target.value)} placeholder="לדוגמה: התקנת תשתית בבניין חדש" /></div>
         <div className="space-y-1.5"><Label>תיאור</Label><Textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} /></div>
+
+        {/* Client selector / new client toggle */}
         <div className="space-y-1.5">
-          <Label>לקוח</Label>
-          <Select value={clientId} onValueChange={setClientId}>
-            <SelectTrigger><SelectValue placeholder="בחר לקוח" /></SelectTrigger>
-            <SelectContent>{clients.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            <Label>לקוח</Label>
+            <Button
+              type="button"
+              variant="link"
+              size="sm"
+              className="h-auto p-0 text-xs"
+              onClick={() => {
+                setIsNewClient(!isNewClient);
+                setClientId("");
+                setNewClientName("");
+                setNewClientPhone("");
+                setNewClientAddress("");
+                setNewClientContact("");
+              }}
+            >
+              {isNewClient ? "בחר מלקוחות קיימים" : "+ לקוח חדש"}
+            </Button>
+          </div>
+
+          {isNewClient ? (
+            <div className="space-y-2 border rounded-md p-3 bg-muted/30">
+              <div className="space-y-1">
+                <Label className="text-sm">שם לקוח <span className="text-destructive">*</span></Label>
+                <Input value={newClientName} onChange={e => setNewClientName(e.target.value)} placeholder="שם הלקוח / חברה" />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-sm">טלפון</Label>
+                  <Input value={newClientPhone} onChange={e => setNewClientPhone(e.target.value)} placeholder="טלפון" dir="ltr" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-sm">איש קשר</Label>
+                  <Input value={newClientContact} onChange={e => setNewClientContact(e.target.value)} placeholder="שם איש קשר" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm">כתובת</Label>
+                <Input value={newClientAddress} onChange={e => setNewClientAddress(e.target.value)} placeholder="כתובת" />
+              </div>
+            </div>
+          ) : (
+            <Select value={clientId} onValueChange={setClientId}>
+              <SelectTrigger><SelectValue placeholder="בחר לקוח" /></SelectTrigger>
+              <SelectContent>{clients.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+            </Select>
+          )}
         </div>
+
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1.5">
             <Label>טכנאי משויך</Label>
@@ -174,7 +246,14 @@ function NewProjectDialog({ onClose }: { onClose: () => void }) {
           <div className="space-y-1.5"><Label>תאריך התחלה</Label><Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /></div>
         </div>
       </div>
-      <DialogFooter><Button onClick={handleCreate} disabled={!title || saving}>{saving ? "שומר..." : "צור פרוייקט"}</Button></DialogFooter>
+      <DialogFooter>
+        <Button
+          onClick={handleCreate}
+          disabled={!title || saving || (isNewClient && !newClientName.trim())}
+        >
+          {saving ? "שומר..." : "צור פרוייקט"}
+        </Button>
+      </DialogFooter>
     </DialogContent>
   );
 }
