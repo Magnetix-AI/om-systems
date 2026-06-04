@@ -72,9 +72,9 @@ function AuthPage() {
   const handleFaceLogin = async () => {
     setFaceLoading(true);
     try {
-      const { email: e2, password: p2 } = await verifyFaceCred();
-      const { error } = await supabase.auth.signInWithPassword({ email: e2, password: p2 });
-      if (error) throw new Error(error.message);
+      // verifyFaceCred() internally refreshes the Supabase session via a
+      // stored refresh token — no password is involved.
+      await verifyFaceCred();
       finishLogin();
     } catch (err: any) {
       toast.error("כניסה עם זיהוי פנים נכשלה", { description: err.message });
