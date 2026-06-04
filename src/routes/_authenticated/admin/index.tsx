@@ -11,9 +11,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { statusLabel, statusColor } from "@/components/app-shell";
-import { Plus, Briefcase } from "lucide-react";
+import { Plus, Briefcase, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { deleteJobsCascade } from "@/lib/admin-deletes";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   ssr: false,
@@ -23,6 +28,7 @@ export const Route = createFileRoute("/_authenticated/admin/")({
 function AdminJobs() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [toDelete, setToDelete] = useState<{ id: string; title: string } | null>(null);
 
   const { data: jobs = [] } = useQuery({
     queryKey: ["admin-jobs"],
@@ -87,6 +93,7 @@ function AdminJobs() {
                   <TableHead className="text-right">סטטוס</TableHead>
                   <TableHead className="text-right">תאריך</TableHead>
                   <TableHead></TableHead>
+                  <TableHead className="w-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -102,6 +109,12 @@ function AdminJobs() {
                     <TableCell>
                       <AssignTechnician job={j} onChange={() => qc.invalidateQueries({ queryKey: ["admin-jobs"] })} />
                     </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"
+                        onClick={() => setToDelete({ id: j.id, title: j.title })}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -109,6 +122,35 @@ function AdminJobs() {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>למחוק קריאה?</AlertDialogTitle>
+            <AlertDialogDescription>
+              הקריאה "{toDelete?.title}" וכל הפריטים המשויכים אליה יימחקו לצמיתות. לא ניתן לבטל.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ביטול</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (!toDelete) return;
+                try {
+                  await deleteJobsCascade([toDelete.id]);
+                  toast.success("נמחק");
+                  qc.invalidateQueries({ queryKey: ["admin-jobs"] });
+                } catch (e: any) {
+                  toast.error("שגיאה במחיקה", { description: e.message });
+                } finally {
+                  setToDelete(null);
+                }
+              }}
+            >מחק</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
