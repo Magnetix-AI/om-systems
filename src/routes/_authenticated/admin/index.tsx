@@ -11,9 +11,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { statusLabel, statusColor } from "@/components/app-shell";
-import { Plus, Briefcase } from "lucide-react";
+import { Plus, Briefcase, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { deleteJobsCascade } from "@/lib/admin-deletes";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   ssr: false,
@@ -23,6 +28,7 @@ export const Route = createFileRoute("/_authenticated/admin/")({
 function AdminJobs() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [toDelete, setToDelete] = useState<{ id: string; title: string } | null>(null);
 
   const { data: jobs = [] } = useQuery({
     queryKey: ["admin-jobs"],
