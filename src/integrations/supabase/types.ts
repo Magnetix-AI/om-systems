@@ -88,9 +88,11 @@ export type Database = {
       }
       jobs: {
         Row: {
+          arrival_time: string | null
           client_id: string | null
           completed_at: string | null
           created_at: string
+          departure_time: string | null
           description: string | null
           id: string
           scheduled_date: string | null
@@ -103,9 +105,11 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          arrival_time?: string | null
           client_id?: string | null
           completed_at?: string | null
           created_at?: string
+          departure_time?: string | null
           description?: string | null
           id?: string
           scheduled_date?: string | null
@@ -118,9 +122,11 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          arrival_time?: string | null
           client_id?: string | null
           completed_at?: string | null
           created_at?: string
+          departure_time?: string | null
           description?: string | null
           id?: string
           scheduled_date?: string | null
