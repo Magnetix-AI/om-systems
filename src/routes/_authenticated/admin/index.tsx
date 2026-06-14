@@ -99,7 +99,11 @@ function AdminJobs() {
               <TableBody>
                 {jobs.map((j: any) => (
                   <TableRow key={j.id}>
-                    <TableCell className="font-medium">{j.title}</TableCell>
+                    <TableCell className="font-medium">
+                      <Link to="/admin/jobs/$jobId" params={{ jobId: j.id }} className="hover:underline text-primary">
+                        {j.title}
+                      </Link>
+                    </TableCell>
                     <TableCell>{j.client?.name ?? "—"}</TableCell>
                     <TableCell>{j.technician_name ?? <span className="text-muted-foreground">לא משויך</span>}</TableCell>
                     <TableCell><Badge variant="outline" className={statusColor(j.status)}>{statusLabel(j.status)}</Badge></TableCell>
