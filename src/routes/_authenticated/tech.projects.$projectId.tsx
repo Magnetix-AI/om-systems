@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowRight, Plus, Search, Trash2, Clock, MapPin, Lock } from "lucide-react";
 import { toast } from "sonner";
+import { AttachmentsGallery } from "@/components/attachments-gallery";
 
 export const Route = createFileRoute("/_authenticated/tech/projects/$projectId")({
   ssr: false,
@@ -154,6 +155,8 @@ function TechProjectDetail() {
             )}
           </CardHeader>
         </Card>
+
+        <AttachmentsGallery projectId={projectId} />
 
         {isOpen ? (
           <Card>

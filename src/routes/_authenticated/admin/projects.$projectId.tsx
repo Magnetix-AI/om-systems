@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Lock, Unlock, Clock } from "lucide-react";
+import { AttachmentsManager } from "@/components/attachments-manager";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin/projects/$projectId")({
@@ -93,6 +94,8 @@ function AdminProjectDetail() {
           </Button>
         </CardHeader>
       </Card>
+
+      <AttachmentsManager projectId={projectId} />
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
