@@ -95,6 +95,8 @@ function AdminProjectDetail() {
         </CardHeader>
       </Card>
 
+      <AttachmentsManager projectId={projectId} />
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>ימי עבודה ({visits.length})</CardTitle>
