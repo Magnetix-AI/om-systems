@@ -207,6 +207,7 @@ function AssignTechnician({ job, onChange }: { job: any; onChange: () => void })
 }
 
 function NewJobDialog({ onClose }: { onClose: () => void }) {
+  const navigate = useNavigate();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [clientId, setClientId] = useState<string>("");
