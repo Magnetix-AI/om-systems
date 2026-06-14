@@ -156,6 +156,8 @@ function TechProjectDetail() {
           </CardHeader>
         </Card>
 
+        <AttachmentsGallery projectId={projectId} />
+
         {isOpen ? (
           <Card>
             <CardHeader><CardTitle className="text-base">יום עבודה חדש</CardTitle></CardHeader>
