@@ -109,6 +109,7 @@ function AdminProjects() {
 }
 
 function NewProjectDialog({ onClose }: { onClose: () => void }) {
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
