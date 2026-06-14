@@ -175,6 +175,8 @@ function JobDetail() {
             )}
           </CardContent>
         </Card>
+        <AttachmentsGallery jobId={jobId} />
+
 
         {existing.length > 0 && (
           <Card>
