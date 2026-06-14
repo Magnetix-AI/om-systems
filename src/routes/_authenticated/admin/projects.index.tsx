@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -109,6 +109,7 @@ function AdminProjects() {
 }
 
 function NewProjectDialog({ onClose }: { onClose: () => void }) {
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -160,15 +161,16 @@ function NewProjectDialog({ onClose }: { onClose: () => void }) {
         qc.invalidateQueries({ queryKey: ["clients"] });
       }
 
-      const { error } = await supabase.from("projects").insert({
+      const { data: created, error } = await supabase.from("projects").insert({
         title, description,
         client_id: finalClientId,
         technician_id: techId === "__none" ? null : techId,
         start_date: startDate || null,
-      });
+      }).select("id").single();
       if (error) throw error;
-      toast.success("נוצר פרוייקט חדש");
+      toast.success("נוצר פרוייקט — כעת ניתן להעלות תמונות");
       onClose();
+      if (created?.id) navigate({ to: "/admin/projects/$projectId", params: { projectId: created.id } });
     } catch (e: any) {
       toast.error("שגיאה ביצירה", { description: e.message });
     } finally { setSaving(false); }

@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -207,6 +207,7 @@ function AssignTechnician({ job, onChange }: { job: any; onChange: () => void })
 }
 
 function NewJobDialog({ onClose }: { onClose: () => void }) {
+  const navigate = useNavigate();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [clientId, setClientId] = useState<string>("");
@@ -243,15 +244,16 @@ function NewJobDialog({ onClose }: { onClose: () => void }) {
         if (error) throw error;
         cid = data.id;
       }
-      const { error } = await supabase.from("jobs").insert({
+      const { data: created, error } = await supabase.from("jobs").insert({
         title, description,
         client_id: cid || null,
         technician_id: techId === "__none" ? null : techId,
         scheduled_date: scheduled || null,
-      });
+      }).select("id").single();
       if (error) throw error;
-      toast.success("נוצרה קריאה חדשה");
+      toast.success("נוצרה קריאה — כעת ניתן להעלות תמונות");
       onClose();
+      if (created?.id) navigate({ to: "/admin/jobs/$jobId", params: { jobId: created.id } });
     } catch (e: any) {
       toast.error("שגיאה ביצירה", { description: e.message });
     } finally { setSaving(false); }
