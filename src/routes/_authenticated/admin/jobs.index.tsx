@@ -20,7 +20,7 @@ import { Plus, Briefcase, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { deleteJobsCascade } from "@/lib/admin-deletes";
 
-export const Route = createFileRoute("/_authenticated/admin/")({
+export const Route = createFileRoute("/_authenticated/admin/jobs/")({
   ssr: false,
   component: AdminJobs,
 });
