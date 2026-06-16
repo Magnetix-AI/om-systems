@@ -19,7 +19,8 @@ export const Route = createFileRoute("/_authenticated/admin")({
 function AdminLayout() {
   const pathname = useRouterState({ select: s => s.location.pathname });
   const tabs = [
-    { to: "/admin", label: "קריאות", icon: Briefcase },
+    { to: "/admin", label: "ראשי", icon: LayoutDashboard },
+    { to: "/admin/jobs", label: "קריאות", icon: Briefcase },
     { to: "/admin/projects", label: "פרוייקטים", icon: FolderKanban },
     { to: "/admin/history", label: "היסטוריה", icon: History },
     { to: "/admin/clients", label: "מאגר לקוחות", icon: Users },
