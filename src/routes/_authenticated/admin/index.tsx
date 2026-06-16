@@ -453,8 +453,6 @@ function EditDialog({ item, techs, onClose }: {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const table = item.kind === "job" ? "jobs" : "projects";
-      const dateField = item.kind === "job" ? "scheduled_date" : "start_date";
       const value = scheduled ? new Date(scheduled).toISOString() : null;
       const payload = item.kind === "job"
         ? { scheduled_date: value, technician_id: techId === "__none" ? null : techId }
