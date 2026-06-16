@@ -456,10 +456,13 @@ function EditDialog({ item, techs, onClose }: {
       const table = item.kind === "job" ? "jobs" : "projects";
       const dateField = item.kind === "job" ? "scheduled_date" : "start_date";
       const value = scheduled ? new Date(scheduled).toISOString() : null;
-      const { error } = await supabase.from(table).update({
-        [dateField]: item.kind === "job" ? value : (value ? value.slice(0, 10) : null),
-        technician_id: techId === "__none" ? null : techId,
-      }).eq("id", item.id);
+      const payload = item.kind === "job"
+        ? { scheduled_date: value, technician_id: techId === "__none" ? null : techId }
+        : { start_date: value ? value.slice(0, 10) : null, technician_id: techId === "__none" ? null : techId };
+      const query = item.kind === "job"
+        ? supabase.from("jobs").update(payload as any).eq("id", item.id)
+        : supabase.from("projects").update(payload as any).eq("id", item.id);
+      const { error } = await query;
       if (error) throw error;
       toast.success("עודכן");
       qc.invalidateQueries({ queryKey: ["main-jobs"] });
