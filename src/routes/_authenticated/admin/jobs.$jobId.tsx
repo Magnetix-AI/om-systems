@@ -1,9 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { ArrowRight } from "lucide-react";
+import { toast } from "sonner";
 import { statusLabel, statusColor } from "@/components/app-shell";
 import { AttachmentsManager } from "@/components/attachments-manager";
 
@@ -14,6 +18,7 @@ export const Route = createFileRoute("/_authenticated/admin/jobs/$jobId")({
 
 export default function AdminJobDetail() {
   const { jobId } = Route.useParams();
+  const qc = useQueryClient();
   const { data: job } = useQuery({
     queryKey: ["admin-job", jobId],
     queryFn: async () => {
@@ -29,6 +34,21 @@ export default function AdminJobDetail() {
       return data;
     },
   });
+
+  const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    if (job) setNotes(job.technician_notes ?? "");
+  }, [job?.id, job?.technician_notes]);
+
+  const saveNotes = async () => {
+    setSaving(true);
+    const { error } = await supabase.from("jobs").update({ technician_notes: notes }).eq("id", jobId);
+    setSaving(false);
+    if (error) { toast.error("שגיאה בשמירה"); return; }
+    toast.success("הערות נשמרו");
+    qc.invalidateQueries({ queryKey: ["admin-job", jobId] });
+  };
 
   if (!job) return <div className="p-6 text-center text-muted-foreground">טוען...</div>;
 
@@ -77,10 +97,13 @@ export default function AdminJobDetail() {
             </div>
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-2">
             <div className="font-medium">הערות טכנאי</div>
-            <div className="text-muted-foreground whitespace-pre-wrap">
-              {job.technician_notes?.trim() ? job.technician_notes : "אין הערות"}
+            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} placeholder="אין הערות" />
+            <div className="flex justify-end">
+              <Button size="sm" onClick={saveNotes} disabled={saving || notes === (job.technician_notes ?? "")}>
+                {saving ? "שומר..." : "שמור הערות"}
+              </Button>
             </div>
           </div>
 
