@@ -212,7 +212,7 @@ function AdminMain() {
               <MonthGrid cursor={cursor} selected={selected} items={items} onSelect={setSelected} />
             )}
             {view === "week" && (
-              <WeekGrid cursor={cursor} selected={selected} items={items} onSelect={setSelected} />
+              <WeekGrid cursor={cursor} selected={selected} items={items} onSelect={setSelected} onItemClick={setEditItem} />
             )}
             {view === "day" && (
               <DayGrid cursor={cursor} items={items.filter(i => isSameDay(i.date, cursor))} onItemClick={setEditItem} />
