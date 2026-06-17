@@ -59,6 +59,9 @@ function JobDetail() {
     if (job?.technician_notes) setNotes(job.technician_notes);
     if (job?.arrival_time) setArrival(new Date(job.arrival_time).toTimeString().slice(0, 5));
     if (job?.departure_time) setDeparture(new Date(job.departure_time).toTimeString().slice(0, 5));
+    if (job?.draft_quantities && typeof job.draft_quantities === "object") {
+      setQuantities(job.draft_quantities as Record<string, number>);
+    }
   }, [job?.id]);
 
   const filteredProducts = products.filter((p: any) => {
@@ -128,6 +131,7 @@ function JobDetail() {
         technician_notes: notes,
         arrival_time: toTs(arrival),
         departure_time: toTs(departure),
+        draft_quantities: null,
       }).eq("id", job.id);
       if (error) throw error;
       toast.success("הקריאה סומנה כסופקה");
@@ -137,6 +141,30 @@ function JobDetail() {
     } catch (e: any) {
       toast.error("שגיאה בסגירת הקריאה", { description: e.message });
     } finally { setSaving(false); }
+  };
+
+  const [draftSaving, setDraftSaving] = useState(false);
+  const handleSaveDraft = async () => {
+    if (!job) return;
+    setDraftSaving(true);
+    try {
+      const cleanQty = Object.fromEntries(
+        Object.entries(quantities).filter(([, v]) => Number(v) > 0)
+      );
+      const { error } = await supabase.from("jobs").update({
+        status: job.status === "open" ? "in_progress" : job.status,
+        technician_notes: notes,
+        arrival_time: toTs(arrival),
+        departure_time: toTs(departure),
+        draft_quantities: Object.keys(cleanQty).length ? cleanQty : null,
+      }).eq("id", job.id);
+      if (error) throw error;
+      toast.success("נשמרה טיוטה — תוכל להמשיך מאוחר יותר");
+      qc.invalidateQueries({ queryKey: ["job", jobId] });
+      qc.invalidateQueries({ queryKey: ["tech-jobs"] });
+    } catch (e: any) {
+      toast.error("שגיאה בשמירת הטיוטה", { description: e.message });
+    } finally { setDraftSaving(false); }
   };
 
   const startWork = async () => {
@@ -288,15 +316,17 @@ function JobDetail() {
         </Card>
 
         {!completed && (
-          <div className="flex gap-2 sticky bottom-4">
+          <div className="flex gap-2 sticky bottom-4 flex-wrap">
             {job.status === "open" && (
               <Button variant="outline" onClick={startWork} className="flex-1">סמן בטיפול</Button>
             )}
-            <Button onClick={handleSubmit} disabled={saving} className="flex-1 bg-success hover:bg-success/90 text-success-foreground">
+            <Button variant="secondary" onClick={handleSaveDraft} disabled={draftSaving || saving} className="flex-1">
+              {draftSaving ? "שומר..." : "💾 שמור טיוטה"}
+            </Button>
+            <Button onClick={handleSubmit} disabled={saving || draftSaving} className="flex-1 bg-success hover:bg-success/90 text-success-foreground">
               <CheckCircle2 className="h-4 w-4 ml-1" />
               {saving ? "שומר..." : "סופק — סגור קריאה"}
             </Button>
-
           </div>
         )}
         {completed && (

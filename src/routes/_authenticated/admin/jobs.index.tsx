@@ -213,6 +213,7 @@ function NewJobDialog({ onClose }: { onClose: () => void }) {
   const [clientId, setClientId] = useState<string>("");
   const [techId, setTechId] = useState<string>("__none");
   const [scheduled, setScheduled] = useState("");
+  const [endAt, setEndAt] = useState("");
   const [newClientName, setNewClientName] = useState("");
   const [newClientPhone, setNewClientPhone] = useState("");
   const [newClientAddress, setNewClientAddress] = useState("");
@@ -249,6 +250,8 @@ function NewJobDialog({ onClose }: { onClose: () => void }) {
         client_id: cid || null,
         technician_id: techId === "__none" ? null : techId,
         scheduled_date: scheduled || null,
+        start_time: scheduled || null,
+        end_time: endAt || null,
       }).select("id").single();
       if (error) throw error;
       toast.success("נוצרה קריאה — כעת ניתן להעלות תמונות");
@@ -302,8 +305,12 @@ function NewJobDialog({ onClose }: { onClose: () => void }) {
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label>תאריך מתוכנן</Label>
+            <Label>תחילת קריאה</Label>
             <Input type="datetime-local" value={scheduled} onChange={e => setScheduled(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>סיום קריאה</Label>
+            <Input type="datetime-local" value={endAt} onChange={e => setEndAt(e.target.value)} />
           </div>
         </div>
       </div>

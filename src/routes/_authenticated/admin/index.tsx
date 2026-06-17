@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   ChevronRight, ChevronLeft, Calendar as CalendarIcon, MapPin,
-  User, Clock, Briefcase, FolderKanban, AlertTriangle, Pencil,
+  User, Clock, Briefcase, FolderKanban, AlertTriangle, Pencil, Trash2,
 } from "lucide-react";
 import {
   addDays, addMonths, addWeeks, eachDayOfInterval, endOfMonth, endOfWeek,
@@ -24,6 +24,11 @@ import { he } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { statusLabel, statusColor } from "@/components/app-shell";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { deleteJobsCascade, deleteProjectsCascade } from "@/lib/admin-deletes";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   ssr: false,
@@ -38,18 +43,22 @@ type CalendarItem = {
   title: string;
   description: string | null;
   date: Date;
+  end: Date | null;
   technician_id: string | null;
   technician_name: string | null;
+  technician_color: string | null;
   client_name: string | null;
   client_address: string | null;
   status: string;
 };
 
 function AdminMain() {
-  const [view, setView] = useState<ViewMode>("month");
+  const [view, setView] = useState<ViewMode>("week");
   const [cursor, setCursor] = useState(new Date());
   const [selected, setSelected] = useState<Date>(new Date());
   const [editItem, setEditItem] = useState<CalendarItem | null>(null);
+  const [toDelete, setToDelete] = useState<CalendarItem | null>(null);
+  const qc = useQueryClient();
 
   const range = useMemo(() => getRange(cursor, view), [cursor, view]);
 
@@ -58,7 +67,7 @@ function AdminMain() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("jobs")
-        .select("id, title, description, status, scheduled_date, technician_id, client:clients(name, address)")
+        .select("id, title, description, status, scheduled_date, start_time, end_time, technician_id, client:clients(name, address)")
         .order("scheduled_date", { ascending: true });
       if (error) throw error;
       return data ?? [];
@@ -83,62 +92,78 @@ function AdminMain() {
       const { data: roles } = await supabase.from("user_roles").select("user_id").eq("role", "technician");
       const ids = (roles ?? []).map(r => r.user_id);
       if (!ids.length) return [];
-      return (await supabase.from("profiles").select("id, full_name").in("id", ids)).data ?? [];
+      return (await supabase.from("profiles").select("id, full_name, color").in("id", ids)).data ?? [];
     },
   });
 
   const techMap = useMemo(
-    () => Object.fromEntries((techs as any[]).map(t => [t.id, t.full_name])),
+    () => Object.fromEntries((techs as any[]).map(t => [t.id, t])),
     [techs],
   );
 
   const items: CalendarItem[] = useMemo(() => {
     const jobItems = (jobs as any[])
-      .filter(j => j.scheduled_date)
-      .map<CalendarItem>(j => ({
-        kind: "job",
-        id: j.id,
-        title: j.title,
-        description: j.description,
-        date: new Date(j.scheduled_date),
-        technician_id: j.technician_id,
-        technician_name: j.technician_id ? techMap[j.technician_id] ?? null : null,
-        client_name: j.client?.name ?? null,
-        client_address: j.client?.address ?? null,
-        status: j.status,
-      }));
+      .filter(j => j.scheduled_date || j.start_time)
+      .map<CalendarItem>(j => {
+        const start = new Date(j.start_time ?? j.scheduled_date);
+        const tech = j.technician_id ? techMap[j.technician_id] : null;
+        return {
+          kind: "job",
+          id: j.id,
+          title: j.title,
+          description: j.description,
+          date: start,
+          end: j.end_time ? new Date(j.end_time) : null,
+          technician_id: j.technician_id,
+          technician_name: tech?.full_name ?? null,
+          technician_color: tech?.color ?? null,
+          client_name: j.client?.name ?? null,
+          client_address: j.client?.address ?? null,
+          status: j.status,
+        };
+      });
     const projItems = (projects as any[])
       .filter(p => p.start_date)
-      .map<CalendarItem>(p => ({
-        kind: "project",
-        id: p.id,
-        title: p.title,
-        description: p.description,
-        date: new Date(p.start_date),
-        technician_id: p.technician_id,
-        technician_name: p.technician_id ? techMap[p.technician_id] ?? null : null,
-        client_name: p.client?.name ?? null,
-        client_address: p.client?.address ?? null,
-        status: p.status,
-      }));
+      .map<CalendarItem>(p => {
+        const tech = p.technician_id ? techMap[p.technician_id] : null;
+        return {
+          kind: "project",
+          id: p.id,
+          title: p.title,
+          description: p.description,
+          date: new Date(p.start_date),
+          end: null,
+          technician_id: p.technician_id,
+          technician_name: tech?.full_name ?? null,
+          technician_color: tech?.color ?? null,
+          client_name: p.client?.name ?? null,
+          client_address: p.client?.address ?? null,
+          status: p.status,
+        };
+      });
     return [...jobItems, ...projItems];
   }, [jobs, projects, techMap]);
 
   const unscheduled: CalendarItem[] = useMemo(() => {
     return (jobs as any[])
-      .filter(j => !j.scheduled_date || !j.technician_id)
-      .map<CalendarItem>(j => ({
-        kind: "job",
-        id: j.id,
-        title: j.title,
-        description: j.description,
-        date: j.scheduled_date ? new Date(j.scheduled_date) : new Date(),
-        technician_id: j.technician_id,
-        technician_name: j.technician_id ? techMap[j.technician_id] ?? null : null,
-        client_name: j.client?.name ?? null,
-        client_address: j.client?.address ?? null,
-        status: j.status,
-      }));
+      .filter(j => (!j.scheduled_date && !j.start_time) || !j.technician_id)
+      .map<CalendarItem>(j => {
+        const tech = j.technician_id ? techMap[j.technician_id] : null;
+        return {
+          kind: "job",
+          id: j.id,
+          title: j.title,
+          description: j.description,
+          date: j.start_time ? new Date(j.start_time) : (j.scheduled_date ? new Date(j.scheduled_date) : new Date()),
+          end: j.end_time ? new Date(j.end_time) : null,
+          technician_id: j.technician_id,
+          technician_name: tech?.full_name ?? null,
+          technician_color: tech?.color ?? null,
+          client_name: j.client?.name ?? null,
+          client_address: j.client?.address ?? null,
+          status: j.status,
+        };
+      });
   }, [jobs, techMap]);
 
   const dayItems = useMemo(
@@ -187,7 +212,7 @@ function AdminMain() {
               <MonthGrid cursor={cursor} selected={selected} items={items} onSelect={setSelected} />
             )}
             {view === "week" && (
-              <WeekGrid cursor={cursor} selected={selected} items={items} onSelect={setSelected} />
+              <WeekGrid cursor={cursor} selected={selected} items={items} onSelect={setSelected} onItemClick={setEditItem} />
             )}
             {view === "day" && (
               <DayGrid cursor={cursor} items={items.filter(i => isSameDay(i.date, cursor))} onItemClick={setEditItem} />
@@ -196,10 +221,39 @@ function AdminMain() {
         </Card>
 
         {/* Day details — RIGHT side */}
-        <DayDetailsPanel date={selected} items={dayItems} onEdit={setEditItem} />
+        <DayDetailsPanel date={selected} items={dayItems} onEdit={setEditItem} onDelete={setToDelete} />
       </div>
 
       <EditDialog item={editItem} techs={techs as any[]} onClose={() => setEditItem(null)} />
+
+      <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>למחוק {toDelete?.kind === "project" ? "פרוייקט" : "קריאה"}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              "{toDelete?.title}" — הפעולה בלתי הפיכה.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ביטול</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (!toDelete) return;
+                try {
+                  if (toDelete.kind === "job") await deleteJobsCascade([toDelete.id]);
+                  else await deleteProjectsCascade([toDelete.id]);
+                  toast.success("נמחק");
+                  qc.invalidateQueries({ queryKey: ["main-jobs"] });
+                  qc.invalidateQueries({ queryKey: ["main-projects"] });
+                } catch (e: any) {
+                  toast.error("שגיאה במחיקה", { description: e.message });
+                } finally { setToDelete(null); }
+              }}
+            >מחק</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -271,41 +325,79 @@ function MonthGrid({ cursor, selected, items, onSelect }: {
   );
 }
 
-function WeekGrid({ cursor, selected, items, onSelect }: {
+function WeekGrid({ cursor, selected, items, onSelect, onItemClick }: {
   cursor: Date; selected: Date; items: CalendarItem[]; onSelect: (d: Date) => void;
+  onItemClick: (i: CalendarItem) => void;
 }) {
   const days = getRange(cursor, "week");
+  const HOUR_PX = 36;
+  const START_HOUR = 6;
+  const END_HOUR = 22;
+  const hours = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i);
+
   return (
-    <div className="grid grid-cols-7 gap-2">
-      {days.map(d => {
-        const dayItems = items.filter(i => isSameDay(i.date, d)).sort((a, b) => a.date.getTime() - b.date.getTime());
-        const sel = isSameDay(d, selected);
-        return (
-          <button
-            key={d.toISOString()}
-            onClick={() => onSelect(d)}
-            className={cn(
-              "min-h-[280px] rounded-lg border p-2 text-right flex flex-col gap-1 hover:border-primary/50 transition-all",
-              sel && "ring-2 ring-primary border-primary",
-              isToday(d) && "bg-primary/5",
-            )}
-          >
-            <div className="text-xs text-muted-foreground">{WEEKDAY_LABELS[d.getDay()]}</div>
-            <div className={cn("text-lg font-bold", isToday(d) && "text-primary")}>{format(d, "d/M")}</div>
-            <div className="flex flex-col gap-1 overflow-hidden mt-1">
-              {dayItems.map(it => (
-                <div key={it.kind + it.id} className={cn(
-                  "text-[11px] rounded px-1.5 py-1 truncate text-right",
-                  it.kind === "project" ? "bg-accent/40" : "bg-primary/15 text-primary"
-                )}>
-                  <div className="font-medium truncate">{it.title}</div>
-                  <div className="opacity-70">{format(it.date, "HH:mm")}</div>
-                </div>
-              ))}
+    <div className="overflow-x-auto">
+      <div className="grid" style={{ gridTemplateColumns: "48px repeat(7, minmax(110px, 1fr))" }}>
+        {/* Header row */}
+        <div />
+        {days.map(d => {
+          const sel = isSameDay(d, selected);
+          return (
+            <button
+              key={d.toISOString()}
+              onClick={() => onSelect(d)}
+              className={cn(
+                "p-2 text-center border-b text-xs font-semibold transition-colors hover:bg-secondary/50",
+                sel && "bg-primary/10 text-primary",
+                isToday(d) && !sel && "text-primary",
+              )}
+            >
+              <div className="text-muted-foreground">{WEEKDAY_LABELS[d.getDay()]}</div>
+              <div className="text-lg">{format(d, "d/M")}</div>
+            </button>
+          );
+        })}
+
+        {/* Hours + day columns */}
+        <div className="relative border-l">
+          {hours.map(h => (
+            <div key={h} style={{ height: HOUR_PX }} className="text-[10px] text-muted-foreground text-left pl-1 border-b">
+              {String(h).padStart(2, "0")}:00
             </div>
-          </button>
-        );
-      })}
+          ))}
+        </div>
+        {days.map(d => {
+          const dayItems = items.filter(i => isSameDay(i.date, d));
+          return (
+            <div key={d.toISOString()} className="relative border-l border-b" style={{ height: HOUR_PX * hours.length }}>
+              {hours.map(h => (
+                <div key={h} style={{ height: HOUR_PX }} className="border-b border-dashed border-border/40" />
+              ))}
+              {dayItems.map(it => {
+                const startMin = it.date.getHours() * 60 + it.date.getMinutes() - START_HOUR * 60;
+                const durMin = it.end ? Math.max(30, (it.end.getTime() - it.date.getTime()) / 60000) : 60;
+                const top = (startMin / 60) * HOUR_PX;
+                const height = (durMin / 60) * HOUR_PX;
+                const color = it.technician_color || (it.kind === "project" ? "#a78bfa" : "#3b82f6");
+                return (
+                  <button
+                    key={it.kind + it.id}
+                    onClick={(e) => { e.stopPropagation(); onItemClick(it); }}
+                    className="absolute left-1 right-1 rounded text-right text-[11px] text-white px-1.5 py-1 shadow-sm overflow-hidden hover:opacity-90 hover:shadow-md transition"
+                    style={{ top, height, background: color }}
+                    title={`${it.title} · ${it.technician_name ?? "ללא טכנאי"}`}
+                  >
+                    <div className="font-semibold truncate">{it.title}</div>
+                    <div className="opacity-90 truncate">
+                      {format(it.date, "HH:mm")}{it.end ? `–${format(it.end, "HH:mm")}` : ""}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -385,8 +477,10 @@ function UnscheduledPanel({ items, onEdit }: { items: CalendarItem[]; onEdit: (i
   );
 }
 
-function DayDetailsPanel({ date, items, onEdit }: {
-  date: Date; items: CalendarItem[]; onEdit: (i: CalendarItem) => void;
+function DayDetailsPanel({ date, items, onEdit, onDelete }: {
+  date: Date; items: CalendarItem[];
+  onEdit: (i: CalendarItem) => void;
+  onDelete: (i: CalendarItem) => void;
 }) {
   return (
     <Card>
@@ -401,7 +495,8 @@ function DayDetailsPanel({ date, items, onEdit }: {
         {items.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-6">אין פריטים ביום זה</p>
         ) : items.map(it => (
-          <div key={it.kind + it.id} className="p-3 rounded-lg border bg-card space-y-2">
+          <div key={it.kind + it.id} className="p-3 rounded-lg border bg-card space-y-2"
+            style={it.technician_color ? { borderRightWidth: 4, borderRightColor: it.technician_color } : undefined}>
             <div className="flex items-start justify-between gap-2">
               <Link
                 to={it.kind === "job" ? "/admin/jobs/$jobId" : "/admin/projects/$projectId"}
@@ -415,15 +510,25 @@ function DayDetailsPanel({ date, items, onEdit }: {
             </div>
             {it.description && <p className="text-xs text-muted-foreground line-clamp-2">{it.description}</p>}
             <div className="text-xs space-y-1 text-muted-foreground">
-              <div className="flex items-center gap-1.5"><Clock className="h-3 w-3" /> {format(it.date, "HH:mm")}</div>
+              <div className="flex items-center gap-1.5">
+                <Clock className="h-3 w-3" />
+                {format(it.date, "HH:mm")}{it.end ? ` – ${format(it.end, "HH:mm")}` : ""}
+              </div>
               {it.client_name && <div className="flex items-center gap-1.5"><MapPin className="h-3 w-3" /> {it.client_name}{it.client_address ? ` — ${it.client_address}` : ""}</div>}
-              <div className="flex items-center gap-1.5"><User className="h-3 w-3" /> {it.technician_name ?? "לא משויך"}</div>
+              <div className="flex items-center gap-1.5">
+                <User className="h-3 w-3" />
+                {it.technician_color && <span className="h-2 w-2 rounded-full inline-block" style={{ background: it.technician_color }} />}
+                {it.technician_name ?? "לא משויך"}
+              </div>
             </div>
-            {it.kind === "job" && (
-              <Button variant="ghost" size="sm" className="w-full h-7 text-xs" onClick={() => onEdit(it)}>
-                <Pencil className="h-3 w-3 ml-1" /> ערוך שיוך
+            <div className="flex gap-1">
+              <Button variant="ghost" size="sm" className="flex-1 h-7 text-xs" onClick={() => onEdit(it)}>
+                <Pencil className="h-3 w-3 ml-1" /> ערוך
               </Button>
-            )}
+              <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive hover:text-destructive" onClick={() => onDelete(it)}>
+                <Trash2 className="h-3 w-3 ml-1" /> מחק
+              </Button>
+            </div>
           </div>
         ))}
       </CardContent>
@@ -436,14 +541,14 @@ function EditDialog({ item, techs, onClose }: {
 }) {
   const qc = useQueryClient();
   const [scheduled, setScheduled] = useState("");
+  const [endAt, setEndAt] = useState("");
   const [techId, setTechId] = useState("__none");
   const [saving, setSaving] = useState(false);
 
   useMemo(() => {
     if (item) {
-      // initialise once when item changes
-      setScheduled(item.date && (item.kind === "job" || item.status !== "open")
-        ? toLocalInput(item.date) : "");
+      setScheduled(item.date ? toLocalInput(item.date) : "");
+      setEndAt(item.end ? toLocalInput(item.end) : "");
       setTechId(item.technician_id ?? "__none");
     }
   }, [item?.id]);
@@ -453,10 +558,19 @@ function EditDialog({ item, techs, onClose }: {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const value = scheduled ? new Date(scheduled).toISOString() : null;
+      const startIso = scheduled ? new Date(scheduled).toISOString() : null;
+      const endIso = endAt ? new Date(endAt).toISOString() : null;
       const payload = item.kind === "job"
-        ? { scheduled_date: value, technician_id: techId === "__none" ? null : techId }
-        : { start_date: value ? value.slice(0, 10) : null, technician_id: techId === "__none" ? null : techId };
+        ? {
+            scheduled_date: startIso,
+            start_time: startIso,
+            end_time: endIso,
+            technician_id: techId === "__none" ? null : techId,
+          }
+        : {
+            start_date: startIso ? startIso.slice(0, 10) : null,
+            technician_id: techId === "__none" ? null : techId,
+          };
       const query = item.kind === "job"
         ? supabase.from("jobs").update(payload as any).eq("id", item.id)
         : supabase.from("projects").update(payload as any).eq("id", item.id);
@@ -479,9 +593,15 @@ function EditDialog({ item, techs, onClose }: {
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">תאריך ושעה</label>
+            <label className="text-sm font-medium">תחילת קריאה</label>
             <Input type="datetime-local" value={scheduled} onChange={e => setScheduled(e.target.value)} />
           </div>
+          {item.kind === "job" && (
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">סיום קריאה</label>
+              <Input type="datetime-local" value={endAt} onChange={e => setEndAt(e.target.value)} />
+            </div>
+          )}
           <div className="space-y-1.5">
             <label className="text-sm font-medium">טכנאי</label>
             <Select value={techId} onValueChange={setTechId}>

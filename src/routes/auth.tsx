@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Cable, ScanFace, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
@@ -34,11 +33,9 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [tab, setTab] = useState("login");
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
 
   const [adminOpen, setAdminOpen] = useState(false);
   const [adminUser, setAdminUser] = useState("");
@@ -60,12 +57,14 @@ function AuthPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const id = email.trim();
+    // Allow login via plain username — auto-map to internal email domain.
+    const loginEmail = id.includes("@") ? id : `${id.toLowerCase()}@om-tech.local`;
+    const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
     setLoading(false);
     if (error) return toast.error("שגיאה בהתחברות", { description: error.message });
-    // First successful login on this device → offer Face ID setup
     if (faceSupported && !hasFaceCred) {
-      setPendingCreds({ email, password });
+      setPendingCreds({ email: loginEmail, password });
       setFaceSetupOpen(true);
       return;
     }
@@ -107,19 +106,6 @@ function AuthPage() {
   };
 
 
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email, password,
-      options: { data: { full_name: fullName, role: "technician" }, emailRedirectTo: window.location.origin },
-    });
-    setLoading(false);
-    if (error) return toast.error("שגיאה בהרשמה", { description: error.message });
-    toast.success("נרשמת בהצלחה כטכנאי");
-    navigate({ to: "/" });
-  };
-
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAdminLoading(true);
@@ -153,69 +139,49 @@ function AuthPage() {
           <CardDescription>מערכת לניהול קריאות שירות — מתח נמוך ותקשורת</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs value={tab} onValueChange={setTab}>
-            <TabsList className="grid grid-cols-2 w-full">
-              <TabsTrigger value="login">התחברות</TabsTrigger>
-              <TabsTrigger value="signup">הרשמה</TabsTrigger>
-            </TabsList>
-            <TabsContent value="login">
-              <form onSubmit={handleLogin} className="space-y-4 mt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">דוא״ל</Label>
-                  <Input id="email" type="email" required value={email} onChange={e => setEmail(e.target.value)} dir="ltr" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">סיסמה</Label>
-                  <Input id="password" type="password" required value={password} onChange={e => setPassword(e.target.value)} dir="ltr" />
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "מתחבר..." : "התחבר כטכנאי"}
-                </Button>
-                {faceSupported && hasFaceCred && (
-                  <button
-                    type="button"
-                    onClick={handleFaceLogin}
-                    disabled={faceLoading}
-                    className="w-full flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-                  >
-                    <ScanFace className="h-3.5 w-3.5" />
-                    {faceLoading ? "מאמת..." : "כניסה עם זיהוי פנים"}
-                  </button>
-                )}
-              </form>
-              <div className="relative my-5">
-                <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
-                <div className="relative flex justify-center text-xs"><span className="bg-card px-2 text-muted-foreground">או</span></div>
-              </div>
-              <Button type="button" variant="outline" className="w-full gap-2" onClick={() => setAdminOpen(true)}>
-                <ShieldCheck className="h-4 w-4" />
-                כניסה למערכת כאדמין
-              </Button>
-            </TabsContent>
-
-            <TabsContent value="signup">
-              <form onSubmit={handleSignup} className="space-y-4 mt-4">
-                <div className="rounded-md bg-secondary px-3 py-2 text-xs text-muted-foreground text-center">
-                  הרשמה מיועדת לטכנאים בלבד
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="name">שם מלא</Label>
-                  <Input id="name" required value={fullName} onChange={e => setFullName(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email2">דוא״ל</Label>
-                  <Input id="email2" type="email" required value={email} onChange={e => setEmail(e.target.value)} dir="ltr" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password2">סיסמה</Label>
-                  <Input id="password2" type="password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)} dir="ltr" />
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "נרשם..." : "צור חשבון טכנאי"}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
+          <form onSubmit={handleLogin} className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">דוא״ל / שם משתמש</Label>
+              <Input
+                id="email"
+                type="text"
+                required
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                dir="ltr"
+                placeholder="username או email@example.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">סיסמה</Label>
+              <Input id="password" type="password" required value={password} onChange={e => setPassword(e.target.value)} dir="ltr" />
+            </div>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "מתחבר..." : "התחבר כטכנאי"}
+            </Button>
+            {faceSupported && hasFaceCred && (
+              <button
+                type="button"
+                onClick={handleFaceLogin}
+                disabled={faceLoading}
+                className="w-full flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+              >
+                <ScanFace className="h-3.5 w-3.5" />
+                {faceLoading ? "מאמת..." : "כניסה עם זיהוי פנים"}
+              </button>
+            )}
+          </form>
+          <div className="relative my-5">
+            <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+            <div className="relative flex justify-center text-xs"><span className="bg-card px-2 text-muted-foreground">או</span></div>
+          </div>
+          <Button type="button" variant="outline" className="w-full gap-2" onClick={() => setAdminOpen(true)}>
+            <ShieldCheck className="h-4 w-4" />
+            כניסה למערכת כאדמין
+          </Button>
+          <p className="text-[11px] text-muted-foreground text-center mt-4">
+            אין אפשרות להרשמה עצמית. טכנאים מתווספים על ידי מנהל המערכת בלבד.
+          </p>
         </CardContent>
       </Card>
 
