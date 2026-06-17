@@ -84,6 +84,7 @@ function buildBuckets(g: Granularity) {
 
 function AdminHistory() {
   const qc = useQueryClient();
+  const [statusFilter, setStatusFilter] = useState<"all" | "open" | "completed">("all");
   const [search, setSearch] = useState("");
   const [granularity, setGranularity] = useState<Granularity>("all");
   const [bucket, setBucket] = useState<string>("");
