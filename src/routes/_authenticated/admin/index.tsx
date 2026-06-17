@@ -8,10 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from "@/components/ui/dialog";
+
 import {
   ChevronRight, ChevronLeft, Calendar as CalendarIcon, MapPin,
   User, Clock, Briefcase, FolderKanban, AlertTriangle, Pencil, Trash2,
@@ -29,6 +26,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { deleteJobsCascade, deleteProjectsCascade } from "@/lib/admin-deletes";
+import { AdminEditItemDialog } from "@/components/admin-edit-item-dialog";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   ssr: false,
@@ -224,7 +222,7 @@ function AdminMain() {
         <DayDetailsPanel date={selected} items={dayItems} onEdit={setEditItem} onDelete={setToDelete} />
       </div>
 
-      <EditDialog item={editItem} techs={techs as any[]} onClose={() => setEditItem(null)} />
+      <AdminEditItemDialog item={editItem} onClose={() => setEditItem(null)} invalidateKeys={[["main-jobs"], ["main-projects"]]} />
 
       <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
         <AlertDialogContent dir="rtl">
@@ -536,93 +534,3 @@ function DayDetailsPanel({ date, items, onEdit, onDelete }: {
   );
 }
 
-function EditDialog({ item, techs, onClose }: {
-  item: CalendarItem | null; techs: { id: string; full_name: string }[]; onClose: () => void;
-}) {
-  const qc = useQueryClient();
-  const [scheduled, setScheduled] = useState("");
-  const [endAt, setEndAt] = useState("");
-  const [techId, setTechId] = useState("__none");
-  const [saving, setSaving] = useState(false);
-
-  useMemo(() => {
-    if (item) {
-      setScheduled(item.date ? toLocalInput(item.date) : "");
-      setEndAt(item.end ? toLocalInput(item.end) : "");
-      setTechId(item.technician_id ?? "__none");
-    }
-  }, [item?.id]);
-
-  if (!item) return null;
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      const startIso = scheduled ? new Date(scheduled).toISOString() : null;
-      const endIso = endAt ? new Date(endAt).toISOString() : null;
-      const payload = item.kind === "job"
-        ? {
-            scheduled_date: startIso,
-            start_time: startIso,
-            end_time: endIso,
-            technician_id: techId === "__none" ? null : techId,
-          }
-        : {
-            start_date: startIso ? startIso.slice(0, 10) : null,
-            technician_id: techId === "__none" ? null : techId,
-          };
-      const query = item.kind === "job"
-        ? supabase.from("jobs").update(payload as any).eq("id", item.id)
-        : supabase.from("projects").update(payload as any).eq("id", item.id);
-      const { error } = await query;
-      if (error) throw error;
-      toast.success("עודכן");
-      qc.invalidateQueries({ queryKey: ["main-jobs"] });
-      qc.invalidateQueries({ queryKey: ["main-projects"] });
-      onClose();
-    } catch (e: any) {
-      toast.error("שגיאה בעדכון", { description: e.message });
-    } finally { setSaving(false); }
-  };
-
-  return (
-    <Dialog open={!!item} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent dir="rtl" className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>שיוך — {item.title}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3">
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium">תחילת קריאה</label>
-            <Input type="datetime-local" value={scheduled} onChange={e => setScheduled(e.target.value)} />
-          </div>
-          {item.kind === "job" && (
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">סיום קריאה</label>
-              <Input type="datetime-local" value={endAt} onChange={e => setEndAt(e.target.value)} />
-            </div>
-          )}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium">טכנאי</label>
-            <Select value={techId} onValueChange={setTechId}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none">לא משויך</SelectItem>
-                {techs.map(t => <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>ביטול</Button>
-          <Button onClick={handleSave} disabled={saving}>{saving ? "שומר..." : "שמור"}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function toLocalInput(d: Date) {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}

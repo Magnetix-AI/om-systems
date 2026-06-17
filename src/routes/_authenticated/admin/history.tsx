@@ -13,10 +13,11 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trash2, Search, History as HistoryIcon, Briefcase, FolderKanban } from "lucide-react";
+import { Trash2, Search, History as HistoryIcon, Briefcase, FolderKanban, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { statusLabel, statusColor } from "@/components/app-shell";
 import { deleteJobsCascade, deleteProjectsCascade } from "@/lib/admin-deletes";
+import { AdminEditItemDialog } from "@/components/admin-edit-item-dialog";
 
 export const Route = createFileRoute("/_authenticated/admin/history")({
   ssr: false,
@@ -89,6 +90,7 @@ function AdminHistory() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Row[] | null>(null);
+  const [editItem, setEditItem] = useState<{ kind: "job" | "project"; id: string } | null>(null);
 
   const { data: rows = [] } = useQuery({
     queryKey: ["admin-history"],
@@ -271,9 +273,14 @@ function AdminHistory() {
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{new Date(r.date).toLocaleDateString("he-IL")}</TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => askDelete([r])}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex gap-1 justify-end">
+                          <Button variant="ghost" size="icon" onClick={() => setEditItem({ kind: r.kind, id: r.id })} title="ערוך">
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => askDelete([r])}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
@@ -298,6 +305,12 @@ function AdminHistory() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AdminEditItemDialog
+        item={editItem}
+        onClose={() => setEditItem(null)}
+        invalidateKeys={[["admin-history"]]}
+      />
     </div>
   );
 }
