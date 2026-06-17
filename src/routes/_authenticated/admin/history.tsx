@@ -84,6 +84,7 @@ function buildBuckets(g: Granularity) {
 
 function AdminHistory() {
   const qc = useQueryClient();
+  const [statusFilter, setStatusFilter] = useState<"all" | "open" | "completed">("all");
   const [search, setSearch] = useState("");
   const [granularity, setGranularity] = useState<Granularity>("all");
   const [bucket, setBucket] = useState<string>("");
@@ -137,9 +138,10 @@ function AdminHistory() {
         const d = new Date(r.date).getTime();
         if (d < selectedBucket.start.getTime() || d >= selectedBucket.end.getTime()) return false;
       }
+      if (statusFilter !== "all" && r.status !== statusFilter) return false;
       return true;
     });
-  }, [rows, search, selectedBucket]);
+  }, [rows, search, selectedBucket, statusFilter]);
 
   const allSelected = filtered.length > 0 && filtered.every(r => selected.has(`${r.kind}:${r.id}`));
   const toggleAll = () => {
@@ -205,6 +207,17 @@ function AdminHistory() {
                   <SelectItem value="day">ימים</SelectItem>
                   <SelectItem value="week">שבועות</SelectItem>
                   <SelectItem value="month">חודשים</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <div className="text-xs text-muted-foreground">סטטוס</div>
+              <Select value={statusFilter} onValueChange={(v: "all" | "open" | "completed") => setStatusFilter(v)}>
+                <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">כל הסטטוסים</SelectItem>
+                  <SelectItem value="open">פתוחה</SelectItem>
+                  <SelectItem value="completed">הושלמה</SelectItem>
                 </SelectContent>
               </Select>
             </div>
