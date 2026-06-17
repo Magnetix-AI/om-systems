@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Trash2, Plus, ArrowRight, CheckCircle2, Search, Mic, MicOff } from "lucide-react";
+import { Trash2, Plus, ArrowRight, CheckCircle2, Search, Mic, MicOff, Phone } from "lucide-react";
 import { toast } from "sonner";
 import { AttachmentsGallery } from "@/components/attachments-gallery";
 
