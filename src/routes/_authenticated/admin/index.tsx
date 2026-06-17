@@ -225,7 +225,7 @@ function AdminMain() {
         <DayDetailsPanel date={selected} items={dayItems} onEdit={setEditItem} onDelete={setToDelete} />
       </div>
 
-      <EditDialog item={editItem} techs={techs as any[]} onClose={() => setEditItem(null)} />
+      <AdminEditItemDialog item={editItem} onClose={() => setEditItem(null)} invalidateKeys={[["main-jobs"], ["main-projects"]]} />
 
       <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
         <AlertDialogContent dir="rtl">
