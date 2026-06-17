@@ -122,17 +122,30 @@ export default function AdminJobDetail() {
           <CardTitle className="text-base">עדכוני טכנאי</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 text-sm">
-          <div className="space-y-1">
+          <div className="space-y-2">
             <div className="font-medium">שעות פעילות</div>
-            <div className="text-muted-foreground space-y-0.5">
-              {(job as any).start_time && <div>התחלה: {fmtTime((job as any).start_time)}</div>}
-              {(job as any).end_time && <div>סיום: {fmtTime((job as any).end_time)}</div>}
-              {(job as any).arrival_time && <div>כניסה: {fmtTime((job as any).arrival_time)}</div>}
-              {(job as any).departure_time && <div>יציאה: {fmtTime((job as any).departure_time)}</div>}
-              {job.completed_at && <div>הושלמה: {fmtDateTime(job.completed_at)}</div>}
-              {!(job as any).start_time && !(job as any).end_time && !(job as any).arrival_time && !(job as any).departure_time && !job.completed_at && (
-                <div>אין רישום שעות</div>
-              )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {([
+                ["start_time", "התחלה"],
+                ["end_time", "סיום"],
+                ["arrival_time", "כניסה"],
+                ["departure_time", "יציאה"],
+                ["completed_at", "הושלמה"],
+              ] as const).map(([k, label]) => (
+                <div key={k} className="space-y-1">
+                  <Label className="text-xs">{label}</Label>
+                  <Input
+                    type="datetime-local"
+                    value={times[k]}
+                    onChange={(e) => setTimes((t) => ({ ...t, [k]: e.target.value }))}
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end">
+              <Button size="sm" onClick={saveTimes} disabled={savingTimes}>
+                {savingTimes ? "שומר..." : "שמור שעות"}
+              </Button>
             </div>
           </div>
 
