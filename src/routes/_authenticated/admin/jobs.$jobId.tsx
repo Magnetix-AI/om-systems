@@ -19,7 +19,7 @@ export default function AdminJobDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("jobs")
-        .select("*, client:clients(name, phone, address)")
+        .select("*, client:clients(name, phone, address), items:job_items(id, quantity, unit_price, product:products(name, unit))")
         .eq("id", jobId).maybeSingle();
       if (error) throw error;
       if (data?.technician_id) {
@@ -31,6 +31,11 @@ export default function AdminJobDetail() {
   });
 
   if (!job) return <div className="p-6 text-center text-muted-foreground">טוען...</div>;
+
+  const fmtTime = (t?: string | null) =>
+    t ? new Date(t).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }) : null;
+  const fmtDateTime = (t?: string | null) =>
+    t ? new Date(t).toLocaleString("he-IL") : null;
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-4">
@@ -53,7 +58,51 @@ export default function AdminJobDetail() {
         </CardHeader>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">עדכוני טכנאי</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 text-sm">
+          <div className="space-y-1">
+            <div className="font-medium">שעות פעילות</div>
+            <div className="text-muted-foreground space-y-0.5">
+              {(job as any).start_time && <div>התחלה: {fmtTime((job as any).start_time)}</div>}
+              {(job as any).end_time && <div>סיום: {fmtTime((job as any).end_time)}</div>}
+              {(job as any).arrival_time && <div>כניסה: {fmtTime((job as any).arrival_time)}</div>}
+              {(job as any).departure_time && <div>יציאה: {fmtTime((job as any).departure_time)}</div>}
+              {job.completed_at && <div>הושלמה: {fmtDateTime(job.completed_at)}</div>}
+              {!(job as any).start_time && !(job as any).end_time && !(job as any).arrival_time && !(job as any).departure_time && !job.completed_at && (
+                <div>אין רישום שעות</div>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <div className="font-medium">הערות טכנאי</div>
+            <div className="text-muted-foreground whitespace-pre-wrap">
+              {job.technician_notes?.trim() ? job.technician_notes : "אין הערות"}
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <div className="font-medium">פריטים שנוספו</div>
+            {(job as any).items?.length ? (
+              <ul className="text-muted-foreground space-y-0.5 list-disc pr-5">
+                {(job as any).items.map((it: any) => (
+                  <li key={it.id}>
+                    {it.product?.name ?? "פריט"} — {it.quantity} {it.product?.unit ?? ""} × ₪{it.unit_price}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="text-muted-foreground">אין פריטים</div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       <AttachmentsManager jobId={jobId} />
     </div>
   );
 }
+
