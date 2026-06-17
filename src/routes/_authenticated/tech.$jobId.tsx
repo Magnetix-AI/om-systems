@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Trash2, Plus, ArrowRight, CheckCircle2, Search, Mic, MicOff } from "lucide-react";
+import { Trash2, Plus, ArrowRight, CheckCircle2, Search, Mic, MicOff, Phone } from "lucide-react";
 import { toast } from "sonner";
 import { AttachmentsGallery } from "@/components/attachments-gallery";
 
@@ -222,7 +222,16 @@ function JobDetail() {
                 <div className="font-semibold">פרטי לקוח</div>
                 <div>{job.client.name}</div>
                 {job.client.contact_name && <div className="text-muted-foreground">איש קשר: {job.client.contact_name}</div>}
-                {job.client.phone && <div className="text-muted-foreground" dir="ltr">{job.client.phone}</div>}
+                {job.client.phone && (
+                  <a
+                    href={`tel:${job.client.phone}`}
+                    className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors"
+                    dir="ltr"
+                  >
+                    <Phone className="h-3.5 w-3.5" />
+                    {job.client.phone}
+                  </a>
+                )}
                 {job.client.address && <div className="text-muted-foreground">{job.client.address}</div>}
               </div>
             )}
