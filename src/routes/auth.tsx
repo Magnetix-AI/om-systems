@@ -60,12 +60,14 @@ function AuthPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const id = email.trim();
+    // Allow login via plain username — auto-map to internal email domain.
+    const loginEmail = id.includes("@") ? id : `${id.toLowerCase()}@om-tech.local`;
+    const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
     setLoading(false);
     if (error) return toast.error("שגיאה בהתחברות", { description: error.message });
-    // First successful login on this device → offer Face ID setup
     if (faceSupported && !hasFaceCred) {
-      setPendingCreds({ email, password });
+      setPendingCreds({ email: loginEmail, password });
       setFaceSetupOpen(true);
       return;
     }
