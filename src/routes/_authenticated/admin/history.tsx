@@ -273,9 +273,14 @@ function AdminHistory() {
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{new Date(r.date).toLocaleDateString("he-IL")}</TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => askDelete([r])}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex gap-1 justify-end">
+                          <Button variant="ghost" size="icon" onClick={() => setEditItem({ kind: r.kind, id: r.id })} title="ערוך">
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => askDelete([r])}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
