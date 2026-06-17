@@ -6,10 +6,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { statusLabel, statusColor } from "@/components/app-shell";
 import { AttachmentsManager } from "@/components/attachments-manager";
+
+const toLocalInput = (t?: string | null) => {
+  if (!t) return "";
+  const d = new Date(t);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+const fromLocalInput = (v: string) => (v ? new Date(v).toISOString() : null);
 
 export const Route = createFileRoute("/_authenticated/admin/jobs/$jobId")({
   ssr: false,
@@ -37,9 +47,22 @@ export default function AdminJobDetail() {
 
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
+  const [times, setTimes] = useState({ start_time: "", end_time: "", arrival_time: "", departure_time: "", completed_at: "" });
+  const [savingTimes, setSavingTimes] = useState(false);
   useEffect(() => {
     if (job) setNotes(job.technician_notes ?? "");
   }, [job?.id, job?.technician_notes]);
+  useEffect(() => {
+    if (!job) return;
+    const j = job as any;
+    setTimes({
+      start_time: toLocalInput(j.start_time),
+      end_time: toLocalInput(j.end_time),
+      arrival_time: toLocalInput(j.arrival_time),
+      departure_time: toLocalInput(j.departure_time),
+      completed_at: toLocalInput(j.completed_at),
+    });
+  }, [job?.id, (job as any)?.start_time, (job as any)?.end_time, (job as any)?.arrival_time, (job as any)?.departure_time, (job as any)?.completed_at]);
 
   const saveNotes = async () => {
     setSaving(true);
@@ -50,12 +73,24 @@ export default function AdminJobDetail() {
     qc.invalidateQueries({ queryKey: ["admin-job", jobId] });
   };
 
+  const saveTimes = async () => {
+    setSavingTimes(true);
+    const payload: any = {
+      start_time: fromLocalInput(times.start_time),
+      end_time: fromLocalInput(times.end_time),
+      arrival_time: fromLocalInput(times.arrival_time),
+      departure_time: fromLocalInput(times.departure_time),
+      completed_at: fromLocalInput(times.completed_at),
+    };
+    const { error } = await supabase.from("jobs").update(payload).eq("id", jobId);
+    setSavingTimes(false);
+    if (error) { toast.error("שגיאה בשמירת שעות"); return; }
+    toast.success("שעות עודכנו");
+    qc.invalidateQueries({ queryKey: ["admin-job", jobId] });
+  };
+
   if (!job) return <div className="p-6 text-center text-muted-foreground">טוען...</div>;
 
-  const fmtTime = (t?: string | null) =>
-    t ? new Date(t).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }) : null;
-  const fmtDateTime = (t?: string | null) =>
-    t ? new Date(t).toLocaleString("he-IL") : null;
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-4">
@@ -83,17 +118,30 @@ export default function AdminJobDetail() {
           <CardTitle className="text-base">עדכוני טכנאי</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 text-sm">
-          <div className="space-y-1">
+          <div className="space-y-2">
             <div className="font-medium">שעות פעילות</div>
-            <div className="text-muted-foreground space-y-0.5">
-              {(job as any).start_time && <div>התחלה: {fmtTime((job as any).start_time)}</div>}
-              {(job as any).end_time && <div>סיום: {fmtTime((job as any).end_time)}</div>}
-              {(job as any).arrival_time && <div>כניסה: {fmtTime((job as any).arrival_time)}</div>}
-              {(job as any).departure_time && <div>יציאה: {fmtTime((job as any).departure_time)}</div>}
-              {job.completed_at && <div>הושלמה: {fmtDateTime(job.completed_at)}</div>}
-              {!(job as any).start_time && !(job as any).end_time && !(job as any).arrival_time && !(job as any).departure_time && !job.completed_at && (
-                <div>אין רישום שעות</div>
-              )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {([
+                ["start_time", "התחלה"],
+                ["end_time", "סיום"],
+                ["arrival_time", "כניסה"],
+                ["departure_time", "יציאה"],
+                ["completed_at", "הושלמה"],
+              ] as const).map(([k, label]) => (
+                <div key={k} className="space-y-1">
+                  <Label className="text-xs">{label}</Label>
+                  <Input
+                    type="datetime-local"
+                    value={times[k]}
+                    onChange={(e) => setTimes((t) => ({ ...t, [k]: e.target.value }))}
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end">
+              <Button size="sm" onClick={saveTimes} disabled={savingTimes}>
+                {savingTimes ? "שומר..." : "שמור שעות"}
+              </Button>
             </div>
           </div>
 
