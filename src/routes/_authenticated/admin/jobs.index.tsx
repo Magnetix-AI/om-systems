@@ -305,8 +305,12 @@ function NewJobDialog({ onClose }: { onClose: () => void }) {
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label>תאריך מתוכנן</Label>
+            <Label>תחילת קריאה</Label>
             <Input type="datetime-local" value={scheduled} onChange={e => setScheduled(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>סיום קריאה</Label>
+            <Input type="datetime-local" value={endAt} onChange={e => setEndAt(e.target.value)} />
           </div>
         </div>
       </div>
