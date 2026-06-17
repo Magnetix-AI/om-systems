@@ -477,8 +477,10 @@ function UnscheduledPanel({ items, onEdit }: { items: CalendarItem[]; onEdit: (i
   );
 }
 
-function DayDetailsPanel({ date, items, onEdit }: {
-  date: Date; items: CalendarItem[]; onEdit: (i: CalendarItem) => void;
+function DayDetailsPanel({ date, items, onEdit, onDelete }: {
+  date: Date; items: CalendarItem[];
+  onEdit: (i: CalendarItem) => void;
+  onDelete: (i: CalendarItem) => void;
 }) {
   return (
     <Card>
@@ -493,7 +495,8 @@ function DayDetailsPanel({ date, items, onEdit }: {
         {items.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-6">אין פריטים ביום זה</p>
         ) : items.map(it => (
-          <div key={it.kind + it.id} className="p-3 rounded-lg border bg-card space-y-2">
+          <div key={it.kind + it.id} className="p-3 rounded-lg border bg-card space-y-2"
+            style={it.technician_color ? { borderRightWidth: 4, borderRightColor: it.technician_color } : undefined}>
             <div className="flex items-start justify-between gap-2">
               <Link
                 to={it.kind === "job" ? "/admin/jobs/$jobId" : "/admin/projects/$projectId"}
@@ -507,15 +510,25 @@ function DayDetailsPanel({ date, items, onEdit }: {
             </div>
             {it.description && <p className="text-xs text-muted-foreground line-clamp-2">{it.description}</p>}
             <div className="text-xs space-y-1 text-muted-foreground">
-              <div className="flex items-center gap-1.5"><Clock className="h-3 w-3" /> {format(it.date, "HH:mm")}</div>
+              <div className="flex items-center gap-1.5">
+                <Clock className="h-3 w-3" />
+                {format(it.date, "HH:mm")}{it.end ? ` – ${format(it.end, "HH:mm")}` : ""}
+              </div>
               {it.client_name && <div className="flex items-center gap-1.5"><MapPin className="h-3 w-3" /> {it.client_name}{it.client_address ? ` — ${it.client_address}` : ""}</div>}
-              <div className="flex items-center gap-1.5"><User className="h-3 w-3" /> {it.technician_name ?? "לא משויך"}</div>
+              <div className="flex items-center gap-1.5">
+                <User className="h-3 w-3" />
+                {it.technician_color && <span className="h-2 w-2 rounded-full inline-block" style={{ background: it.technician_color }} />}
+                {it.technician_name ?? "לא משויך"}
+              </div>
             </div>
-            {it.kind === "job" && (
-              <Button variant="ghost" size="sm" className="w-full h-7 text-xs" onClick={() => onEdit(it)}>
-                <Pencil className="h-3 w-3 ml-1" /> ערוך שיוך
+            <div className="flex gap-1">
+              <Button variant="ghost" size="sm" className="flex-1 h-7 text-xs" onClick={() => onEdit(it)}>
+                <Pencil className="h-3 w-3 ml-1" /> ערוך
               </Button>
-            )}
+              <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive hover:text-destructive" onClick={() => onDelete(it)}>
+                <Trash2 className="h-3 w-3 ml-1" /> מחק
+              </Button>
+            </div>
           </div>
         ))}
       </CardContent>
