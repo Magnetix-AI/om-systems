@@ -541,14 +541,14 @@ function EditDialog({ item, techs, onClose }: {
 }) {
   const qc = useQueryClient();
   const [scheduled, setScheduled] = useState("");
+  const [endAt, setEndAt] = useState("");
   const [techId, setTechId] = useState("__none");
   const [saving, setSaving] = useState(false);
 
   useMemo(() => {
     if (item) {
-      // initialise once when item changes
-      setScheduled(item.date && (item.kind === "job" || item.status !== "open")
-        ? toLocalInput(item.date) : "");
+      setScheduled(item.date ? toLocalInput(item.date) : "");
+      setEndAt(item.end ? toLocalInput(item.end) : "");
       setTechId(item.technician_id ?? "__none");
     }
   }, [item?.id]);
@@ -558,10 +558,19 @@ function EditDialog({ item, techs, onClose }: {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const value = scheduled ? new Date(scheduled).toISOString() : null;
+      const startIso = scheduled ? new Date(scheduled).toISOString() : null;
+      const endIso = endAt ? new Date(endAt).toISOString() : null;
       const payload = item.kind === "job"
-        ? { scheduled_date: value, technician_id: techId === "__none" ? null : techId }
-        : { start_date: value ? value.slice(0, 10) : null, technician_id: techId === "__none" ? null : techId };
+        ? {
+            scheduled_date: startIso,
+            start_time: startIso,
+            end_time: endIso,
+            technician_id: techId === "__none" ? null : techId,
+          }
+        : {
+            start_date: startIso ? startIso.slice(0, 10) : null,
+            technician_id: techId === "__none" ? null : techId,
+          };
       const query = item.kind === "job"
         ? supabase.from("jobs").update(payload as any).eq("id", item.id)
         : supabase.from("projects").update(payload as any).eq("id", item.id);
@@ -584,9 +593,15 @@ function EditDialog({ item, techs, onClose }: {
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">תאריך ושעה</label>
+            <label className="text-sm font-medium">תחילת קריאה</label>
             <Input type="datetime-local" value={scheduled} onChange={e => setScheduled(e.target.value)} />
           </div>
+          {item.kind === "job" && (
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">סיום קריאה</label>
+              <Input type="datetime-local" value={endAt} onChange={e => setEndAt(e.target.value)} />
+            </div>
+          )}
           <div className="space-y-1.5">
             <label className="text-sm font-medium">טכנאי</label>
             <Select value={techId} onValueChange={setTechId}>
