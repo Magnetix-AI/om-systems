@@ -63,7 +63,7 @@ export const updateTechnician = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const patch: Record<string, any> = {};
+    const patch: { full_name?: string; color?: string | null } = {};
     if (data.fullName !== undefined) patch.full_name = data.fullName;
     if (data.color !== undefined) patch.color = data.color;
     if (Object.keys(patch).length) {
