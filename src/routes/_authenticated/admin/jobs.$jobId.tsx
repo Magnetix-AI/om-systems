@@ -97,10 +97,13 @@ export default function AdminJobDetail() {
             </div>
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-2">
             <div className="font-medium">הערות טכנאי</div>
-            <div className="text-muted-foreground whitespace-pre-wrap">
-              {job.technician_notes?.trim() ? job.technician_notes : "אין הערות"}
+            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} placeholder="אין הערות" />
+            <div className="flex justify-end">
+              <Button size="sm" onClick={saveNotes} disabled={saving || notes === (job.technician_notes ?? "")}>
+                {saving ? "שומר..." : "שמור הערות"}
+              </Button>
             </div>
           </div>
 
