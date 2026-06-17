@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
+
 import {
   ChevronRight, ChevronLeft, Calendar as CalendarIcon, MapPin,
   User, Clock, Briefcase, FolderKanban, AlertTriangle, Pencil, Trash2,
