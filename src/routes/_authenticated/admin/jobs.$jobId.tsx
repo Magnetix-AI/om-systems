@@ -91,10 +91,6 @@ export default function AdminJobDetail() {
 
   if (!job) return <div className="p-6 text-center text-muted-foreground">טוען...</div>;
 
-  const fmtTime = (t?: string | null) =>
-    t ? new Date(t).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }) : null;
-  const fmtDateTime = (t?: string | null) =>
-    t ? new Date(t).toLocaleString("he-IL") : null;
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-4">
