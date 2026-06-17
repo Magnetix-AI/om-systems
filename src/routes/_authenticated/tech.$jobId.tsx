@@ -172,12 +172,20 @@ function JobDetail() {
     if (!job) return;
     setUpdatingNotes(true);
     try {
-      const { error } = await supabase.from("jobs").update({
-        technician_notes: notes,
-      }).eq("id", job.id);
+      const { data, error } = await supabase
+        .from("jobs")
+        .update({ technician_notes: notes })
+        .eq("id", job.id)
+        .select("id, technician_notes");
       if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error("העדכון לא בוצע — אין הרשאה לעדכן את הקריאה");
+      }
+      const saved = data[0]?.technician_notes ?? "";
+      setNotes(saved);
       toast.success("הערות טכנאי עודכנו");
-      qc.invalidateQueries({ queryKey: ["job", jobId] });
+      await qc.invalidateQueries({ queryKey: ["job", jobId] });
+      await qc.refetchQueries({ queryKey: ["job", jobId] });
       qc.invalidateQueries({ queryKey: ["tech-jobs"] });
     } catch (e: any) {
       toast.error("שגיאה בעדכון ההערות", { description: e.message });
