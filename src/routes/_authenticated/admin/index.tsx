@@ -366,6 +366,40 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick }: {
         </div>
         {days.map(d => {
           const dayItems = items.filter(i => isSameDay(i.date, d));
+          // Compute overlap columns
+          const sorted = [...dayItems].sort((a, b) => a.date.getTime() - b.date.getTime());
+          const layout = new Map<string, { col: number; cols: number }>();
+          let cluster: typeof sorted = [];
+          let clusterEnd = 0;
+          const flush = () => {
+            if (!cluster.length) return;
+            const cols: Array<{ end: number }> = [];
+            const assign = new Map<string, number>();
+            for (const it of cluster) {
+              const s = it.date.getTime();
+              const e = (it.end ?? new Date(s + 60 * 60000)).getTime();
+              let placed = -1;
+              for (let i = 0; i < cols.length; i++) {
+                if (cols[i].end <= s) { placed = i; cols[i].end = e; break; }
+              }
+              if (placed === -1) { cols.push({ end: e }); placed = cols.length - 1; }
+              assign.set(it.kind + it.id, placed);
+            }
+            const total = cols.length;
+            for (const it of cluster) {
+              layout.set(it.kind + it.id, { col: assign.get(it.kind + it.id)!, cols: total });
+            }
+            cluster = [];
+            clusterEnd = 0;
+          };
+          for (const it of sorted) {
+            const s = it.date.getTime();
+            const e = (it.end ?? new Date(s + 60 * 60000)).getTime();
+            if (cluster.length && s >= clusterEnd) flush();
+            cluster.push(it);
+            clusterEnd = Math.max(clusterEnd, e);
+          }
+          flush();
           return (
             <div key={d.toISOString()} className="relative border-l border-b" style={{ height: HOUR_PX * hours.length }}>
               {hours.map(h => (
@@ -377,12 +411,14 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick }: {
                 const top = (startMin / 60) * HOUR_PX;
                 const height = (durMin / 60) * HOUR_PX;
                 const color = it.technician_color || (it.kind === "project" ? "#a78bfa" : "#3b82f6");
+                const lay = layout.get(it.kind + it.id) ?? { col: 0, cols: 1 };
+                const widthPct = 100 / lay.cols;
                 return (
                   <button
                     key={it.kind + it.id}
                     onClick={(e) => { e.stopPropagation(); onItemClick(it); }}
-                    className="absolute left-1 right-1 rounded text-right text-[11px] text-white px-1.5 py-1 shadow-sm overflow-hidden hover:opacity-90 hover:shadow-md transition"
-                    style={{ top, height, background: color }}
+                    className="absolute rounded text-right text-[11px] text-white px-1.5 py-1 shadow-sm overflow-hidden hover:opacity-90 hover:shadow-md transition"
+                    style={{ top, height, background: color, left: `calc(${lay.col * widthPct}% + 2px)`, width: `calc(${widthPct}% - 4px)` }}
                     title={`${it.title} · ${it.technician_name ?? "ללא טכנאי"}`}
                   >
                     <div className="font-semibold truncate">{it.title}</div>
@@ -395,6 +431,7 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick }: {
             </div>
           );
         })}
+
       </div>
     </div>
   );
