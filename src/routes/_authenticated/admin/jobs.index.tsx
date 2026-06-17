@@ -182,7 +182,7 @@ function AssignTechnician({ job, onChange }: { job: any; onChange: () => void })
       const { data: roles } = await supabase.from("user_roles").select("user_id").eq("role", "technician");
       const ids = (roles ?? []).map(r => r.user_id);
       if (!ids.length) return [];
-      const { data } = await supabase.from("profiles").select("id, full_name").in("id", ids);
+      const { data } = await supabase.from("profiles").select("id, full_name, color").in("id", ids);
       return data ?? [];
     },
   });
@@ -230,7 +230,7 @@ function NewJobDialog({ onClose }: { onClose: () => void }) {
       const { data: roles } = await supabase.from("user_roles").select("user_id").eq("role", "technician");
       const ids = (roles ?? []).map(r => r.user_id);
       if (!ids.length) return [];
-      return (await supabase.from("profiles").select("id, full_name").in("id", ids)).data ?? [];
+      return (await supabase.from("profiles").select("id, full_name, color").in("id", ids)).data ?? [];
     },
   });
 
