@@ -325,41 +325,79 @@ function MonthGrid({ cursor, selected, items, onSelect }: {
   );
 }
 
-function WeekGrid({ cursor, selected, items, onSelect }: {
+function WeekGrid({ cursor, selected, items, onSelect, onItemClick }: {
   cursor: Date; selected: Date; items: CalendarItem[]; onSelect: (d: Date) => void;
+  onItemClick: (i: CalendarItem) => void;
 }) {
   const days = getRange(cursor, "week");
+  const HOUR_PX = 36;
+  const START_HOUR = 6;
+  const END_HOUR = 22;
+  const hours = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i);
+
   return (
-    <div className="grid grid-cols-7 gap-2">
-      {days.map(d => {
-        const dayItems = items.filter(i => isSameDay(i.date, d)).sort((a, b) => a.date.getTime() - b.date.getTime());
-        const sel = isSameDay(d, selected);
-        return (
-          <button
-            key={d.toISOString()}
-            onClick={() => onSelect(d)}
-            className={cn(
-              "min-h-[280px] rounded-lg border p-2 text-right flex flex-col gap-1 hover:border-primary/50 transition-all",
-              sel && "ring-2 ring-primary border-primary",
-              isToday(d) && "bg-primary/5",
-            )}
-          >
-            <div className="text-xs text-muted-foreground">{WEEKDAY_LABELS[d.getDay()]}</div>
-            <div className={cn("text-lg font-bold", isToday(d) && "text-primary")}>{format(d, "d/M")}</div>
-            <div className="flex flex-col gap-1 overflow-hidden mt-1">
-              {dayItems.map(it => (
-                <div key={it.kind + it.id} className={cn(
-                  "text-[11px] rounded px-1.5 py-1 truncate text-right",
-                  it.kind === "project" ? "bg-accent/40" : "bg-primary/15 text-primary"
-                )}>
-                  <div className="font-medium truncate">{it.title}</div>
-                  <div className="opacity-70">{format(it.date, "HH:mm")}</div>
-                </div>
-              ))}
+    <div className="overflow-x-auto">
+      <div className="grid" style={{ gridTemplateColumns: "48px repeat(7, minmax(110px, 1fr))" }}>
+        {/* Header row */}
+        <div />
+        {days.map(d => {
+          const sel = isSameDay(d, selected);
+          return (
+            <button
+              key={d.toISOString()}
+              onClick={() => onSelect(d)}
+              className={cn(
+                "p-2 text-center border-b text-xs font-semibold transition-colors hover:bg-secondary/50",
+                sel && "bg-primary/10 text-primary",
+                isToday(d) && !sel && "text-primary",
+              )}
+            >
+              <div className="text-muted-foreground">{WEEKDAY_LABELS[d.getDay()]}</div>
+              <div className="text-lg">{format(d, "d/M")}</div>
+            </button>
+          );
+        })}
+
+        {/* Hours + day columns */}
+        <div className="relative border-l">
+          {hours.map(h => (
+            <div key={h} style={{ height: HOUR_PX }} className="text-[10px] text-muted-foreground text-left pl-1 border-b">
+              {String(h).padStart(2, "0")}:00
             </div>
-          </button>
-        );
-      })}
+          ))}
+        </div>
+        {days.map(d => {
+          const dayItems = items.filter(i => isSameDay(i.date, d));
+          return (
+            <div key={d.toISOString()} className="relative border-l border-b" style={{ height: HOUR_PX * hours.length }}>
+              {hours.map(h => (
+                <div key={h} style={{ height: HOUR_PX }} className="border-b border-dashed border-border/40" />
+              ))}
+              {dayItems.map(it => {
+                const startMin = it.date.getHours() * 60 + it.date.getMinutes() - START_HOUR * 60;
+                const durMin = it.end ? Math.max(30, (it.end.getTime() - it.date.getTime()) / 60000) : 60;
+                const top = (startMin / 60) * HOUR_PX;
+                const height = (durMin / 60) * HOUR_PX;
+                const color = it.technician_color || (it.kind === "project" ? "#a78bfa" : "#3b82f6");
+                return (
+                  <button
+                    key={it.kind + it.id}
+                    onClick={(e) => { e.stopPropagation(); onItemClick(it); }}
+                    className="absolute left-1 right-1 rounded text-right text-[11px] text-white px-1.5 py-1 shadow-sm overflow-hidden hover:opacity-90 hover:shadow-md transition"
+                    style={{ top, height, background: color }}
+                    title={`${it.title} · ${it.technician_name ?? "ללא טכנאי"}`}
+                  >
+                    <div className="font-semibold truncate">{it.title}</div>
+                    <div className="opacity-90 truncate">
+                      {format(it.date, "HH:mm")}{it.end ? `–${format(it.end, "HH:mm")}` : ""}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
