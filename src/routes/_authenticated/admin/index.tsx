@@ -103,51 +103,67 @@ function AdminMain() {
 
   const items: CalendarItem[] = useMemo(() => {
     const jobItems = (jobs as any[])
-      .filter(j => j.scheduled_date)
-      .map<CalendarItem>(j => ({
-        kind: "job",
-        id: j.id,
-        title: j.title,
-        description: j.description,
-        date: new Date(j.scheduled_date),
-        technician_id: j.technician_id,
-        technician_name: j.technician_id ? techMap[j.technician_id] ?? null : null,
-        client_name: j.client?.name ?? null,
-        client_address: j.client?.address ?? null,
-        status: j.status,
-      }));
+      .filter(j => j.scheduled_date || j.start_time)
+      .map<CalendarItem>(j => {
+        const start = new Date(j.start_time ?? j.scheduled_date);
+        const tech = j.technician_id ? techMap[j.technician_id] : null;
+        return {
+          kind: "job",
+          id: j.id,
+          title: j.title,
+          description: j.description,
+          date: start,
+          end: j.end_time ? new Date(j.end_time) : null,
+          technician_id: j.technician_id,
+          technician_name: tech?.full_name ?? null,
+          technician_color: tech?.color ?? null,
+          client_name: j.client?.name ?? null,
+          client_address: j.client?.address ?? null,
+          status: j.status,
+        };
+      });
     const projItems = (projects as any[])
       .filter(p => p.start_date)
-      .map<CalendarItem>(p => ({
-        kind: "project",
-        id: p.id,
-        title: p.title,
-        description: p.description,
-        date: new Date(p.start_date),
-        technician_id: p.technician_id,
-        technician_name: p.technician_id ? techMap[p.technician_id] ?? null : null,
-        client_name: p.client?.name ?? null,
-        client_address: p.client?.address ?? null,
-        status: p.status,
-      }));
+      .map<CalendarItem>(p => {
+        const tech = p.technician_id ? techMap[p.technician_id] : null;
+        return {
+          kind: "project",
+          id: p.id,
+          title: p.title,
+          description: p.description,
+          date: new Date(p.start_date),
+          end: null,
+          technician_id: p.technician_id,
+          technician_name: tech?.full_name ?? null,
+          technician_color: tech?.color ?? null,
+          client_name: p.client?.name ?? null,
+          client_address: p.client?.address ?? null,
+          status: p.status,
+        };
+      });
     return [...jobItems, ...projItems];
   }, [jobs, projects, techMap]);
 
   const unscheduled: CalendarItem[] = useMemo(() => {
     return (jobs as any[])
-      .filter(j => !j.scheduled_date || !j.technician_id)
-      .map<CalendarItem>(j => ({
-        kind: "job",
-        id: j.id,
-        title: j.title,
-        description: j.description,
-        date: j.scheduled_date ? new Date(j.scheduled_date) : new Date(),
-        technician_id: j.technician_id,
-        technician_name: j.technician_id ? techMap[j.technician_id] ?? null : null,
-        client_name: j.client?.name ?? null,
-        client_address: j.client?.address ?? null,
-        status: j.status,
-      }));
+      .filter(j => (!j.scheduled_date && !j.start_time) || !j.technician_id)
+      .map<CalendarItem>(j => {
+        const tech = j.technician_id ? techMap[j.technician_id] : null;
+        return {
+          kind: "job",
+          id: j.id,
+          title: j.title,
+          description: j.description,
+          date: j.start_time ? new Date(j.start_time) : (j.scheduled_date ? new Date(j.scheduled_date) : new Date()),
+          end: j.end_time ? new Date(j.end_time) : null,
+          technician_id: j.technician_id,
+          technician_name: tech?.full_name ?? null,
+          technician_color: tech?.color ?? null,
+          client_name: j.client?.name ?? null,
+          client_address: j.client?.address ?? null,
+          status: j.status,
+        };
+      });
   }, [jobs, techMap]);
 
   const dayItems = useMemo(
