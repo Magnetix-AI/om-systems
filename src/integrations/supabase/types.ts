@@ -139,10 +139,13 @@ export type Database = {
           created_at: string
           departure_time: string | null
           description: string | null
+          draft_quantities: Json | null
+          end_time: string | null
           id: string
           scheduled_date: string | null
           sent_to_invoicing: boolean
           sent_to_invoicing_at: string | null
+          start_time: string | null
           status: Database["public"]["Enums"]["job_status"]
           technician_id: string | null
           technician_notes: string | null
@@ -156,10 +159,13 @@ export type Database = {
           created_at?: string
           departure_time?: string | null
           description?: string | null
+          draft_quantities?: Json | null
+          end_time?: string | null
           id?: string
           scheduled_date?: string | null
           sent_to_invoicing?: boolean
           sent_to_invoicing_at?: string | null
+          start_time?: string | null
           status?: Database["public"]["Enums"]["job_status"]
           technician_id?: string | null
           technician_notes?: string | null
@@ -173,10 +179,13 @@ export type Database = {
           created_at?: string
           departure_time?: string | null
           description?: string | null
+          draft_quantities?: Json | null
+          end_time?: string | null
           id?: string
           scheduled_date?: string | null
           sent_to_invoicing?: boolean
           sent_to_invoicing_at?: string | null
+          start_time?: string | null
           status?: Database["public"]["Enums"]["job_status"]
           technician_id?: string | null
           technician_notes?: string | null
@@ -234,6 +243,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          color: string | null
           created_at: string
           full_name: string
           id: string
@@ -241,6 +251,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          color?: string | null
           created_at?: string
           full_name?: string
           id: string
@@ -248,6 +259,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          color?: string | null
           created_at?: string
           full_name?: string
           id?: string
