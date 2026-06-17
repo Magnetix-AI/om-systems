@@ -106,19 +106,6 @@ function AuthPage() {
   };
 
 
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email, password,
-      options: { data: { full_name: fullName, role: "technician" }, emailRedirectTo: window.location.origin },
-    });
-    setLoading(false);
-    if (error) return toast.error("שגיאה בהרשמה", { description: error.message });
-    toast.success("נרשמת בהצלחה כטכנאי");
-    navigate({ to: "/" });
-  };
-
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAdminLoading(true);
