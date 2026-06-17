@@ -43,18 +43,22 @@ type CalendarItem = {
   title: string;
   description: string | null;
   date: Date;
+  end: Date | null;
   technician_id: string | null;
   technician_name: string | null;
+  technician_color: string | null;
   client_name: string | null;
   client_address: string | null;
   status: string;
 };
 
 function AdminMain() {
-  const [view, setView] = useState<ViewMode>("month");
+  const [view, setView] = useState<ViewMode>("week");
   const [cursor, setCursor] = useState(new Date());
   const [selected, setSelected] = useState<Date>(new Date());
   const [editItem, setEditItem] = useState<CalendarItem | null>(null);
+  const [toDelete, setToDelete] = useState<CalendarItem | null>(null);
+  const qc = useQueryClient();
 
   const range = useMemo(() => getRange(cursor, view), [cursor, view]);
 
@@ -63,7 +67,7 @@ function AdminMain() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("jobs")
-        .select("id, title, description, status, scheduled_date, technician_id, client:clients(name, address)")
+        .select("id, title, description, status, scheduled_date, start_time, end_time, technician_id, client:clients(name, address)")
         .order("scheduled_date", { ascending: true });
       if (error) throw error;
       return data ?? [];
@@ -88,12 +92,12 @@ function AdminMain() {
       const { data: roles } = await supabase.from("user_roles").select("user_id").eq("role", "technician");
       const ids = (roles ?? []).map(r => r.user_id);
       if (!ids.length) return [];
-      return (await supabase.from("profiles").select("id, full_name").in("id", ids)).data ?? [];
+      return (await supabase.from("profiles").select("id, full_name, color").in("id", ids)).data ?? [];
     },
   });
 
   const techMap = useMemo(
-    () => Object.fromEntries((techs as any[]).map(t => [t.id, t.full_name])),
+    () => Object.fromEntries((techs as any[]).map(t => [t.id, t])),
     [techs],
   );
 
