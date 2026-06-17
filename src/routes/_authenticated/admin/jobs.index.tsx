@@ -245,13 +245,15 @@ function NewJobDialog({ onClose }: { onClose: () => void }) {
         if (error) throw error;
         cid = data.id;
       }
+      const startIso = scheduled ? new Date(scheduled).toISOString() : null;
+      const endIso = endAt ? new Date(endAt).toISOString() : null;
       const { data: created, error } = await supabase.from("jobs").insert({
         title, description,
         client_id: cid || null,
         technician_id: techId === "__none" ? null : techId,
-        scheduled_date: scheduled || null,
-        start_time: scheduled || null,
-        end_time: endAt || null,
+        scheduled_date: startIso,
+        start_time: startIso,
+        end_time: endIso,
       }).select("id").single();
       if (error) throw error;
       toast.success("נוצרה קריאה — כעת ניתן להעלות תמונות");
