@@ -363,24 +363,21 @@ function JobDetail() {
             <div className="relative">
               <Textarea
                 value={notes}
-                disabled={completed}
                 onChange={e => setNotes(e.target.value)}
                 placeholder="פרט את העבודה שבוצעה... או לחץ על המיקרופון להקלטה"
                 rows={4}
                 className="pl-12"
               />
-              {!completed && (
-                <Button
-                  type="button"
-                  variant={recording ? "destructive" : "secondary"}
-                  size="icon"
-                  onClick={toggleRecording}
-                  className={`absolute bottom-2 left-2 h-9 w-9 rounded-full ${recording ? "animate-pulse" : ""}`}
-                  title={recording ? "עצור הקלטה" : "הקלט תמלול"}
-                >
-                  {recording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-                </Button>
-              )}
+              <Button
+                type="button"
+                variant={recording ? "destructive" : "secondary"}
+                size="icon"
+                onClick={toggleRecording}
+                className={`absolute bottom-2 left-2 h-9 w-9 rounded-full ${recording ? "animate-pulse" : ""}`}
+                title={recording ? "עצור הקלטה" : "הקלט תמלול"}
+              >
+                {recording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+              </Button>
             </div>
             {recording && <p className="text-xs text-muted-foreground text-center">🎙️ מקליט... דבר בעברית</p>}
           </CardContent>
@@ -401,12 +398,17 @@ function JobDetail() {
           </div>
         )}
         {completed && (
-          <Card className="bg-success/10 border-success/30">
-            <CardContent className="p-4 text-center text-sm font-medium text-success flex items-center justify-center gap-2">
-              <CheckCircle2 className="h-5 w-5" />
-              הקריאה הושלמה {job.completed_at && `ב-${new Date(job.completed_at).toLocaleDateString("he-IL")}`}
-            </CardContent>
-          </Card>
+          <div className="space-y-2">
+            <Button onClick={handleUpdateNotes} disabled={updatingNotes} className="w-full">
+              {updatingNotes ? "מעדכן..." : "עדכן הערות"}
+            </Button>
+            <Card className="bg-success/10 border-success/30">
+              <CardContent className="p-4 text-center text-sm font-medium text-success flex items-center justify-center gap-2">
+                <CheckCircle2 className="h-5 w-5" />
+                הקריאה הושלמה {job.completed_at && `ב-${new Date(job.completed_at).toLocaleDateString("he-IL")}`}
+              </CardContent>
+            </Card>
+          </div>
         )}
       </div>
     </AppShell>
