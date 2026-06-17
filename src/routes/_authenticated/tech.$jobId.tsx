@@ -225,15 +225,69 @@ function JobDetail() {
             <CardHeader>
               <CardTitle className="text-lg">שעות עבודה באתר</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">שעת כניסה</label>
-                <Input type="time" step={300} value={arrival} onChange={e => setArrival(e.target.value)} dir="ltr" />
+            <CardContent className="space-y-3">
+              {(job.start_time || job.end_time || job.scheduled_date) && (
+                <div className="rounded-lg bg-secondary/40 p-3 text-sm space-y-1">
+                  <div className="font-semibold">שעות מתוכננות לקריאה</div>
+                  {job.scheduled_date && (
+                    <div className="text-muted-foreground">
+                      תאריך: {new Date(job.scheduled_date).toLocaleDateString("he-IL")}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-4 text-muted-foreground" dir="ltr">
+                    {job.start_time && (
+                      <span>התחלה: {new Date(job.start_time).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}</span>
+                    )}
+                    {job.end_time && (
+                      <span>סיום: {new Date(job.end_time).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}</span>
+                    )}
+                  </div>
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">שעת כניסה בפועל</label>
+                  <Input type="time" step={300} value={arrival} onChange={e => setArrival(e.target.value)} dir="ltr" />
+                  {job.start_time && !arrival && (
+                    <button type="button" className="text-xs text-primary hover:underline"
+                      onClick={() => setArrival(new Date(job.start_time).toTimeString().slice(0, 5))}>
+                      העתק מהשעה המתוכננת
+                    </button>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">שעת יציאה בפועל</label>
+                  <Input type="time" step={300} value={departure} onChange={e => setDeparture(e.target.value)} dir="ltr" />
+                  {job.end_time && !departure && (
+                    <button type="button" className="text-xs text-primary hover:underline"
+                      onClick={() => setDeparture(new Date(job.end_time).toTimeString().slice(0, 5))}>
+                      העתק מהשעה המתוכננת
+                    </button>
+                  )}
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">שעת יציאה</label>
-                <Input type="time" step={300} value={departure} onChange={e => setDeparture(e.target.value)} dir="ltr" />
-              </div>
+              {arrival && departure && (() => {
+                const [ah, am] = arrival.split(":").map(Number);
+                const [dh, dm] = departure.split(":").map(Number);
+                const mins = (dh * 60 + dm) - (ah * 60 + am);
+                if (mins <= 0) return null;
+                const h = Math.floor(mins / 60);
+                const m = mins % 60;
+                return (
+                  <div className="text-sm text-center text-success font-medium">
+                    סה״כ נוכחות באתר: {h > 0 ? `${h} שעות` : ""}{h > 0 && m > 0 ? " ו-" : ""}{m > 0 ? `${m} דקות` : ""}
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+        )}
+        {completed && (job.arrival_time || job.departure_time) && (
+          <Card>
+            <CardHeader><CardTitle className="text-lg">שעות נוכחות באתר</CardTitle></CardHeader>
+            <CardContent className="text-sm space-y-1" dir="ltr">
+              {job.arrival_time && <div>כניסה: {new Date(job.arrival_time).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}</div>}
+              {job.departure_time && <div>יציאה: {new Date(job.departure_time).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}</div>}
             </CardContent>
           </Card>
         )}
