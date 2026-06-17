@@ -131,6 +131,7 @@ function JobDetail() {
         technician_notes: notes,
         arrival_time: toTs(arrival),
         departure_time: toTs(departure),
+        draft_quantities: null,
       }).eq("id", job.id);
       if (error) throw error;
       toast.success("הקריאה סומנה כסופקה");
@@ -140,6 +141,30 @@ function JobDetail() {
     } catch (e: any) {
       toast.error("שגיאה בסגירת הקריאה", { description: e.message });
     } finally { setSaving(false); }
+  };
+
+  const [draftSaving, setDraftSaving] = useState(false);
+  const handleSaveDraft = async () => {
+    if (!job) return;
+    setDraftSaving(true);
+    try {
+      const cleanQty = Object.fromEntries(
+        Object.entries(quantities).filter(([, v]) => Number(v) > 0)
+      );
+      const { error } = await supabase.from("jobs").update({
+        status: job.status === "open" ? "in_progress" : job.status,
+        technician_notes: notes,
+        arrival_time: toTs(arrival),
+        departure_time: toTs(departure),
+        draft_quantities: Object.keys(cleanQty).length ? cleanQty : null,
+      }).eq("id", job.id);
+      if (error) throw error;
+      toast.success("נשמרה טיוטה — תוכל להמשיך מאוחר יותר");
+      qc.invalidateQueries({ queryKey: ["job", jobId] });
+      qc.invalidateQueries({ queryKey: ["tech-jobs"] });
+    } catch (e: any) {
+      toast.error("שגיאה בשמירת הטיוטה", { description: e.message });
+    } finally { setDraftSaving(false); }
   };
 
   const startWork = async () => {
