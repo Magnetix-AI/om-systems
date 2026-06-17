@@ -18,6 +18,7 @@ export const Route = createFileRoute("/_authenticated/admin/jobs/$jobId")({
 
 export default function AdminJobDetail() {
   const { jobId } = Route.useParams();
+  const qc = useQueryClient();
   const { data: job } = useQuery({
     queryKey: ["admin-job", jobId],
     queryFn: async () => {
@@ -33,6 +34,21 @@ export default function AdminJobDetail() {
       return data;
     },
   });
+
+  const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    if (job) setNotes(job.technician_notes ?? "");
+  }, [job?.id, job?.technician_notes]);
+
+  const saveNotes = async () => {
+    setSaving(true);
+    const { error } = await supabase.from("jobs").update({ technician_notes: notes }).eq("id", jobId);
+    setSaving(false);
+    if (error) { toast.error("שגיאה בשמירה"); return; }
+    toast.success("הערות נשמרו");
+    qc.invalidateQueries({ queryKey: ["admin-job", jobId] });
+  };
 
   if (!job) return <div className="p-6 text-center text-muted-foreground">טוען...</div>;
 
