@@ -13,10 +13,11 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trash2, Search, History as HistoryIcon, Briefcase, FolderKanban } from "lucide-react";
+import { Trash2, Search, History as HistoryIcon, Briefcase, FolderKanban, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { statusLabel, statusColor } from "@/components/app-shell";
 import { deleteJobsCascade, deleteProjectsCascade } from "@/lib/admin-deletes";
+import { AdminEditItemDialog } from "@/components/admin-edit-item-dialog";
 
 export const Route = createFileRoute("/_authenticated/admin/history")({
   ssr: false,
