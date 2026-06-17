@@ -59,6 +59,9 @@ function JobDetail() {
     if (job?.technician_notes) setNotes(job.technician_notes);
     if (job?.arrival_time) setArrival(new Date(job.arrival_time).toTimeString().slice(0, 5));
     if (job?.departure_time) setDeparture(new Date(job.departure_time).toTimeString().slice(0, 5));
+    if (job?.draft_quantities && typeof job.draft_quantities === "object") {
+      setQuantities(job.draft_quantities as Record<string, number>);
+    }
   }, [job?.id]);
 
   const filteredProducts = products.filter((p: any) => {
