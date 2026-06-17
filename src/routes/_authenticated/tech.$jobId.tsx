@@ -260,7 +260,7 @@ function JobDetail() {
                   <Input type="time" step={300} value={departure} onChange={e => setDeparture(e.target.value)} dir="ltr" />
                   {job.end_time && !departure && (
                     <button type="button" className="text-xs text-primary hover:underline"
-                      onClick={() => setDeparture(new Date(job.end_time).toTimeString().slice(0, 5))}>
+                      onClick={() => setDeparture(new Date(job.end_time!).toTimeString().slice(0, 5))}>
                       העתק מהשעה המתוכננת
                     </button>
                   )}
