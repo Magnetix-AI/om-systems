@@ -250,6 +250,8 @@ function NewJobDialog({ onClose }: { onClose: () => void }) {
         client_id: cid || null,
         technician_id: techId === "__none" ? null : techId,
         scheduled_date: scheduled || null,
+        start_time: scheduled || null,
+        end_time: endAt || null,
       }).select("id").single();
       if (error) throw error;
       toast.success("נוצרה קריאה — כעת ניתן להעלות תמונות");
