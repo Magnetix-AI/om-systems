@@ -90,6 +90,7 @@ function AdminHistory() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Row[] | null>(null);
+  const [editItem, setEditItem] = useState<{ kind: "job" | "project"; id: string } | null>(null);
 
   const { data: rows = [] } = useQuery({
     queryKey: ["admin-history"],
