@@ -213,6 +213,7 @@ function NewJobDialog({ onClose }: { onClose: () => void }) {
   const [clientId, setClientId] = useState<string>("");
   const [techId, setTechId] = useState<string>("__none");
   const [scheduled, setScheduled] = useState("");
+  const [endAt, setEndAt] = useState("");
   const [newClientName, setNewClientName] = useState("");
   const [newClientPhone, setNewClientPhone] = useState("");
   const [newClientAddress, setNewClientAddress] = useState("");
