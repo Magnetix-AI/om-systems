@@ -221,10 +221,39 @@ function AdminMain() {
         </Card>
 
         {/* Day details — RIGHT side */}
-        <DayDetailsPanel date={selected} items={dayItems} onEdit={setEditItem} />
+        <DayDetailsPanel date={selected} items={dayItems} onEdit={setEditItem} onDelete={setToDelete} />
       </div>
 
       <EditDialog item={editItem} techs={techs as any[]} onClose={() => setEditItem(null)} />
+
+      <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>למחוק {toDelete?.kind === "project" ? "פרוייקט" : "קריאה"}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              "{toDelete?.title}" — הפעולה בלתי הפיכה.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ביטול</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (!toDelete) return;
+                try {
+                  if (toDelete.kind === "job") await deleteJobsCascade([toDelete.id]);
+                  else await deleteProjectsCascade([toDelete.id]);
+                  toast.success("נמחק");
+                  qc.invalidateQueries({ queryKey: ["main-jobs"] });
+                  qc.invalidateQueries({ queryKey: ["main-projects"] });
+                } catch (e: any) {
+                  toast.error("שגיאה במחיקה", { description: e.message });
+                } finally { setToDelete(null); }
+              }}
+            >מחק</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
