@@ -144,6 +144,7 @@ function JobDetail() {
   };
 
   const [draftSaving, setDraftSaving] = useState(false);
+  const [updatingNotes, setUpdatingNotes] = useState(false);
   const handleSaveDraft = async () => {
     if (!job) return;
     setDraftSaving(true);
@@ -165,6 +166,22 @@ function JobDetail() {
     } catch (e: any) {
       toast.error("שגיאה בשמירת הטיוטה", { description: e.message });
     } finally { setDraftSaving(false); }
+  };
+
+  const handleUpdateNotes = async () => {
+    if (!job) return;
+    setUpdatingNotes(true);
+    try {
+      const { error } = await supabase.from("jobs").update({
+        technician_notes: notes,
+      }).eq("id", job.id);
+      if (error) throw error;
+      toast.success("הערות טכנאי עודכנו");
+      qc.invalidateQueries({ queryKey: ["job", jobId] });
+      qc.invalidateQueries({ queryKey: ["tech-jobs"] });
+    } catch (e: any) {
+      toast.error("שגיאה בעדכון ההערות", { description: e.message });
+    } finally { setUpdatingNotes(false); }
   };
 
   const startWork = async () => {
