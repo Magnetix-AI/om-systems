@@ -316,15 +316,17 @@ function JobDetail() {
         </Card>
 
         {!completed && (
-          <div className="flex gap-2 sticky bottom-4">
+          <div className="flex gap-2 sticky bottom-4 flex-wrap">
             {job.status === "open" && (
               <Button variant="outline" onClick={startWork} className="flex-1">סמן בטיפול</Button>
             )}
-            <Button onClick={handleSubmit} disabled={saving} className="flex-1 bg-success hover:bg-success/90 text-success-foreground">
+            <Button variant="secondary" onClick={handleSaveDraft} disabled={draftSaving || saving} className="flex-1">
+              {draftSaving ? "שומר..." : "💾 שמור טיוטה"}
+            </Button>
+            <Button onClick={handleSubmit} disabled={saving || draftSaving} className="flex-1 bg-success hover:bg-success/90 text-success-foreground">
               <CheckCircle2 className="h-4 w-4 ml-1" />
               {saving ? "שומר..." : "סופק — סגור קריאה"}
             </Button>
-
           </div>
         )}
         {completed && (
