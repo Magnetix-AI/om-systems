@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   ChevronRight, ChevronLeft, Calendar as CalendarIcon, MapPin,
-  User, Clock, Briefcase, FolderKanban, AlertTriangle, Pencil,
+  User, Clock, Briefcase, FolderKanban, AlertTriangle, Pencil, Trash2,
 } from "lucide-react";
 import {
   addDays, addMonths, addWeeks, eachDayOfInterval, endOfMonth, endOfWeek,
@@ -24,6 +24,11 @@ import { he } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { statusLabel, statusColor } from "@/components/app-shell";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { deleteJobsCascade, deleteProjectsCascade } from "@/lib/admin-deletes";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   ssr: false,
