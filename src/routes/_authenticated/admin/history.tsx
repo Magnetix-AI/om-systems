@@ -305,6 +305,12 @@ function AdminHistory() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AdminEditItemDialog
+        item={editItem}
+        onClose={() => setEditItem(null)}
+        invalidateKeys={[["admin-history"]]}
+      />
     </div>
   );
 }
