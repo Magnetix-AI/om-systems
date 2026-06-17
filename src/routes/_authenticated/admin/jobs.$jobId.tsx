@@ -6,10 +6,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { statusLabel, statusColor } from "@/components/app-shell";
 import { AttachmentsManager } from "@/components/attachments-manager";
+
+const toLocalInput = (t?: string | null) => {
+  if (!t) return "";
+  const d = new Date(t);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+const fromLocalInput = (v: string) => (v ? new Date(v).toISOString() : null);
 
 export const Route = createFileRoute("/_authenticated/admin/jobs/$jobId")({
   ssr: false,
