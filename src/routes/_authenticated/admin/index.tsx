@@ -759,10 +759,17 @@ function UnscheduledPanel({ items, categories, onEdit, onDelete }: {
     qc.invalidateQueries({ queryKey: ["job-categories"] });
   };
 
-  const moveJob = async (jobId: string, categoryId: string) => {
-    const { error } = await supabase.from("jobs").update({ category_id: categoryId }).eq("id", jobId);
+  const moveJob = async (jobId: string, categoryId: string, clearSchedule = false) => {
+    const update: Record<string, any> = { category_id: categoryId };
+    if (clearSchedule) {
+      update.scheduled_date = null;
+      update.start_time = null;
+      update.end_time = null;
+      update.technician_id = null;
+    }
+    const { error } = await supabase.from("jobs").update(update).eq("id", jobId);
     if (error) return toast.error("שגיאה בהעברה", { description: error.message });
-    toast.success("הקריאה הועברה");
+    toast.success(clearSchedule ? "הוחזרה לקריאות לא מתואמות" : "הקריאה הועברה");
     invalidateAll();
   };
   const reparent = async (catId: string, newParent: string | null) => {
