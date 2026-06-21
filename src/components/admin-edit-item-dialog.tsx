@@ -136,6 +136,7 @@ export function AdminEditItemDialog({
           end_time: endIso,
           site_contact_name: siteContactName.trim() || null,
           site_contact_phone: siteContactPhone.trim() || null,
+          site_contact_address: siteContactAddress.trim() || null,
           project_id: projectId,
         }).eq("id", item.id);
         if (error) throw error;
