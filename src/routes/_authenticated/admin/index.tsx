@@ -63,6 +63,7 @@ function AdminMain() {
   const [editItem, setEditItem] = useState<CalendarItem | null>(null);
   const [toDelete, setToDelete] = useState<CalendarItem | null>(null);
   const [newJobDate, setNewJobDate] = useState<Date | null>(null);
+  const [rescheduleTarget, setRescheduleTarget] = useState<{ item: CalendarItem; date: Date } | null>(null);
   const qc = useQueryClient();
 
   const range = useMemo(() => getRange(cursor, view), [cursor, view]);
@@ -217,7 +218,15 @@ function AdminMain() {
               <MonthGrid cursor={cursor} selected={selected} items={items} onSelect={setSelected} />
             )}
             {view === "week" && (
-              <WeekGrid cursor={cursor} selected={selected} items={items} onSelect={setSelected} onItemClick={setEditItem} onItemDelete={setToDelete} onAddOnDay={setNewJobDate} />
+              <WeekGrid
+                cursor={cursor} selected={selected} items={items}
+                onSelect={setSelected} onItemClick={setEditItem} onItemDelete={setToDelete}
+                onAddOnDay={setNewJobDate}
+                onDropOnDay={(kind, id, date) => {
+                  const found = items.find(i => i.kind === kind && i.id === id);
+                  if (found) setRescheduleTarget({ item: found, date });
+                }}
+              />
             )}
             {view === "day" && (
               <DayGrid cursor={cursor} items={items.filter(i => isSameDay(i.date, cursor))} onItemClick={setEditItem} />
@@ -239,6 +248,16 @@ function AdminMain() {
           setNewJobDate(null);
         }}
       />
+
+      <RescheduleDialog
+        target={rescheduleTarget}
+        onClose={() => setRescheduleTarget(null)}
+        onSaved={() => {
+          qc.invalidateQueries({ queryKey: ["main-jobs"] });
+          setRescheduleTarget(null);
+        }}
+      />
+
 
       <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
         <AlertDialogContent dir="rtl">
@@ -339,11 +358,12 @@ function MonthGrid({ cursor, selected, items, onSelect }: {
   );
 }
 
-function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemDelete, onAddOnDay }: {
+function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemDelete, onAddOnDay, onDropOnDay }: {
   cursor: Date; selected: Date; items: CalendarItem[]; onSelect: (d: Date) => void;
   onItemClick: (i: CalendarItem) => void;
   onItemDelete: (i: CalendarItem) => void;
   onAddOnDay: (d: Date) => void;
+  onDropOnDay: (kind: "job" | "project", id: string, date: Date) => void;
 }) {
   const days = getRange(cursor, "week");
   const HOUR_PX = 36;
@@ -427,7 +447,21 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemDelete
           }
           flush();
           return (
-            <div key={d.toISOString()} className="relative border-l border-b" style={{ height: HOUR_PX * hours.length }}>
+            <div
+              key={d.toISOString()}
+              className="relative border-l border-b"
+              style={{ height: HOUR_PX * hours.length }}
+              onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
+              onDrop={(e) => {
+                e.preventDefault();
+                const raw = e.dataTransfer.getData("application/x-cal-item");
+                if (!raw) return;
+                try {
+                  const parsed = JSON.parse(raw) as { kind: "job" | "project"; id: string };
+                  onDropOnDay(parsed.kind, parsed.id, d);
+                } catch { /* ignore */ }
+              }}
+            >
               {hours.map(h => (
                 <div key={h} style={{ height: HOUR_PX }} className="border-b border-dashed border-border/40" />
               ))}
@@ -444,6 +478,11 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemDelete
                     key={it.kind + it.id}
                     className="absolute group/item"
                     style={{ top, height, left: `calc(${lay.col * widthPct}% + 2px)`, width: `calc(${widthPct}% - 4px)` }}
+                    draggable={it.kind === "job"}
+                    onDragStart={(e) => {
+                      e.dataTransfer.effectAllowed = "move";
+                      e.dataTransfer.setData("application/x-cal-item", JSON.stringify({ kind: it.kind, id: it.id }));
+                    }}
                   >
                     <button
                       onClick={(e) => { e.stopPropagation(); onItemClick(it); }}
@@ -732,6 +771,99 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>ביטול</Button>
           <Button onClick={handleCreate} disabled={saving}>{saving ? "יוצר..." : "צור קריאה"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function RescheduleDialog({ target, onClose, onSaved }: {
+  target: { item: CalendarItem; date: Date } | null;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [start, setStart] = useState("09:00");
+  const [end, setEnd] = useState("10:00");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (target) {
+      const s = target.item.date;
+      const e = target.item.end;
+      setStart(`${String(s.getHours()).padStart(2, "0")}:${String(s.getMinutes()).padStart(2, "0")}`);
+      if (e) setEnd(`${String(e.getHours()).padStart(2, "0")}:${String(e.getMinutes()).padStart(2, "0")}`);
+      else {
+        const eh = (s.getHours() + 1) % 24;
+        setEnd(`${String(eh).padStart(2, "0")}:${String(s.getMinutes()).padStart(2, "0")}`);
+      }
+    }
+  }, [target]);
+
+  const handleSave = async () => {
+    if (!target) return;
+    setSaving(true);
+    try {
+      const [sh, sm] = start.split(":").map(Number);
+      const [eh, em] = end.split(":").map(Number);
+      const sd = new Date(target.date);
+      sd.setHours(sh || 0, sm || 0, 0, 0);
+      const ed = new Date(target.date);
+      ed.setHours(eh || 0, em || 0, 0, 0);
+      if (ed.getTime() <= sd.getTime()) {
+        toast.error("שעת הסיום חייבת להיות אחרי שעת ההתחלה");
+        setSaving(false);
+        return;
+      }
+      const startIso = sd.toISOString();
+      const endIso = ed.toISOString();
+      if (target.item.kind === "job") {
+        const { error } = await supabase.from("jobs").update({
+          scheduled_date: startIso,
+          start_time: startIso,
+          end_time: endIso,
+        }).eq("id", target.item.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("projects").update({
+          start_date: startIso,
+        }).eq("id", target.item.id);
+        if (error) throw error;
+      }
+      toast.success("הקריאה הועברה");
+      onSaved();
+    } catch (e: any) {
+      toast.error("שגיאה בעדכון", { description: e.message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={!!target} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent dir="rtl" className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>
+            העברת קריאה {target ? `· ${format(target.date, "EEEE, d בMMMM", { locale: he })}` : ""}
+          </DialogTitle>
+        </DialogHeader>
+        {target && (
+          <div className="space-y-3">
+            <div className="text-sm text-muted-foreground truncate">"{target.item.title}"</div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1.5">
+                <Label>שעת התחלה</Label>
+                <Input type="time" value={start} onChange={e => setStart(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>שעת סיום</Label>
+                <Input type="time" value={end} onChange={e => setEnd(e.target.value)} />
+              </div>
+            </div>
+          </div>
+        )}
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>ביטול</Button>
+          <Button onClick={handleSave} disabled={saving}>{saving ? "שומר..." : "העבר"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
