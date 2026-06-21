@@ -1132,8 +1132,6 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
             {useNewClient ? (
               <div className="space-y-2 border rounded-md p-2 bg-muted/30">
                 <Input placeholder="שם לקוח *" value={newClientName} onChange={e => setNewClientName(e.target.value)} />
-                <Input placeholder="איש קשר (אופציונלי)" value={newClientContact} onChange={e => setNewClientContact(e.target.value)} />
-                <Input placeholder="כתובת" value={newClientAddress} onChange={e => setNewClientAddress(e.target.value)} />
               </div>
             ) : (
               <Select value={clientId} onValueChange={setClientId}>
@@ -1146,11 +1144,13 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
             )}
           </div>
 
-          <div className="space-y-1.5 border rounded-md p-2 bg-secondary/20">
+          <div className="space-y-2 border rounded-md p-2 bg-secondary/20">
             <Label className="font-semibold text-sm">איש קשר בשטח</Label>
             <div className="grid grid-cols-2 gap-2">
               <Input placeholder="שם" value={siteContactName} onChange={e => setSiteContactName(e.target.value)} />
               <Input placeholder="טלפון" value={siteContactPhone} onChange={e => setSiteContactPhone(e.target.value)} dir="ltr" />
+            </div>
+            <Input placeholder="כתובת" value={siteContactAddress} onChange={e => setSiteContactAddress(e.target.value)} />
           </div>
 
           <div className="space-y-1.5">
