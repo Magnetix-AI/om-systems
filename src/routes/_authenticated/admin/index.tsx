@@ -760,7 +760,7 @@ function UnscheduledPanel({ items, categories, onEdit, onDelete }: {
   };
 
   const moveJob = async (jobId: string, categoryId: string, clearSchedule = false) => {
-    const update: Record<string, any> = { category_id: categoryId };
+    const update: any = { category_id: categoryId };
     if (clearSchedule) {
       update.scheduled_date = null;
       update.start_time = null;
