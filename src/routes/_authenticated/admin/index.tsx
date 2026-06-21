@@ -638,7 +638,7 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
   });
 
   // reset when date changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (date) {
       setTitle(""); setDescription(""); setClientId("__none"); setTechId("__none"); setTime("09:00");
     }
