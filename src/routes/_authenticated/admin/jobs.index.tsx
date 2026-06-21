@@ -264,6 +264,7 @@ function NewJobDialog({ onClose }: { onClose: () => void }) {
         end_time: endIso,
         site_contact_name: siteContactName.trim() || null,
         site_contact_phone: siteContactPhone.trim() || null,
+        project_id: projectId,
       }).select("id").single();
       if (error) throw error;
       toast.success("נוצרה קריאה — כעת ניתן להעלות תמונות");
