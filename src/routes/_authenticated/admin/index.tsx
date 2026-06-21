@@ -1194,7 +1194,18 @@ function RescheduleDialog({ target, onClose, onSaved }: {
 }) {
   const [start, setStart] = useState("09:00");
   const [end, setEnd] = useState("10:00");
+  const [techId, setTechId] = useState<string>("__none");
   const [saving, setSaving] = useState(false);
+
+  const { data: techs = [] } = useQuery({
+    queryKey: ["technicians"],
+    queryFn: async () => {
+      const { data: roles } = await supabase.from("user_roles").select("user_id").eq("role", "technician");
+      const ids = (roles ?? []).map(r => r.user_id);
+      if (!ids.length) return [];
+      return (await supabase.from("profiles").select("id, full_name, color").in("id", ids)).data ?? [];
+    },
+  });
 
   useEffect(() => {
     if (target) {
@@ -1206,6 +1217,7 @@ function RescheduleDialog({ target, onClose, onSaved }: {
         const eh = (s.getHours() + 1) % 24;
         setEnd(`${String(eh).padStart(2, "0")}:${String(s.getMinutes()).padStart(2, "0")}`);
       }
+      setTechId(target.item.technician_id ?? "__none");
     }
   }, [target]);
 
@@ -1231,11 +1243,13 @@ function RescheduleDialog({ target, onClose, onSaved }: {
           scheduled_date: startIso,
           start_time: startIso,
           end_time: endIso,
+          technician_id: techId === "__none" ? null : techId,
         }).eq("id", target.item.id);
         if (error) throw error;
       } else {
         const { error } = await supabase.from("projects").update({
           start_date: startIso,
+          technician_id: techId === "__none" ? null : techId,
         }).eq("id", target.item.id);
         if (error) throw error;
       }
@@ -1253,7 +1267,7 @@ function RescheduleDialog({ target, onClose, onSaved }: {
       <DialogContent dir="rtl" className="max-w-sm">
         <DialogHeader>
           <DialogTitle>
-            העברת קריאה {target ? `· ${format(target.date, "EEEE, d בMMMM", { locale: he })}` : ""}
+            שיבוץ ליום {target ? `· ${format(target.date, "EEEE, d בMMMM", { locale: he })}` : ""}
           </DialogTitle>
         </DialogHeader>
         {target && (
@@ -1269,11 +1283,21 @@ function RescheduleDialog({ target, onClose, onSaved }: {
                 <Input type="time" value={end} onChange={e => setEnd(e.target.value)} />
               </div>
             </div>
+            <div className="space-y-1.5">
+              <Label>טכנאי</Label>
+              <Select value={techId} onValueChange={setTechId}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none">לא משויך</SelectItem>
+                  {(techs as any[]).map(t => <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         )}
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>ביטול</Button>
-          <Button onClick={handleSave} disabled={saving}>{saving ? "שומר..." : "העבר"}</Button>
+          <Button onClick={handleSave} disabled={saving}>{saving ? "שומר..." : "שבץ"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
