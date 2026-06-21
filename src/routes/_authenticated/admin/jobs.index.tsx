@@ -296,8 +296,6 @@ function NewJobDialog({ onClose }: { onClose: () => void }) {
         {useNewClient ? (
           <div className="space-y-2 border rounded-md p-3 bg-muted/30">
             <Input placeholder="שם לקוח" value={newClientName} onChange={e => setNewClientName(e.target.value)} />
-            <Input placeholder="איש קשר (אופציונלי)" value={newClientContact} onChange={e => setNewClientContact(e.target.value)} />
-            <Input placeholder="כתובת" value={newClientAddress} onChange={e => setNewClientAddress(e.target.value)} />
           </div>
         ) : (
           <div className="space-y-1.5">
@@ -308,19 +306,20 @@ function NewJobDialog({ onClose }: { onClose: () => void }) {
             </Select>
           </div>
         )}
-        <div className="space-y-1.5 border rounded-md p-3 bg-secondary/20">
+        <div className="space-y-2 border rounded-md p-3 bg-secondary/20">
           <Label className="font-semibold">איש קשר בשטח</Label>
+          <div className="grid grid-cols-2 gap-2">
+            <Input placeholder="שם" value={siteContactName} onChange={e => setSiteContactName(e.target.value)} />
+            <Input placeholder="טלפון (לחיוג מהיר)" value={siteContactPhone} onChange={e => setSiteContactPhone(e.target.value)} dir="ltr" />
+          </div>
+          <Input placeholder="כתובת" value={siteContactAddress} onChange={e => setSiteContactAddress(e.target.value)} />
+        </div>
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
             <Checkbox id="linkProject" checked={linkProject} onCheckedChange={(c) => { setLinkProject(!!c); if (!c) setProjectId(null); }} />
             <Label htmlFor="linkProject" className="cursor-pointer">שייך לפרוייקט</Label>
           </div>
           {linkProject && <ProjectPicker value={projectId} onChange={setProjectId} />}
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-            <Input placeholder="שם" value={siteContactName} onChange={e => setSiteContactName(e.target.value)} />
-            <Input placeholder="טלפון (לחיוג מהיר)" value={siteContactPhone} onChange={e => setSiteContactPhone(e.target.value)} dir="ltr" />
-          </div>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1.5">
