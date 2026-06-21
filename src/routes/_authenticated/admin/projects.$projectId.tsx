@@ -25,7 +25,7 @@ function AdminProjectDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("*, client:clients(name, address, phone)")
+        .select("*, client:clients(name, address)")
         .eq("id", projectId).maybeSingle();
       if (error) throw error;
       if (data?.technician_id) {
@@ -83,7 +83,7 @@ function AdminProjectDetail() {
             </div>
             {project.description && <p className="text-sm text-muted-foreground">{project.description}</p>}
             <div className="text-sm text-muted-foreground mt-2 space-y-0.5">
-              <div>לקוח: {project.client?.name ?? "—"} {project.client?.phone && <span dir="ltr">({project.client.phone})</span>}</div>
+              <div>לקוח: {project.client?.name ?? "—"}</div>
               <div>טכנאי: {(project as any).technician_name ?? "לא משויך"}</div>
               <div>תאריך התחלה: {fmtDate(project.start_date)}</div>
               {project.closed_at && <div>נסגר: {new Date(project.closed_at).toLocaleString("he-IL")}</div>}

@@ -121,7 +121,6 @@ function NewProjectDialog({ onClose }: { onClose: () => void }) {
   // New client fields
   const [isNewClient, setIsNewClient] = useState(false);
   const [newClientName, setNewClientName] = useState("");
-  const [newClientPhone, setNewClientPhone] = useState("");
   const [newClientAddress, setNewClientAddress] = useState("");
   const [newClientContact, setNewClientContact] = useState("");
 
@@ -150,7 +149,6 @@ function NewProjectDialog({ onClose }: { onClose: () => void }) {
           .from("clients")
           .insert({
             name: newClientName.trim(),
-            phone: newClientPhone.trim() || null,
             address: newClientAddress.trim() || null,
             contact_name: newClientContact.trim() || null,
           })
@@ -196,7 +194,6 @@ function NewProjectDialog({ onClose }: { onClose: () => void }) {
                 setIsNewClient(!isNewClient);
                 setClientId("");
                 setNewClientName("");
-                setNewClientPhone("");
                 setNewClientAddress("");
                 setNewClientContact("");
               }}
@@ -211,15 +208,9 @@ function NewProjectDialog({ onClose }: { onClose: () => void }) {
                 <Label className="text-sm">שם לקוח <span className="text-destructive">*</span></Label>
                 <Input value={newClientName} onChange={e => setNewClientName(e.target.value)} placeholder="שם הלקוח / חברה" />
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <Label className="text-sm">טלפון</Label>
-                  <Input value={newClientPhone} onChange={e => setNewClientPhone(e.target.value)} placeholder="טלפון" dir="ltr" />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-sm">איש קשר</Label>
-                  <Input value={newClientContact} onChange={e => setNewClientContact(e.target.value)} placeholder="שם איש קשר" />
-                </div>
+              <div className="space-y-1">
+                <Label className="text-sm">איש קשר</Label>
+                <Input value={newClientContact} onChange={e => setNewClientContact(e.target.value)} placeholder="שם איש קשר" />
               </div>
               <div className="space-y-1">
                 <Label className="text-sm">כתובת</Label>

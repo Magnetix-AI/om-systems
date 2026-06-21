@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { statusLabel, statusColor } from "@/components/app-shell";
-import { ArrowRight, Phone, MapPin, User, Briefcase, Wrench } from "lucide-react";
+import { ArrowRight, MapPin, User, Briefcase, Wrench } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/clients/$clientId")({
   ssr: false,
@@ -71,7 +71,6 @@ function ClientDetail() {
         <CardHeader><CardTitle className="text-xl">{client?.name ?? "—"}</CardTitle></CardHeader>
         <CardContent className="text-sm space-y-1 text-muted-foreground">
           {client?.contact_name && <div className="flex items-center gap-2"><User className="h-4 w-4" /> {client.contact_name}</div>}
-          {client?.phone && <div className="flex items-center gap-2" dir="ltr"><Phone className="h-4 w-4" /> {client.phone}</div>}
           {client?.address && <div className="flex items-center gap-2"><MapPin className="h-4 w-4" /> {client.address}</div>}
           {client?.notes && <div className="mt-2 p-2 bg-secondary/40 rounded text-foreground">{client.notes}</div>}
         </CardContent>
