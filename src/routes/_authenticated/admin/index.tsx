@@ -1068,7 +1068,12 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
             <div className="grid grid-cols-2 gap-2">
               <Input placeholder="שם" value={siteContactName} onChange={e => setSiteContactName(e.target.value)} />
               <Input placeholder="טלפון" value={siteContactPhone} onChange={e => setSiteContactPhone(e.target.value)} dir="ltr" />
-            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>שייוך לפרוייקט</Label>
+            <ProjectPicker value={projectId} onChange={setProjectId} />
+          </div>
           </div>
 
           <div className="space-y-1.5">
