@@ -220,6 +220,12 @@ export function AdminEditItemDialog({
                 </div>
               </div>
             )}
+            {item.kind === "job" && (
+              <div className="space-y-1.5">
+                <Label>שייוך לפרוייקט</Label>
+                <ProjectPicker value={projectId} onChange={setProjectId} />
+              </div>
+            )}
           </div>
         )}
         <DialogFooter>
