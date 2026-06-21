@@ -11,8 +11,14 @@ import {
 
 import {
   ChevronRight, ChevronLeft, Calendar as CalendarIcon, MapPin,
-  User, Clock, Briefcase, FolderKanban, AlertTriangle, Pencil, Trash2,
+  User, Clock, Briefcase, FolderKanban, AlertTriangle, Pencil, Trash2, Plus, X,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
 import {
   addDays, addMonths, addWeeks, eachDayOfInterval, endOfMonth, endOfWeek,
   format, isSameDay, isSameMonth, startOfMonth, startOfWeek, isToday,
