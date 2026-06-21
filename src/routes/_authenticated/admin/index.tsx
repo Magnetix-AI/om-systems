@@ -80,6 +80,39 @@ function AdminMain() {
   const [rescheduleTarget, setRescheduleTarget] = useState<{ item: CalendarItem; date: Date } | null>(null);
   const qc = useQueryClient();
 
+  // X on a calendar item: if partial (no technician), just clear schedule fields
+  // and keep it under "unscheduled". If fully scheduled, confirm a full delete.
+  const handleCalendarRemove = async (it: CalendarItem) => {
+    if (it.kind === "job" && !it.technician_id) {
+      const { error } = await supabase.from("jobs").update({
+        scheduled_date: null, start_time: null, end_time: null,
+      }).eq("id", it.id);
+      if (error) return toast.error("שגיאה", { description: error.message });
+      toast.success("הוסר מהיומן");
+      qc.invalidateQueries({ queryKey: ["main-jobs"] });
+      return;
+    }
+    setToDelete(it);
+  };
+
+  // Return a scheduled item back to the unscheduled list — clears date & tech.
+  const handleReturnToUnscheduled = async (it: CalendarItem) => {
+    if (it.kind === "job") {
+      const { error } = await supabase.from("jobs").update({
+        scheduled_date: null, start_time: null, end_time: null, technician_id: null,
+      }).eq("id", it.id);
+      if (error) return toast.error("שגיאה", { description: error.message });
+    } else {
+      const { error } = await supabase.from("projects").update({
+        start_date: null, technician_id: null,
+      }).eq("id", it.id);
+      if (error) return toast.error("שגיאה", { description: error.message });
+    }
+    toast.success("הוחזר לקריאות לא מתואמות");
+    qc.invalidateQueries({ queryKey: ["main-jobs"] });
+    qc.invalidateQueries({ queryKey: ["main-projects"] });
+  };
+
   const range = useMemo(() => getRange(cursor, view), [cursor, view]);
 
   const { data: jobs = [] } = useQuery({
@@ -249,7 +282,8 @@ function AdminMain() {
                 cursor={cursor} selected={selected} items={items} onSelect={setSelected}
                 onAddOnDay={setNewJobDate}
                 onItemClick={setEditItem}
-                onItemDelete={setToDelete}
+                onItemRemove={handleCalendarRemove}
+                onItemReturnToUnscheduled={handleReturnToUnscheduled}
                 onDropOnDay={(kind, id, date) => {
                   const all = [...items, ...unscheduled];
                   const found = all.find(i => i.kind === kind && i.id === id);
@@ -260,7 +294,9 @@ function AdminMain() {
             {view === "week" && (
               <WeekGrid
                 cursor={cursor} selected={selected} items={items}
-                onSelect={setSelected} onItemClick={setEditItem} onItemDelete={setToDelete}
+                onSelect={setSelected} onItemClick={setEditItem}
+                onItemRemove={handleCalendarRemove}
+                onItemReturnToUnscheduled={handleReturnToUnscheduled}
                 onAddOnDay={setNewJobDate}
                 onDropOnDay={(kind, id, date) => {
                   const found = items.find(i => i.kind === kind && i.id === id);
@@ -346,11 +382,12 @@ function getRange(cursor: Date, view: ViewMode) {
 
 const WEEKDAY_LABELS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
 
-function MonthGrid({ cursor, selected, items, onSelect, onAddOnDay, onItemClick, onItemDelete, onDropOnDay }: {
+function MonthGrid({ cursor, selected, items, onSelect, onAddOnDay, onItemClick, onItemRemove, onItemReturnToUnscheduled, onDropOnDay }: {
   cursor: Date; selected: Date; items: CalendarItem[]; onSelect: (d: Date) => void;
   onAddOnDay: (d: Date) => void;
   onItemClick: (i: CalendarItem) => void;
-  onItemDelete: (i: CalendarItem) => void;
+  onItemRemove: (i: CalendarItem) => void;
+  onItemReturnToUnscheduled: (i: CalendarItem) => void;
   onDropOnDay: (kind: "job" | "project", id: string, date: Date) => void;
 }) {
   const days = getRange(cursor, "month");
@@ -411,25 +448,40 @@ function MonthGrid({ cursor, selected, items, onSelect, onAddOnDay, onItemClick,
               </div>
               <div className="flex flex-col gap-0.5 overflow-hidden relative z-[1]">
                 {dayItems.slice(0, 2).map(it => (
-                  <div key={it.kind + it.id} className="group/item relative">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); onItemClick(it); }}
-                      className={cn(
-                        "w-full text-[10px] rounded px-1 py-0.5 truncate text-right",
-                        it.kind === "project" ? "bg-accent/40 text-accent-foreground" : "bg-primary/15 text-primary"
-                      )}
-                    >
-                      {format(it.date, "HH:mm")} {it.title}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); onItemDelete(it); }}
-                      title="הסר"
-                      className="absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition shadow"
-                    >
-                      <X className="h-2.5 w-2.5" />
-                    </button>
-                  </div>
+                  <ContextMenu key={it.kind + it.id}>
+                    <ContextMenuTrigger asChild>
+                      <div className="group/item relative">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onItemClick(it); }}
+                          className={cn(
+                            "w-full text-[10px] rounded px-1 py-0.5 truncate text-right",
+                            it.kind === "project" ? "bg-accent/40 text-accent-foreground" : "bg-primary/15 text-primary"
+                          )}
+                        >
+                          {format(it.date, "HH:mm")} {it.title}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); onItemRemove(it); }}
+                          title="הסר מהיומן"
+                          className="absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition shadow"
+                        >
+                          <X className="h-2.5 w-2.5" />
+                        </button>
+                      </div>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent>
+                      <ContextMenuItem onClick={() => onItemClick(it)}>
+                        <Pencil className="h-3.5 w-3.5 ml-2" /> ערוך
+                      </ContextMenuItem>
+                      <ContextMenuItem onClick={() => onItemReturnToUnscheduled(it)}>
+                        <AlertTriangle className="h-3.5 w-3.5 ml-2" /> החזר לקריאות לא מתואמות
+                      </ContextMenuItem>
+                      <ContextMenuItem className="text-destructive" onClick={() => onItemRemove(it)}>
+                        <Trash2 className="h-3.5 w-3.5 ml-2" /> הסר מהיומן
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
                 ))}
                 {dayItems.length > 2 && (
                   <div className="text-[10px] text-muted-foreground">+{dayItems.length - 2} נוספים</div>
@@ -444,10 +496,11 @@ function MonthGrid({ cursor, selected, items, onSelect, onAddOnDay, onItemClick,
 }
 
 
-function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemDelete, onAddOnDay, onDropOnDay }: {
+function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove, onItemReturnToUnscheduled, onAddOnDay, onDropOnDay }: {
   cursor: Date; selected: Date; items: CalendarItem[]; onSelect: (d: Date) => void;
   onItemClick: (i: CalendarItem) => void;
-  onItemDelete: (i: CalendarItem) => void;
+  onItemRemove: (i: CalendarItem) => void;
+  onItemReturnToUnscheduled: (i: CalendarItem) => void;
   onAddOnDay: (d: Date) => void;
   onDropOnDay: (kind: "job" | "project", id: string, date: Date) => void;
 }) {
@@ -560,36 +613,50 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemDelete
                 const lay = layout.get(it.kind + it.id) ?? { col: 0, cols: 1 };
                 const widthPct = 100 / lay.cols;
                 return (
-                  <div
-                    key={it.kind + it.id}
-                    className="absolute group/item"
-                    style={{ top, height, left: `calc(${lay.col * widthPct}% + 2px)`, width: `calc(${widthPct}% - 4px)` }}
-                    draggable={it.kind === "job"}
-                    onDragStart={(e) => {
-                      e.dataTransfer.effectAllowed = "move";
-                      e.dataTransfer.setData("application/x-cal-item", JSON.stringify({ kind: it.kind, id: it.id }));
-                    }}
-                  >
-                    <button
-                      onClick={(e) => { e.stopPropagation(); onItemClick(it); }}
-                      className="w-full h-full rounded text-right text-[11px] text-white px-1.5 py-1 shadow-sm overflow-hidden hover:opacity-90 hover:shadow-md transition"
-                      style={{ background: color }}
-                      title={`${it.title} · ${it.technician_name ?? "ללא טכנאי"}`}
-                    >
-                      <div className="font-semibold truncate">{it.title}</div>
-                      <div className="opacity-90 truncate">
-                        {format(it.date, "HH:mm")}{it.end ? `–${format(it.end, "HH:mm")}` : ""}
+                  <ContextMenu key={it.kind + it.id}>
+                    <ContextMenuTrigger asChild>
+                      <div
+                        className="absolute group/item"
+                        style={{ top, height, left: `calc(${lay.col * widthPct}% + 2px)`, width: `calc(${widthPct}% - 4px)` }}
+                        draggable={it.kind === "job"}
+                        onDragStart={(e) => {
+                          e.dataTransfer.effectAllowed = "move";
+                          e.dataTransfer.setData("application/x-cal-item", JSON.stringify({ kind: it.kind, id: it.id }));
+                        }}
+                      >
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onItemClick(it); }}
+                          className="w-full h-full rounded text-right text-[11px] text-white px-1.5 py-1 shadow-sm overflow-hidden hover:opacity-90 hover:shadow-md transition"
+                          style={{ background: color }}
+                          title={`${it.title} · ${it.technician_name ?? "ללא טכנאי"}`}
+                        >
+                          <div className="font-semibold truncate">{it.title}</div>
+                          <div className="opacity-90 truncate">
+                            {format(it.date, "HH:mm")}{it.end ? `–${format(it.end, "HH:mm")}` : ""}
+                          </div>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); onItemRemove(it); }}
+                          title="הסר מהיומן"
+                          className="absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition shadow"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
                       </div>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); onItemDelete(it); }}
-                      title="הסר"
-                      className="absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition shadow"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent>
+                      <ContextMenuItem onClick={() => onItemClick(it)}>
+                        <Pencil className="h-3.5 w-3.5 ml-2" /> ערוך
+                      </ContextMenuItem>
+                      <ContextMenuItem onClick={() => onItemReturnToUnscheduled(it)}>
+                        <AlertTriangle className="h-3.5 w-3.5 ml-2" /> החזר לקריאות לא מתואמות
+                      </ContextMenuItem>
+                      <ContextMenuItem className="text-destructive" onClick={() => onItemRemove(it)}>
+                        <Trash2 className="h-3.5 w-3.5 ml-2" /> הסר מהיומן
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
                 );
               })}
             </div>

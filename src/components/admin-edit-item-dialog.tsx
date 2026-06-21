@@ -12,6 +12,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ProjectPicker } from "@/components/project-picker";
 
 export type EditItem = {
@@ -53,6 +54,8 @@ export function AdminEditItemDialog({
   const [siteContactPhone, setSiteContactPhone] = useState("");
   const [siteContactAddress, setSiteContactAddress] = useState("");
   const [projectId, setProjectId] = useState<string | null>(null);
+  const [useNewClient, setUseNewClient] = useState(false);
+  const [newClientName, setNewClientName] = useState("");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -73,6 +76,8 @@ export function AdminEditItemDialog({
   useEffect(() => {
     if (!item) return;
     let cancelled = false;
+    setUseNewClient(false);
+    setNewClientName("");
     (async () => {
       setLoading(true);
       try {
@@ -126,11 +131,19 @@ export function AdminEditItemDialog({
     try {
       const startIso = localToIso(scheduled);
       const endIso = localToIso(endAt);
+      let cid: string | null = clientId === "__none" ? null : clientId;
+      if (useNewClient && newClientName.trim()) {
+        const { data, error } = await supabase.from("clients")
+          .insert({ name: newClientName.trim() })
+          .select("id").single();
+        if (error) throw error;
+        cid = data.id;
+      }
       if (item.kind === "job") {
         const { error } = await supabase.from("jobs").update({
           title,
           description,
-          client_id: clientId === "__none" ? null : clientId,
+          client_id: cid,
           technician_id: techId === "__none" ? null : techId,
           scheduled_date: startIso,
           start_time: startIso,
@@ -145,7 +158,7 @@ export function AdminEditItemDialog({
         const { error } = await supabase.from("projects").update({
           title,
           description,
-          client_id: clientId === "__none" ? null : clientId,
+          client_id: cid,
           technician_id: techId === "__none" ? null : techId,
           start_date: startIso ? startIso.slice(0, 10) : null,
         }).eq("id", item.id);
@@ -185,13 +198,25 @@ export function AdminEditItemDialog({
             </div>
             <div className="space-y-1.5">
               <Label>לקוח</Label>
-              <Select value={clientId} onValueChange={setClientId}>
-                <SelectTrigger><SelectValue placeholder="בחר לקוח" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none">— ללא לקוח —</SelectItem>
-                  {(clients as any[]).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="editNewClient"
+                  checked={useNewClient}
+                  onCheckedChange={(c) => { setUseNewClient(!!c); if (!c) setNewClientName(""); }}
+                />
+                <Label htmlFor="editNewClient" className="cursor-pointer text-xs font-normal">לקוח חדש</Label>
+              </div>
+              {useNewClient ? (
+                <Input placeholder="שם לקוח חדש" value={newClientName} onChange={e => setNewClientName(e.target.value)} />
+              ) : (
+                <Select value={clientId} onValueChange={setClientId}>
+                  <SelectTrigger><SelectValue placeholder="בחר לקוח" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none">— ללא לקוח —</SelectItem>
+                    {(clients as any[]).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>טכנאי</Label>
