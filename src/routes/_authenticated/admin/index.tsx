@@ -1022,6 +1022,7 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
   // Site contact (per job)
   const [siteContactName, setSiteContactName] = useState("");
   const [siteContactPhone, setSiteContactPhone] = useState("");
+  const [siteContactAddress, setSiteContactAddress] = useState("");
   const [linkProject, setLinkProject] = useState(false);
   const [projectId, setProjectId] = useState<string | null>(null);
 
