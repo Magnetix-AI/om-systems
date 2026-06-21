@@ -166,6 +166,12 @@ function AdminJobs() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AdminEditItemDialog
+        item={editItem}
+        onClose={() => setEditItem(null)}
+        invalidateKeys={[["admin-jobs"]]}
+      />
     </div>
   );
 }
