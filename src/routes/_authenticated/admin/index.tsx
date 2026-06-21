@@ -613,36 +613,50 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
                 const lay = layout.get(it.kind + it.id) ?? { col: 0, cols: 1 };
                 const widthPct = 100 / lay.cols;
                 return (
-                  <div
-                    key={it.kind + it.id}
-                    className="absolute group/item"
-                    style={{ top, height, left: `calc(${lay.col * widthPct}% + 2px)`, width: `calc(${widthPct}% - 4px)` }}
-                    draggable={it.kind === "job"}
-                    onDragStart={(e) => {
-                      e.dataTransfer.effectAllowed = "move";
-                      e.dataTransfer.setData("application/x-cal-item", JSON.stringify({ kind: it.kind, id: it.id }));
-                    }}
-                  >
-                    <button
-                      onClick={(e) => { e.stopPropagation(); onItemClick(it); }}
-                      className="w-full h-full rounded text-right text-[11px] text-white px-1.5 py-1 shadow-sm overflow-hidden hover:opacity-90 hover:shadow-md transition"
-                      style={{ background: color }}
-                      title={`${it.title} · ${it.technician_name ?? "ללא טכנאי"}`}
-                    >
-                      <div className="font-semibold truncate">{it.title}</div>
-                      <div className="opacity-90 truncate">
-                        {format(it.date, "HH:mm")}{it.end ? `–${format(it.end, "HH:mm")}` : ""}
+                  <ContextMenu key={it.kind + it.id}>
+                    <ContextMenuTrigger asChild>
+                      <div
+                        className="absolute group/item"
+                        style={{ top, height, left: `calc(${lay.col * widthPct}% + 2px)`, width: `calc(${widthPct}% - 4px)` }}
+                        draggable={it.kind === "job"}
+                        onDragStart={(e) => {
+                          e.dataTransfer.effectAllowed = "move";
+                          e.dataTransfer.setData("application/x-cal-item", JSON.stringify({ kind: it.kind, id: it.id }));
+                        }}
+                      >
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onItemClick(it); }}
+                          className="w-full h-full rounded text-right text-[11px] text-white px-1.5 py-1 shadow-sm overflow-hidden hover:opacity-90 hover:shadow-md transition"
+                          style={{ background: color }}
+                          title={`${it.title} · ${it.technician_name ?? "ללא טכנאי"}`}
+                        >
+                          <div className="font-semibold truncate">{it.title}</div>
+                          <div className="opacity-90 truncate">
+                            {format(it.date, "HH:mm")}{it.end ? `–${format(it.end, "HH:mm")}` : ""}
+                          </div>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); onItemRemove(it); }}
+                          title="הסר מהיומן"
+                          className="absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition shadow"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
                       </div>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); onItemDelete(it); }}
-                      title="הסר"
-                      className="absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition shadow"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent>
+                      <ContextMenuItem onClick={() => onItemClick(it)}>
+                        <Pencil className="h-3.5 w-3.5 ml-2" /> ערוך
+                      </ContextMenuItem>
+                      <ContextMenuItem onClick={() => onItemReturnToUnscheduled(it)}>
+                        <AlertTriangle className="h-3.5 w-3.5 ml-2" /> החזר לקריאות לא מתואמות
+                      </ContextMenuItem>
+                      <ContextMenuItem className="text-destructive" onClick={() => onItemRemove(it)}>
+                        <Trash2 className="h-3.5 w-3.5 ml-2" /> הסר מהיומן
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
                 );
               })}
             </div>
