@@ -79,7 +79,7 @@ export function AdminEditItemDialog({
         if (item.kind === "job") {
           const { data, error } = await supabase
             .from("jobs")
-            .select("title, description, client_id, technician_id, start_time, end_time, scheduled_date, site_contact_name, site_contact_phone, project_id")
+            .select("title, description, client_id, technician_id, start_time, end_time, scheduled_date, site_contact_name, site_contact_phone, site_contact_address, project_id")
             .eq("id", item.id).single();
           if (error) throw error;
           if (cancelled || !data) return;
