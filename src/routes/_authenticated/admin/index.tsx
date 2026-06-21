@@ -10,9 +10,12 @@ import {
 } from "@/components/ui/select";
 
 import {
-  ChevronRight, ChevronLeft, Calendar as CalendarIcon, MapPin,
+  ChevronRight, ChevronLeft, ChevronDown, Calendar as CalendarIcon, MapPin,
   User, Clock, Briefcase, FolderKanban, AlertTriangle, Pencil, Trash2, Plus, X,
 } from "lucide-react";
+import {
+  ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
