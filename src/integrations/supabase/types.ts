@@ -178,6 +178,7 @@ export type Database = {
           draft_quantities: Json | null
           end_time: string | null
           id: string
+          project_id: string | null
           scheduled_date: string | null
           sent_to_invoicing: boolean
           sent_to_invoicing_at: string | null
@@ -201,6 +202,7 @@ export type Database = {
           draft_quantities?: Json | null
           end_time?: string | null
           id?: string
+          project_id?: string | null
           scheduled_date?: string | null
           sent_to_invoicing?: boolean
           sent_to_invoicing_at?: string | null
@@ -224,6 +226,7 @@ export type Database = {
           draft_quantities?: Json | null
           end_time?: string | null
           id?: string
+          project_id?: string | null
           scheduled_date?: string | null
           sent_to_invoicing?: boolean
           sent_to_invoicing_at?: string | null
@@ -251,12 +254,55 @@ export type Database = {
             referencedRelation: "clients"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "jobs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          parent_id: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          parent_id?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          parent_id?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "product_categories"
+            referencedColumns: ["id"]
+          },
         ]
       }
       products: {
         Row: {
           barcode: string | null
           category: string | null
+          category_id: string | null
           created_at: string
           id: string
           is_active: boolean
@@ -269,6 +315,7 @@ export type Database = {
         Insert: {
           barcode?: string | null
           category?: string | null
+          category_id?: string | null
           created_at?: string
           id?: string
           is_active?: boolean
@@ -281,6 +328,7 @@ export type Database = {
         Update: {
           barcode?: string | null
           category?: string | null
+          category_id?: string | null
           created_at?: string
           id?: string
           is_active?: boolean
@@ -290,7 +338,15 @@ export type Database = {
           unit?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "product_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
