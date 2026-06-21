@@ -345,11 +345,12 @@ function getRange(cursor: Date, view: ViewMode) {
 
 const WEEKDAY_LABELS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
 
-function MonthGrid({ cursor, selected, items, onSelect, onAddOnDay, onItemClick, onItemDelete }: {
+function MonthGrid({ cursor, selected, items, onSelect, onAddOnDay, onItemClick, onItemDelete, onDropOnDay }: {
   cursor: Date; selected: Date; items: CalendarItem[]; onSelect: (d: Date) => void;
   onAddOnDay: (d: Date) => void;
   onItemClick: (i: CalendarItem) => void;
   onItemDelete: (i: CalendarItem) => void;
+  onDropOnDay: (kind: "job" | "project", id: string, date: Date) => void;
 }) {
   const days = getRange(cursor, "month");
   return (
@@ -365,6 +366,21 @@ function MonthGrid({ cursor, selected, items, onSelect, onAddOnDay, onItemClick,
           return (
             <div
               key={d.toISOString()}
+              onDragOver={(e) => {
+                if (e.dataTransfer.types.includes("application/x-cal-item")) {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                }
+              }}
+              onDrop={(e) => {
+                const raw = e.dataTransfer.getData("application/x-cal-item");
+                if (!raw) return;
+                e.preventDefault();
+                try {
+                  const parsed = JSON.parse(raw) as { kind: "job" | "project"; id: string };
+                  onDropOnDay(parsed.kind, parsed.id, d);
+                } catch { /* ignore */ }
+              }}
               className={cn(
                 "relative min-h-[88px] rounded-lg border p-1.5 text-right transition-all hover:border-primary/50 hover:shadow-sm flex flex-col gap-1 group/day",
                 inMonth ? "bg-card" : "bg-muted/30 text-muted-foreground",
