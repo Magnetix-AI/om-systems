@@ -308,7 +308,11 @@ function NewJobDialog({ onClose }: { onClose: () => void }) {
         )}
         <div className="space-y-1.5 border rounded-md p-3 bg-secondary/20">
           <Label className="font-semibold">איש קשר בשטח</Label>
-          <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-1.5">
+          <Label>שייוך לפרוייקט</Label>
+          <ProjectPicker value={projectId} onChange={setProjectId} />
+        </div>
+        <div className="grid grid-cols-2 gap-2">
             <Input placeholder="שם" value={siteContactName} onChange={e => setSiteContactName(e.target.value)} />
             <Input placeholder="טלפון (לחיוג מהיר)" value={siteContactPhone} onChange={e => setSiteContactPhone(e.target.value)} dir="ltr" />
           </div>
