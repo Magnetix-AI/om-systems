@@ -33,6 +33,8 @@ function AdminJobs() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [toDelete, setToDelete] = useState<{ id: string; title: string } | null>(null);
+  const [editItem, setEditItem] = useState<EditItem | null>(null);
+
 
   const { data: jobs = [] } = useQuery({
     queryKey: ["admin-jobs"],
