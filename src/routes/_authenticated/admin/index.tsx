@@ -249,6 +249,16 @@ function AdminMain() {
         }}
       />
 
+      <RescheduleDialog
+        target={rescheduleTarget}
+        onClose={() => setRescheduleTarget(null)}
+        onSaved={() => {
+          qc.invalidateQueries({ queryKey: ["main-jobs"] });
+          setRescheduleTarget(null);
+        }}
+      />
+
+
       <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
         <AlertDialogContent dir="rtl">
           <AlertDialogHeader>
