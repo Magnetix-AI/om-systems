@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,8 +11,14 @@ import {
 
 import {
   ChevronRight, ChevronLeft, Calendar as CalendarIcon, MapPin,
-  User, Clock, Briefcase, FolderKanban, AlertTriangle, Pencil, Trash2,
+  User, Clock, Briefcase, FolderKanban, AlertTriangle, Pencil, Trash2, Plus, X,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
 import {
   addDays, addMonths, addWeeks, eachDayOfInterval, endOfMonth, endOfWeek,
   format, isSameDay, isSameMonth, startOfMonth, startOfWeek, isToday,
@@ -56,6 +62,7 @@ function AdminMain() {
   const [selected, setSelected] = useState<Date>(new Date());
   const [editItem, setEditItem] = useState<CalendarItem | null>(null);
   const [toDelete, setToDelete] = useState<CalendarItem | null>(null);
+  const [newJobDate, setNewJobDate] = useState<Date | null>(null);
   const qc = useQueryClient();
 
   const range = useMemo(() => getRange(cursor, view), [cursor, view]);
@@ -210,7 +217,7 @@ function AdminMain() {
               <MonthGrid cursor={cursor} selected={selected} items={items} onSelect={setSelected} />
             )}
             {view === "week" && (
-              <WeekGrid cursor={cursor} selected={selected} items={items} onSelect={setSelected} onItemClick={setEditItem} />
+              <WeekGrid cursor={cursor} selected={selected} items={items} onSelect={setSelected} onItemClick={setEditItem} onItemDelete={setToDelete} onAddOnDay={setNewJobDate} />
             )}
             {view === "day" && (
               <DayGrid cursor={cursor} items={items.filter(i => isSameDay(i.date, cursor))} onItemClick={setEditItem} />
@@ -223,6 +230,15 @@ function AdminMain() {
       </div>
 
       <AdminEditItemDialog item={editItem} onClose={() => setEditItem(null)} invalidateKeys={[["main-jobs"], ["main-projects"]]} />
+
+      <NewJobOnDateDialog
+        date={newJobDate}
+        onClose={() => setNewJobDate(null)}
+        onCreated={() => {
+          qc.invalidateQueries({ queryKey: ["main-jobs"] });
+          setNewJobDate(null);
+        }}
+      />
 
       <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
         <AlertDialogContent dir="rtl">
@@ -323,9 +339,11 @@ function MonthGrid({ cursor, selected, items, onSelect }: {
   );
 }
 
-function WeekGrid({ cursor, selected, items, onSelect, onItemClick }: {
+function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemDelete, onAddOnDay }: {
   cursor: Date; selected: Date; items: CalendarItem[]; onSelect: (d: Date) => void;
   onItemClick: (i: CalendarItem) => void;
+  onItemDelete: (i: CalendarItem) => void;
+  onAddOnDay: (d: Date) => void;
 }) {
   const days = getRange(cursor, "week");
   const HOUR_PX = 36;
@@ -341,18 +359,26 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick }: {
         {days.map(d => {
           const sel = isSameDay(d, selected);
           return (
-            <button
+            <div
               key={d.toISOString()}
-              onClick={() => onSelect(d)}
               className={cn(
-                "p-2 text-center border-b text-xs font-semibold transition-colors hover:bg-secondary/50",
+                "relative p-2 text-center border-b text-xs font-semibold transition-colors hover:bg-secondary/50 cursor-pointer group/header",
                 sel && "bg-primary/10 text-primary",
                 isToday(d) && !sel && "text-primary",
               )}
+              onClick={() => onSelect(d)}
             >
               <div className="text-muted-foreground">{WEEKDAY_LABELS[d.getDay()]}</div>
               <div className="text-lg">{format(d, "d/M")}</div>
-            </button>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onAddOnDay(d); }}
+                title="הוסף קריאה ליום זה"
+                className="absolute top-1 left-1 h-6 w-6 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground flex items-center justify-center opacity-0 group-hover/header:opacity-100 transition"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </div>
           );
         })}
 
@@ -414,18 +440,31 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick }: {
                 const lay = layout.get(it.kind + it.id) ?? { col: 0, cols: 1 };
                 const widthPct = 100 / lay.cols;
                 return (
-                  <button
+                  <div
                     key={it.kind + it.id}
-                    onClick={(e) => { e.stopPropagation(); onItemClick(it); }}
-                    className="absolute rounded text-right text-[11px] text-white px-1.5 py-1 shadow-sm overflow-hidden hover:opacity-90 hover:shadow-md transition"
-                    style={{ top, height, background: color, left: `calc(${lay.col * widthPct}% + 2px)`, width: `calc(${widthPct}% - 4px)` }}
-                    title={`${it.title} · ${it.technician_name ?? "ללא טכנאי"}`}
+                    className="absolute group/item"
+                    style={{ top, height, left: `calc(${lay.col * widthPct}% + 2px)`, width: `calc(${widthPct}% - 4px)` }}
                   >
-                    <div className="font-semibold truncate">{it.title}</div>
-                    <div className="opacity-90 truncate">
-                      {format(it.date, "HH:mm")}{it.end ? `–${format(it.end, "HH:mm")}` : ""}
-                    </div>
-                  </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onItemClick(it); }}
+                      className="w-full h-full rounded text-right text-[11px] text-white px-1.5 py-1 shadow-sm overflow-hidden hover:opacity-90 hover:shadow-md transition"
+                      style={{ background: color }}
+                      title={`${it.title} · ${it.technician_name ?? "ללא טכנאי"}`}
+                    >
+                      <div className="font-semibold truncate">{it.title}</div>
+                      <div className="opacity-90 truncate">
+                        {format(it.date, "HH:mm")}{it.end ? `–${format(it.end, "HH:mm")}` : ""}
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); onItemDelete(it); }}
+                      title="הסר"
+                      className="absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition shadow"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
                 );
               })}
             </div>
@@ -571,3 +610,118 @@ function DayDetailsPanel({ date, items, onEdit, onDelete }: {
   );
 }
 
+
+function NewJobOnDateDialog({ date, onClose, onCreated }: {
+  date: Date | null;
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [clientId, setClientId] = useState<string>("__none");
+  const [techId, setTechId] = useState<string>("__none");
+  const [time, setTime] = useState("09:00");
+  const [saving, setSaving] = useState(false);
+
+  const { data: clients = [] } = useQuery({
+    queryKey: ["clients"],
+    queryFn: async () => (await supabase.from("clients").select("id, name").order("name")).data ?? [],
+  });
+  const { data: techs = [] } = useQuery({
+    queryKey: ["technicians"],
+    queryFn: async () => {
+      const { data: roles } = await supabase.from("user_roles").select("user_id").eq("role", "technician");
+      const ids = (roles ?? []).map(r => r.user_id);
+      if (!ids.length) return [];
+      return (await supabase.from("profiles").select("id, full_name, color").in("id", ids)).data ?? [];
+    },
+  });
+
+  // reset when date changes
+  useEffect(() => {
+    if (date) {
+      setTitle(""); setDescription(""); setClientId("__none"); setTechId("__none"); setTime("09:00");
+    }
+  }, [date]);
+
+  const handleCreate = async () => {
+    if (!date || !title.trim()) {
+      toast.error("יש להזין כותרת");
+      return;
+    }
+    setSaving(true);
+    try {
+      const [hh, mm] = time.split(":").map(Number);
+      const start = new Date(date);
+      start.setHours(hh || 9, mm || 0, 0, 0);
+      const iso = start.toISOString();
+      const { error } = await supabase.from("jobs").insert({
+        title,
+        description: description || null,
+        client_id: clientId === "__none" ? null : clientId,
+        technician_id: techId === "__none" ? null : techId,
+        scheduled_date: iso,
+        start_time: iso,
+      });
+      if (error) throw error;
+      toast.success("נוצרה קריאה");
+      onCreated();
+    } catch (e: any) {
+      toast.error("שגיאה ביצירה", { description: e.message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={!!date} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent dir="rtl" className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>
+            קריאה חדשה {date ? `· ${format(date, "EEEE, d בMMMM", { locale: he })}` : ""}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label>כותרת</Label>
+            <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="כותרת הקריאה" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>תיאור</Label>
+            <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1.5">
+              <Label>לקוח</Label>
+              <Select value={clientId} onValueChange={setClientId}>
+                <SelectTrigger><SelectValue placeholder="בחר" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none">— ללא —</SelectItem>
+                  {(clients as any[]).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>טכנאי</Label>
+              <Select value={techId} onValueChange={setTechId}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none">לא משויך</SelectItem>
+                  {(techs as any[]).map(t => <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>שעה</Label>
+            <Input type="time" value={time} onChange={e => setTime(e.target.value)} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>ביטול</Button>
+          <Button onClick={handleCreate} disabled={saving}>{saving ? "יוצר..." : "צור קריאה"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
