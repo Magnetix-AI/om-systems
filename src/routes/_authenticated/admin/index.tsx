@@ -80,6 +80,39 @@ function AdminMain() {
   const [rescheduleTarget, setRescheduleTarget] = useState<{ item: CalendarItem; date: Date } | null>(null);
   const qc = useQueryClient();
 
+  // X on a calendar item: if partial (no technician), just clear schedule fields
+  // and keep it under "unscheduled". If fully scheduled, confirm a full delete.
+  const handleCalendarRemove = async (it: CalendarItem) => {
+    if (it.kind === "job" && !it.technician_id) {
+      const { error } = await supabase.from("jobs").update({
+        scheduled_date: null, start_time: null, end_time: null,
+      }).eq("id", it.id);
+      if (error) return toast.error("שגיאה", { description: error.message });
+      toast.success("הוסר מהיומן");
+      qc.invalidateQueries({ queryKey: ["main-jobs"] });
+      return;
+    }
+    setToDelete(it);
+  };
+
+  // Return a scheduled item back to the unscheduled list — clears date & tech.
+  const handleReturnToUnscheduled = async (it: CalendarItem) => {
+    if (it.kind === "job") {
+      const { error } = await supabase.from("jobs").update({
+        scheduled_date: null, start_time: null, end_time: null, technician_id: null,
+      }).eq("id", it.id);
+      if (error) return toast.error("שגיאה", { description: error.message });
+    } else {
+      const { error } = await supabase.from("projects").update({
+        start_date: null, technician_id: null,
+      }).eq("id", it.id);
+      if (error) return toast.error("שגיאה", { description: error.message });
+    }
+    toast.success("הוחזר לקריאות לא מתואמות");
+    qc.invalidateQueries({ queryKey: ["main-jobs"] });
+    qc.invalidateQueries({ queryKey: ["main-projects"] });
+  };
+
   const range = useMemo(() => getRange(cursor, view), [cursor, view]);
 
   const { data: jobs = [] } = useQuery({
