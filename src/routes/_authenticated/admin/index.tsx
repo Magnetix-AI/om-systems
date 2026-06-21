@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { deleteJobsCascade, deleteProjectsCascade } from "@/lib/admin-deletes";
 import { AdminEditItemDialog } from "@/components/admin-edit-item-dialog";
+import { ProjectPicker } from "@/components/project-picker";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   ssr: false,
@@ -939,6 +940,7 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
   // Site contact (per job)
   const [siteContactName, setSiteContactName] = useState("");
   const [siteContactPhone, setSiteContactPhone] = useState("");
+  const [projectId, setProjectId] = useState<string | null>(null);
 
   const { data: clients = [] } = useQuery({
     queryKey: ["clients"],
@@ -961,6 +963,7 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
       setTime("09:00"); setEndTime("10:00");
       setUseNewClient(false); setNewClientName(""); setNewClientAddress(""); setNewClientContact("");
       setSiteContactName(""); setSiteContactPhone("");
+      setProjectId(null);
     }
   }, [date]);
 
@@ -1005,6 +1008,7 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
         end_time: endIso,
         site_contact_name: siteContactName.trim() || null,
         site_contact_phone: siteContactPhone.trim() || null,
+        project_id: projectId,
       });
       if (error) throw error;
       toast.success("נוצרה קריאה");
@@ -1064,7 +1068,12 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
             <div className="grid grid-cols-2 gap-2">
               <Input placeholder="שם" value={siteContactName} onChange={e => setSiteContactName(e.target.value)} />
               <Input placeholder="טלפון" value={siteContactPhone} onChange={e => setSiteContactPhone(e.target.value)} dir="ltr" />
-            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>שייוך לפרוייקט</Label>
+            <ProjectPicker value={projectId} onChange={setProjectId} />
+          </div>
           </div>
 
           <div className="space-y-1.5">

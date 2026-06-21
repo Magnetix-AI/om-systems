@@ -114,11 +114,9 @@ function NewProjectDialog({ onClose }: { onClose: () => void }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [clientId, setClientId] = useState("");
-  const [techId, setTechId] = useState<string>("__none");
-  const [startDate, setStartDate] = useState("");
   const [saving, setSaving] = useState(false);
 
-  // New client fields
+  // New client toggle
   const [isNewClient, setIsNewClient] = useState(false);
   const [newClientName, setNewClientName] = useState("");
   const [newClientAddress, setNewClientAddress] = useState("");
@@ -128,24 +126,14 @@ function NewProjectDialog({ onClose }: { onClose: () => void }) {
     queryKey: ["clients"],
     queryFn: async () => (await supabase.from("clients").select("id, name").order("name")).data ?? [],
   });
-  const { data: techs = [] } = useQuery({
-    queryKey: ["technicians"],
-    queryFn: async () => {
-      const { data: roles } = await supabase.from("user_roles").select("user_id").eq("role", "technician");
-      const ids = (roles ?? []).map(r => r.user_id);
-      if (!ids.length) return [];
-      return (await supabase.from("profiles").select("id, full_name, color").in("id", ids)).data ?? [];
-    },
-  });
 
   const handleCreate = async () => {
     setSaving(true);
     try {
       let finalClientId = clientId || null;
 
-      // Create new client if needed
       if (isNewClient && newClientName.trim()) {
-        const { data: newClient, error: clientError } = await supabase
+        const { data: nc, error: ce } = await supabase
           .from("clients")
           .insert({
             name: newClientName.trim(),
@@ -154,19 +142,18 @@ function NewProjectDialog({ onClose }: { onClose: () => void }) {
           })
           .select("id")
           .single();
-        if (clientError) throw clientError;
-        finalClientId = newClient.id;
+        if (ce) throw ce;
+        finalClientId = nc.id;
         qc.invalidateQueries({ queryKey: ["clients"] });
       }
 
       const { data: created, error } = await supabase.from("projects").insert({
-        title, description,
+        title,
+        description,
         client_id: finalClientId,
-        technician_id: techId === "__none" ? null : techId,
-        start_date: startDate || null,
       }).select("id").single();
       if (error) throw error;
-      toast.success("נוצר פרוייקט — כעת ניתן להעלות תמונות");
+      toast.success("הפרוייקט נוצר");
       onClose();
       if (created?.id) navigate({ to: "/admin/projects/$projectId", params: { projectId: created.id } });
     } catch (e: any) {
@@ -178,10 +165,15 @@ function NewProjectDialog({ onClose }: { onClose: () => void }) {
     <DialogContent dir="rtl" className="max-w-lg">
       <DialogHeader><DialogTitle>פרוייקט חדש</DialogTitle></DialogHeader>
       <div className="space-y-3">
-        <div className="space-y-1.5"><Label>שם הפרוייקט</Label><Input value={title} onChange={e => setTitle(e.target.value)} placeholder="לדוגמה: התקנת תשתית בבניין חדש" /></div>
-        <div className="space-y-1.5"><Label>תיאור</Label><Textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} /></div>
+        <div className="space-y-1.5">
+          <Label>שם הפרוייקט <span className="text-destructive">*</span></Label>
+          <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="לדוגמה: התקנת תשתית בבניין חדש" />
+        </div>
+        <div className="space-y-1.5">
+          <Label>תיאור</Label>
+          <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} />
+        </div>
 
-        {/* Client selector / new client toggle */}
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
             <Label>לקוח</Label>
@@ -204,18 +196,9 @@ function NewProjectDialog({ onClose }: { onClose: () => void }) {
 
           {isNewClient ? (
             <div className="space-y-2 border rounded-md p-3 bg-muted/30">
-              <div className="space-y-1">
-                <Label className="text-sm">שם לקוח <span className="text-destructive">*</span></Label>
-                <Input value={newClientName} onChange={e => setNewClientName(e.target.value)} placeholder="שם הלקוח / חברה" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-sm">איש קשר</Label>
-                <Input value={newClientContact} onChange={e => setNewClientContact(e.target.value)} placeholder="שם איש קשר" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-sm">כתובת</Label>
-                <Input value={newClientAddress} onChange={e => setNewClientAddress(e.target.value)} placeholder="כתובת" />
-              </div>
+              <Input value={newClientName} onChange={e => setNewClientName(e.target.value)} placeholder="שם לקוח *" />
+              <Input value={newClientContact} onChange={e => setNewClientContact(e.target.value)} placeholder="איש קשר (אופציונלי)" />
+              <Input value={newClientAddress} onChange={e => setNewClientAddress(e.target.value)} placeholder="כתובת" />
             </div>
           ) : (
             <Select value={clientId} onValueChange={setClientId}>
@@ -225,19 +208,9 @@ function NewProjectDialog({ onClose }: { onClose: () => void }) {
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
-          <div className="space-y-1.5">
-            <Label>טכנאי משויך</Label>
-            <Select value={techId} onValueChange={setTechId}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none">לא משויך</SelectItem>
-                {techs.map((t: any) => <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5"><Label>תאריך התחלה</Label><Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /></div>
-        </div>
+        <p className="text-xs text-muted-foreground">
+          לאחר היצירה תוכל לשייך לפרוייקט קריאות קיימות, או ליצור קריאות חדשות עם שייוך אליו.
+        </p>
       </div>
       <DialogFooter>
         <Button

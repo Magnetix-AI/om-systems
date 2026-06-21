@@ -1,12 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Lock, Unlock, Clock } from "lucide-react";
+import { ArrowRight, Lock, Unlock, Clock, Briefcase, Plus, X, ChevronLeft } from "lucide-react";
 import { AttachmentsManager } from "@/components/attachments-manager";
 import { toast } from "sonner";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
+} from "@/components/ui/command";
+import { statusLabel, statusColor } from "@/components/app-shell";
 
 export const Route = createFileRoute("/_authenticated/admin/projects/$projectId")({
   ssr: false,
@@ -97,6 +105,9 @@ function AdminProjectDetail() {
 
       <AttachmentsManager projectId={projectId} />
 
+      <LinkedJobsCard projectId={projectId} />
+
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>ימי עבודה ({visits.length})</CardTitle>
@@ -138,5 +149,126 @@ function AdminProjectDetail() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function LinkedJobsCard({ projectId }: { projectId: string }) {
+  const qc = useQueryClient();
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const { data: jobs = [] } = useQuery({
+    queryKey: ["project-jobs", projectId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("jobs")
+        .select("id, title, status, scheduled_date, start_time, client:clients(name)")
+        .eq("project_id", projectId)
+        .order("scheduled_date", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const { data: availableJobs = [] } = useQuery({
+    queryKey: ["project-jobs-available"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("jobs")
+        .select("id, title, scheduled_date, client:clients(name)")
+        .is("project_id", null)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: pickerOpen,
+  });
+
+  const linkJob = async (jobId: string) => {
+    const { error } = await supabase.from("jobs").update({ project_id: projectId }).eq("id", jobId);
+    if (error) return toast.error("שגיאה", { description: error.message });
+    toast.success("הקריאה שויכה לפרוייקט");
+    qc.invalidateQueries({ queryKey: ["project-jobs", projectId] });
+    qc.invalidateQueries({ queryKey: ["project-jobs-available"] });
+    qc.invalidateQueries({ queryKey: ["main-jobs"] });
+    setPickerOpen(false);
+  };
+  const unlinkJob = async (jobId: string) => {
+    if (!confirm("להסיר את הקריאה מהפרוייקט?")) return;
+    const { error } = await supabase.from("jobs").update({ project_id: null }).eq("id", jobId);
+    if (error) return toast.error("שגיאה", { description: error.message });
+    toast.success("הקריאה הוסרה מהפרוייקט");
+    qc.invalidateQueries({ queryKey: ["project-jobs", projectId] });
+    qc.invalidateQueries({ queryKey: ["main-jobs"] });
+  };
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
+        <CardTitle className="flex items-center gap-2">
+          <Briefcase className="h-5 w-5 text-primary" />
+          קריאות בפרוייקט ({jobs.length})
+        </CardTitle>
+        <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm"><Plus className="h-4 w-4 ml-1" /> שייך קריאה</Button>
+          </DialogTrigger>
+          <DialogContent dir="rtl" className="max-w-md p-0">
+            <DialogHeader className="p-4 pb-2"><DialogTitle>שייך קריאה לפרוייקט</DialogTitle></DialogHeader>
+            <Command className="rounded-none">
+              <CommandInput placeholder="חפש קריאה לפי כותרת / לקוח…" />
+              <CommandList className="max-h-[400px]">
+                <CommandEmpty>אין קריאות פנויות לשיוך</CommandEmpty>
+                <CommandGroup>
+                  {(availableJobs as any[]).map(j => (
+                    <CommandItem
+                      key={j.id}
+                      value={`${j.title} ${j.client?.name ?? ""}`}
+                      onSelect={() => linkJob(j.id)}
+                    >
+                      <div className="flex flex-col flex-1 min-w-0">
+                        <span className="font-medium truncate">{j.title}</span>
+                        <span className="text-xs text-muted-foreground truncate">
+                          {j.client?.name ?? "ללא לקוח"}{j.scheduled_date ? ` · ${new Date(j.scheduled_date).toLocaleDateString("he-IL")}` : ""}
+                        </span>
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </DialogContent>
+        </Dialog>
+      </CardHeader>
+      <CardContent>
+        {jobs.length === 0 ? (
+          <p className="text-center text-sm text-muted-foreground py-6">אין קריאות משויכות לפרוייקט. לחץ "שייך קריאה" כדי להתחיל.</p>
+        ) : (
+          <div className="divide-y">
+            {(jobs as any[]).map(j => (
+              <div key={j.id} className="flex items-center justify-between gap-2 py-2">
+                <Link
+                  to="/admin/jobs/$jobId"
+                  params={{ jobId: j.id }}
+                  className="flex-1 min-w-0 hover:text-primary"
+                >
+                  <div className="font-medium truncate">{j.title}</div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {j.client?.name ?? "ללא לקוח"}
+                    {(j.start_time || j.scheduled_date) && ` · ${new Date(j.start_time ?? j.scheduled_date).toLocaleString("he-IL")}`}
+                  </div>
+                </Link>
+                <Badge variant="outline" className={statusColor(j.status)}>{statusLabel(j.status)}</Badge>
+                <Link to="/admin/jobs/$jobId" params={{ jobId: j.id }}>
+                  <Button variant="ghost" size="sm" className="h-7"><ChevronLeft className="h-4 w-4" /></Button>
+                </Link>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => unlinkJob(j.id)} title="הסר מהפרוייקט">
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

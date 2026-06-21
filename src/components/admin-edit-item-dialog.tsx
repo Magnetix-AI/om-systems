@@ -12,6 +12,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { ProjectPicker } from "@/components/project-picker";
 
 export type EditItem = {
   kind: "job" | "project";
@@ -50,6 +51,7 @@ export function AdminEditItemDialog({
   const [endAt, setEndAt] = useState("");
   const [siteContactName, setSiteContactName] = useState("");
   const [siteContactPhone, setSiteContactPhone] = useState("");
+  const [projectId, setProjectId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -76,7 +78,7 @@ export function AdminEditItemDialog({
         if (item.kind === "job") {
           const { data, error } = await supabase
             .from("jobs")
-            .select("title, description, client_id, technician_id, start_time, end_time, scheduled_date, site_contact_name, site_contact_phone")
+            .select("title, description, client_id, technician_id, start_time, end_time, scheduled_date, site_contact_name, site_contact_phone, project_id")
             .eq("id", item.id).single();
           if (error) throw error;
           if (cancelled || !data) return;
@@ -88,6 +90,7 @@ export function AdminEditItemDialog({
           setEndAt(toLocalInput(data.end_time));
           setSiteContactName((data as any).site_contact_name ?? "");
           setSiteContactPhone((data as any).site_contact_phone ?? "");
+          setProjectId((data as any).project_id ?? null);
         } else {
           const { data, error } = await supabase
             .from("projects")
@@ -131,6 +134,7 @@ export function AdminEditItemDialog({
           end_time: endIso,
           site_contact_name: siteContactName.trim() || null,
           site_contact_phone: siteContactPhone.trim() || null,
+          project_id: projectId,
         }).eq("id", item.id);
         if (error) throw error;
       } else {
@@ -214,6 +218,12 @@ export function AdminEditItemDialog({
                   <Input placeholder="שם" value={siteContactName} onChange={e => setSiteContactName(e.target.value)} />
                   <Input placeholder="טלפון" value={siteContactPhone} onChange={e => setSiteContactPhone(e.target.value)} dir="ltr" />
                 </div>
+              </div>
+            )}
+            {item.kind === "job" && (
+              <div className="space-y-1.5">
+                <Label>שייוך לפרוייקט</Label>
+                <ProjectPicker value={projectId} onChange={setProjectId} />
               </div>
             )}
           </div>
