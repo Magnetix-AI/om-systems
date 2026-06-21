@@ -234,7 +234,7 @@ function AdminMain() {
 
       <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)_340px] gap-4">
         {/* Unscheduled — LEFT side. In RTL with grid this column appears on the visual left. */}
-        <UnscheduledPanel items={unscheduled} onEdit={setEditItem} />
+        <UnscheduledPanel items={unscheduled} categories={categories} onEdit={setEditItem} />
 
         {/* Calendar — center */}
         <Card>
