@@ -350,18 +350,26 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemDelete
         {days.map(d => {
           const sel = isSameDay(d, selected);
           return (
-            <button
+            <div
               key={d.toISOString()}
-              onClick={() => onSelect(d)}
               className={cn(
-                "p-2 text-center border-b text-xs font-semibold transition-colors hover:bg-secondary/50",
+                "relative p-2 text-center border-b text-xs font-semibold transition-colors hover:bg-secondary/50 cursor-pointer group/header",
                 sel && "bg-primary/10 text-primary",
                 isToday(d) && !sel && "text-primary",
               )}
+              onClick={() => onSelect(d)}
             >
               <div className="text-muted-foreground">{WEEKDAY_LABELS[d.getDay()]}</div>
               <div className="text-lg">{format(d, "d/M")}</div>
-            </button>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onAddOnDay(d); }}
+                title="הוסף קריאה ליום זה"
+                className="absolute top-1 left-1 h-6 w-6 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground flex items-center justify-center opacity-0 group-hover/header:opacity-100 transition"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </div>
           );
         })}
 
