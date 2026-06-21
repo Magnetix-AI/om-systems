@@ -78,7 +78,7 @@ export function AdminEditItemDialog({
         if (item.kind === "job") {
           const { data, error } = await supabase
             .from("jobs")
-            .select("title, description, client_id, technician_id, start_time, end_time, scheduled_date, site_contact_name, site_contact_phone")
+            .select("title, description, client_id, technician_id, start_time, end_time, scheduled_date, site_contact_name, site_contact_phone, project_id")
             .eq("id", item.id).single();
           if (error) throw error;
           if (cancelled || !data) return;
@@ -90,6 +90,7 @@ export function AdminEditItemDialog({
           setEndAt(toLocalInput(data.end_time));
           setSiteContactName((data as any).site_contact_name ?? "");
           setSiteContactPhone((data as any).site_contact_phone ?? "");
+          setProjectId((data as any).project_id ?? null);
         } else {
           const { data, error } = await supabase
             .from("projects")
