@@ -143,7 +143,7 @@ export function AdminEditItemDialog({
         const { error } = await supabase.from("jobs").update({
           title,
           description,
-          client_id: clientId === "__none" ? null : clientId,
+          client_id: cid,
           technician_id: techId === "__none" ? null : techId,
           scheduled_date: startIso,
           start_time: startIso,
@@ -158,7 +158,7 @@ export function AdminEditItemDialog({
         const { error } = await supabase.from("projects").update({
           title,
           description,
-          client_id: clientId === "__none" ? null : clientId,
+          client_id: cid,
           technician_id: techId === "__none" ? null : techId,
           start_date: startIso ? startIso.slice(0, 10) : null,
         }).eq("id", item.id);
