@@ -222,6 +222,7 @@ export function AdminEditItemDialog({
                   <Input placeholder="שם" value={siteContactName} onChange={e => setSiteContactName(e.target.value)} />
                   <Input placeholder="טלפון" value={siteContactPhone} onChange={e => setSiteContactPhone(e.target.value)} dir="ltr" />
                 </div>
+                <Input placeholder="כתובת" value={siteContactAddress} onChange={e => setSiteContactAddress(e.target.value)} />
               </div>
             )}
             {item.kind === "job" && (
