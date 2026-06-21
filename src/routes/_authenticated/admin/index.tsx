@@ -348,11 +348,12 @@ function MonthGrid({ cursor, selected, items, onSelect }: {
   );
 }
 
-function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemDelete, onAddOnDay }: {
+function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemDelete, onAddOnDay, onDropOnDay }: {
   cursor: Date; selected: Date; items: CalendarItem[]; onSelect: (d: Date) => void;
   onItemClick: (i: CalendarItem) => void;
   onItemDelete: (i: CalendarItem) => void;
   onAddOnDay: (d: Date) => void;
+  onDropOnDay: (kind: "job" | "project", id: string, date: Date) => void;
 }) {
   const days = getRange(cursor, "week");
   const HOUR_PX = 36;
