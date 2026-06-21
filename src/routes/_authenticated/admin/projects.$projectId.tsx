@@ -1,12 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Lock, Unlock, Clock } from "lucide-react";
+import { ArrowRight, Lock, Unlock, Clock, Briefcase, Plus, X, ChevronLeft } from "lucide-react";
 import { AttachmentsManager } from "@/components/attachments-manager";
 import { toast } from "sonner";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
+} from "@/components/ui/command";
+import { statusLabel, statusColor } from "@/components/app-shell";
 
 export const Route = createFileRoute("/_authenticated/admin/projects/$projectId")({
   ssr: false,
