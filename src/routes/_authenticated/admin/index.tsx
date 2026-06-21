@@ -155,6 +155,7 @@ function AdminMain() {
           client_name: p.client?.name ?? null,
           client_address: p.client?.address ?? null,
           status: p.status,
+          category_id: null,
         };
       });
     return [...jobItems, ...projItems];
