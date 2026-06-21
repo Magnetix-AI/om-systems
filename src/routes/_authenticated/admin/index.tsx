@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/context-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -1021,6 +1022,7 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
   // Site contact (per job)
   const [siteContactName, setSiteContactName] = useState("");
   const [siteContactPhone, setSiteContactPhone] = useState("");
+  const [linkProject, setLinkProject] = useState(false);
   const [projectId, setProjectId] = useState<string | null>(null);
 
   const { data: clients = [] } = useQuery({
@@ -1044,7 +1046,7 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
       setTime("09:00"); setEndTime("10:00");
       setUseNewClient(false); setNewClientName(""); setNewClientAddress(""); setNewClientContact("");
       setSiteContactName(""); setSiteContactPhone("");
-      setProjectId(null);
+      setLinkProject(false); setProjectId(null);
     }
   }, [date]);
 
@@ -1089,7 +1091,7 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
         end_time: endIso,
         site_contact_name: siteContactName.trim() || null,
         site_contact_phone: siteContactPhone.trim() || null,
-        project_id: projectId,
+        project_id: linkProject ? projectId : null,
       });
       if (error) throw error;
       toast.success("נוצרה קריאה");
@@ -1152,8 +1154,11 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
           </div>
 
           <div className="space-y-1.5">
-            <Label>שייוך לפרוייקט</Label>
-            <ProjectPicker value={projectId} onChange={setProjectId} />
+            <div className="flex items-center gap-2">
+              <Checkbox id="linkProject" checked={linkProject} onCheckedChange={(c) => { setLinkProject(!!c); if (!c) setProjectId(null); }} />
+              <Label htmlFor="linkProject" className="cursor-pointer">שייך לפרוייקט</Label>
+            </div>
+            {linkProject && <ProjectPicker value={projectId} onChange={setProjectId} />}
           </div>
           </div>
 
