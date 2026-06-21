@@ -51,6 +51,7 @@ export function AdminEditItemDialog({
   const [endAt, setEndAt] = useState("");
   const [siteContactName, setSiteContactName] = useState("");
   const [siteContactPhone, setSiteContactPhone] = useState("");
+  const [siteContactAddress, setSiteContactAddress] = useState("");
   const [projectId, setProjectId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -78,7 +79,7 @@ export function AdminEditItemDialog({
         if (item.kind === "job") {
           const { data, error } = await supabase
             .from("jobs")
-            .select("title, description, client_id, technician_id, start_time, end_time, scheduled_date, site_contact_name, site_contact_phone, project_id")
+            .select("title, description, client_id, technician_id, start_time, end_time, scheduled_date, site_contact_name, site_contact_phone, site_contact_address, project_id")
             .eq("id", item.id).single();
           if (error) throw error;
           if (cancelled || !data) return;
@@ -90,6 +91,7 @@ export function AdminEditItemDialog({
           setEndAt(toLocalInput(data.end_time));
           setSiteContactName((data as any).site_contact_name ?? "");
           setSiteContactPhone((data as any).site_contact_phone ?? "");
+          setSiteContactAddress((data as any).site_contact_address ?? "");
           setProjectId((data as any).project_id ?? null);
         } else {
           const { data, error } = await supabase
@@ -106,6 +108,7 @@ export function AdminEditItemDialog({
           setEndAt("");
           setSiteContactName("");
           setSiteContactPhone("");
+          setSiteContactAddress("");
         }
       } catch (e: any) {
         toast.error("שגיאה בטעינה", { description: e.message });
@@ -134,6 +137,7 @@ export function AdminEditItemDialog({
           end_time: endIso,
           site_contact_name: siteContactName.trim() || null,
           site_contact_phone: siteContactPhone.trim() || null,
+          site_contact_address: siteContactAddress.trim() || null,
           project_id: projectId,
         }).eq("id", item.id);
         if (error) throw error;
@@ -218,6 +222,7 @@ export function AdminEditItemDialog({
                   <Input placeholder="שם" value={siteContactName} onChange={e => setSiteContactName(e.target.value)} />
                   <Input placeholder="טלפון" value={siteContactPhone} onChange={e => setSiteContactPhone(e.target.value)} dir="ltr" />
                 </div>
+                <Input placeholder="כתובת" value={siteContactAddress} onChange={e => setSiteContactAddress(e.target.value)} />
               </div>
             )}
             {item.kind === "job" && (

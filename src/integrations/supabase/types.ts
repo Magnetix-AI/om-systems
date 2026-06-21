@@ -182,6 +182,7 @@ export type Database = {
           scheduled_date: string | null
           sent_to_invoicing: boolean
           sent_to_invoicing_at: string | null
+          site_contact_address: string | null
           site_contact_name: string | null
           site_contact_phone: string | null
           start_time: string | null
@@ -206,6 +207,7 @@ export type Database = {
           scheduled_date?: string | null
           sent_to_invoicing?: boolean
           sent_to_invoicing_at?: string | null
+          site_contact_address?: string | null
           site_contact_name?: string | null
           site_contact_phone?: string | null
           start_time?: string | null
@@ -230,6 +232,7 @@ export type Database = {
           scheduled_date?: string | null
           sent_to_invoicing?: boolean
           sent_to_invoicing_at?: string | null
+          site_contact_address?: string | null
           site_contact_name?: string | null
           site_contact_phone?: string | null
           start_time?: string | null

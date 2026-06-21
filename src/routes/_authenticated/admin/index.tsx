@@ -1022,6 +1022,7 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
   // Site contact (per job)
   const [siteContactName, setSiteContactName] = useState("");
   const [siteContactPhone, setSiteContactPhone] = useState("");
+  const [siteContactAddress, setSiteContactAddress] = useState("");
   const [linkProject, setLinkProject] = useState(false);
   const [projectId, setProjectId] = useState<string | null>(null);
 
@@ -1045,7 +1046,7 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
       setTitle(""); setDescription(""); setClientId("__none"); setTechId("__none");
       setTime("09:00"); setEndTime("10:00");
       setUseNewClient(false); setNewClientName(""); setNewClientAddress(""); setNewClientContact("");
-      setSiteContactName(""); setSiteContactPhone("");
+      setSiteContactName(""); setSiteContactPhone(""); setSiteContactAddress("");
       setLinkProject(false); setProjectId(null);
     }
   }, [date]);
@@ -1065,8 +1066,6 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
       if (useNewClient && newClientName.trim()) {
         const { data: nc, error: ce } = await supabase.from("clients").insert({
           name: newClientName.trim(),
-          address: newClientAddress.trim() || null,
-          contact_name: newClientContact.trim() || null,
         }).select("id").single();
         if (ce) throw ce;
         cid = nc.id;
@@ -1091,6 +1090,7 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
         end_time: endIso,
         site_contact_name: siteContactName.trim() || null,
         site_contact_phone: siteContactPhone.trim() || null,
+        site_contact_address: siteContactAddress.trim() || null,
         project_id: linkProject ? projectId : null,
       });
       if (error) throw error;
@@ -1132,8 +1132,6 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
             {useNewClient ? (
               <div className="space-y-2 border rounded-md p-2 bg-muted/30">
                 <Input placeholder="שם לקוח *" value={newClientName} onChange={e => setNewClientName(e.target.value)} />
-                <Input placeholder="איש קשר (אופציונלי)" value={newClientContact} onChange={e => setNewClientContact(e.target.value)} />
-                <Input placeholder="כתובת" value={newClientAddress} onChange={e => setNewClientAddress(e.target.value)} />
               </div>
             ) : (
               <Select value={clientId} onValueChange={setClientId}>
@@ -1146,11 +1144,13 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
             )}
           </div>
 
-          <div className="space-y-1.5 border rounded-md p-2 bg-secondary/20">
+          <div className="space-y-2 border rounded-md p-2 bg-secondary/20">
             <Label className="font-semibold text-sm">איש קשר בשטח</Label>
             <div className="grid grid-cols-2 gap-2">
               <Input placeholder="שם" value={siteContactName} onChange={e => setSiteContactName(e.target.value)} />
               <Input placeholder="טלפון" value={siteContactPhone} onChange={e => setSiteContactPhone(e.target.value)} dir="ltr" />
+            </div>
+            <Input placeholder="כתובת" value={siteContactAddress} onChange={e => setSiteContactAddress(e.target.value)} />
           </div>
 
           <div className="space-y-1.5">
@@ -1160,7 +1160,8 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
             </div>
             {linkProject && <ProjectPicker value={projectId} onChange={setProjectId} />}
           </div>
-          </div>
+
+
 
           <div className="space-y-1.5">
             <Label>טכנאי</Label>
