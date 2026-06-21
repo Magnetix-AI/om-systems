@@ -610,3 +610,118 @@ function DayDetailsPanel({ date, items, onEdit, onDelete }: {
   );
 }
 
+
+function NewJobOnDateDialog({ date, onClose, onCreated }: {
+  date: Date | null;
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [clientId, setClientId] = useState<string>("__none");
+  const [techId, setTechId] = useState<string>("__none");
+  const [time, setTime] = useState("09:00");
+  const [saving, setSaving] = useState(false);
+
+  const { data: clients = [] } = useQuery({
+    queryKey: ["clients"],
+    queryFn: async () => (await supabase.from("clients").select("id, name").order("name")).data ?? [],
+  });
+  const { data: techs = [] } = useQuery({
+    queryKey: ["technicians"],
+    queryFn: async () => {
+      const { data: roles } = await supabase.from("user_roles").select("user_id").eq("role", "technician");
+      const ids = (roles ?? []).map(r => r.user_id);
+      if (!ids.length) return [];
+      return (await supabase.from("profiles").select("id, full_name, color").in("id", ids)).data ?? [];
+    },
+  });
+
+  // reset when date changes
+  React.useEffect(() => {
+    if (date) {
+      setTitle(""); setDescription(""); setClientId("__none"); setTechId("__none"); setTime("09:00");
+    }
+  }, [date]);
+
+  const handleCreate = async () => {
+    if (!date || !title.trim()) {
+      toast.error("יש להזין כותרת");
+      return;
+    }
+    setSaving(true);
+    try {
+      const [hh, mm] = time.split(":").map(Number);
+      const start = new Date(date);
+      start.setHours(hh || 9, mm || 0, 0, 0);
+      const iso = start.toISOString();
+      const { error } = await supabase.from("jobs").insert({
+        title,
+        description: description || null,
+        client_id: clientId === "__none" ? null : clientId,
+        technician_id: techId === "__none" ? null : techId,
+        scheduled_date: iso,
+        start_time: iso,
+      });
+      if (error) throw error;
+      toast.success("נוצרה קריאה");
+      onCreated();
+    } catch (e: any) {
+      toast.error("שגיאה ביצירה", { description: e.message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={!!date} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent dir="rtl" className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>
+            קריאה חדשה {date ? `· ${format(date, "EEEE, d בMMMM", { locale: he })}` : ""}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label>כותרת</Label>
+            <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="כותרת הקריאה" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>תיאור</Label>
+            <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1.5">
+              <Label>לקוח</Label>
+              <Select value={clientId} onValueChange={setClientId}>
+                <SelectTrigger><SelectValue placeholder="בחר" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none">— ללא —</SelectItem>
+                  {(clients as any[]).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>טכנאי</Label>
+              <Select value={techId} onValueChange={setTechId}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none">לא משויך</SelectItem>
+                  {(techs as any[]).map(t => <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>שעה</Label>
+            <Input type="time" value={time} onChange={e => setTime(e.target.value)} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>ביטול</Button>
+          <Button onClick={handleCreate} disabled={saving}>{saving ? "יוצר..." : "צור קריאה"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
