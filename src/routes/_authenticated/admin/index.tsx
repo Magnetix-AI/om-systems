@@ -238,13 +238,23 @@ function AdminMain() {
 
       <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)_340px] gap-4">
         {/* Unscheduled — LEFT side. In RTL with grid this column appears on the visual left. */}
-        <UnscheduledPanel items={unscheduled} categories={categories} onEdit={setEditItem} />
+        <UnscheduledPanel items={unscheduled} categories={categories} onEdit={setEditItem} onDelete={setToDelete} />
 
         {/* Calendar — center */}
         <Card>
           <CardContent className="p-3">
             {view === "month" && (
-              <MonthGrid cursor={cursor} selected={selected} items={items} onSelect={setSelected} />
+              <MonthGrid
+                cursor={cursor} selected={selected} items={items} onSelect={setSelected}
+                onAddOnDay={setNewJobDate}
+                onItemClick={setEditItem}
+                onItemDelete={setToDelete}
+                onDropOnDay={(kind, id, date) => {
+                  const all = [...items, ...unscheduled];
+                  const found = all.find(i => i.kind === kind && i.id === id);
+                  if (found) setRescheduleTarget({ item: found, date });
+                }}
+              />
             )}
             {view === "week" && (
               <WeekGrid
