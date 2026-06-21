@@ -437,7 +437,21 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemDelete
           }
           flush();
           return (
-            <div key={d.toISOString()} className="relative border-l border-b" style={{ height: HOUR_PX * hours.length }}>
+            <div
+              key={d.toISOString()}
+              className="relative border-l border-b"
+              style={{ height: HOUR_PX * hours.length }}
+              onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
+              onDrop={(e) => {
+                e.preventDefault();
+                const raw = e.dataTransfer.getData("application/x-cal-item");
+                if (!raw) return;
+                try {
+                  const parsed = JSON.parse(raw) as { kind: "job" | "project"; id: string };
+                  onDropOnDay(parsed.kind, parsed.id, d);
+                } catch { /* ignore */ }
+              }}
+            >
               {hours.map(h => (
                 <div key={h} style={{ height: HOUR_PX }} className="border-b border-dashed border-border/40" />
               ))}
@@ -454,6 +468,11 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemDelete
                     key={it.kind + it.id}
                     className="absolute group/item"
                     style={{ top, height, left: `calc(${lay.col * widthPct}% + 2px)`, width: `calc(${widthPct}% - 4px)` }}
+                    draggable={it.kind === "job"}
+                    onDragStart={(e) => {
+                      e.dataTransfer.effectAllowed = "move";
+                      e.dataTransfer.setData("application/x-cal-item", JSON.stringify({ kind: it.kind, id: it.id }));
+                    }}
                   >
                     <button
                       onClick={(e) => { e.stopPropagation(); onItemClick(it); }}
