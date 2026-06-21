@@ -621,6 +621,7 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
   const [clientId, setClientId] = useState<string>("__none");
   const [techId, setTechId] = useState<string>("__none");
   const [time, setTime] = useState("09:00");
+  const [endTime, setEndTime] = useState("10:00");
   const [saving, setSaving] = useState(false);
 
   const { data: clients = [] } = useQuery({
@@ -640,7 +641,7 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
   // reset when date changes
   useEffect(() => {
     if (date) {
-      setTitle(""); setDescription(""); setClientId("__none"); setTechId("__none"); setTime("09:00");
+      setTitle(""); setDescription(""); setClientId("__none"); setTechId("__none"); setTime("09:00"); setEndTime("10:00");
     }
   }, [date]);
 
@@ -651,17 +652,22 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
     }
     setSaving(true);
     try {
-      const [hh, mm] = time.split(":").map(Number);
+      const [shh, smm] = time.split(":").map(Number);
       const start = new Date(date);
-      start.setHours(hh || 9, mm || 0, 0, 0);
-      const iso = start.toISOString();
+      start.setHours(shh || 9, smm || 0, 0, 0);
+      const [ehh, emm] = endTime.split(":").map(Number);
+      const end = new Date(date);
+      end.setHours(ehh || 10, emm || 0, 0, 0);
+      const startIso = start.toISOString();
+      const endIso = end.toISOString();
       const { error } = await supabase.from("jobs").insert({
         title,
         description: description || null,
         client_id: clientId === "__none" ? null : clientId,
         technician_id: techId === "__none" ? null : techId,
-        scheduled_date: iso,
-        start_time: iso,
+        scheduled_date: startIso,
+        start_time: startIso,
+        end_time: endIso,
       });
       if (error) throw error;
       toast.success("נוצרה קריאה");
@@ -712,9 +718,15 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
               </Select>
             </div>
           </div>
-          <div className="space-y-1.5">
-            <Label>שעה</Label>
-            <Input type="time" value={time} onChange={e => setTime(e.target.value)} />
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1.5">
+              <Label>שעת התחלה</Label>
+              <Input type="time" value={time} onChange={e => setTime(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>שעת סיום</Label>
+              <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} />
+            </div>
           </div>
         </div>
         <DialogFooter>
