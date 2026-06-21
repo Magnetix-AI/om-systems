@@ -76,6 +76,8 @@ export function AdminEditItemDialog({
   useEffect(() => {
     if (!item) return;
     let cancelled = false;
+    setUseNewClient(false);
+    setNewClientName("");
     (async () => {
       setLoading(true);
       try {
