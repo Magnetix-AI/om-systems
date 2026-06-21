@@ -813,7 +813,11 @@ function UnscheduledPanel({ items, categories, onEdit, onDelete }: {
     if (job) {
       try {
         const p = JSON.parse(job);
-        if (p.kind === "job" && targetCatId) { e.preventDefault(); moveJob(p.id, targetCatId); return; }
+        if (p.kind === "job" && targetCatId) {
+          e.preventDefault();
+          moveJob(p.id, targetCatId, !!p.fromCalendar);
+          return;
+        }
       } catch { /* ignore */ }
     }
     const catId = e.dataTransfer.getData("application/x-cat");
