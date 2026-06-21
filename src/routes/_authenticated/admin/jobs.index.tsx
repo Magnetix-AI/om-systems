@@ -18,9 +18,11 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { statusLabel, statusColor } from "@/components/app-shell";
-import { Plus, Briefcase, Trash2 } from "lucide-react";
+import { Plus, Briefcase, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { deleteJobsCascade } from "@/lib/admin-deletes";
+import { AdminEditItemDialog, EditItem } from "@/components/admin-edit-item-dialog";
+
 
 export const Route = createFileRoute("/_authenticated/admin/jobs/")({
   ssr: false,
