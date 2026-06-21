@@ -91,6 +91,7 @@ export function AdminEditItemDialog({
           setEndAt(toLocalInput(data.end_time));
           setSiteContactName((data as any).site_contact_name ?? "");
           setSiteContactPhone((data as any).site_contact_phone ?? "");
+          setSiteContactAddress((data as any).site_contact_address ?? "");
           setProjectId((data as any).project_id ?? null);
         } else {
           const { data, error } = await supabase
