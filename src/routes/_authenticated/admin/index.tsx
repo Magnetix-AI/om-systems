@@ -299,7 +299,8 @@ function AdminMain() {
                 onItemReturnToUnscheduled={handleReturnToUnscheduled}
                 onAddOnDay={setNewJobDate}
                 onDropOnDay={(kind, id, date) => {
-                  const found = items.find(i => i.kind === kind && i.id === id);
+                  const all = [...items, ...unscheduled];
+                  const found = all.find(i => i.kind === kind && i.id === id);
                   if (found) setRescheduleTarget({ item: found, date });
                 }}
               />
