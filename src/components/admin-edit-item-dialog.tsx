@@ -131,6 +131,14 @@ export function AdminEditItemDialog({
     try {
       const startIso = localToIso(scheduled);
       const endIso = localToIso(endAt);
+      let cid: string | null = clientId === "__none" ? null : clientId;
+      if (useNewClient && newClientName.trim()) {
+        const { data, error } = await supabase.from("clients")
+          .insert({ name: newClientName.trim() })
+          .select("id").single();
+        if (error) throw error;
+        cid = data.id;
+      }
       if (item.kind === "job") {
         const { error } = await supabase.from("jobs").update({
           title,
