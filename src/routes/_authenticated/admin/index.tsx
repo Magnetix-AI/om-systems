@@ -431,18 +431,31 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemDelete
                 const lay = layout.get(it.kind + it.id) ?? { col: 0, cols: 1 };
                 const widthPct = 100 / lay.cols;
                 return (
-                  <button
+                  <div
                     key={it.kind + it.id}
-                    onClick={(e) => { e.stopPropagation(); onItemClick(it); }}
-                    className="absolute rounded text-right text-[11px] text-white px-1.5 py-1 shadow-sm overflow-hidden hover:opacity-90 hover:shadow-md transition"
-                    style={{ top, height, background: color, left: `calc(${lay.col * widthPct}% + 2px)`, width: `calc(${widthPct}% - 4px)` }}
-                    title={`${it.title} · ${it.technician_name ?? "ללא טכנאי"}`}
+                    className="absolute group/item"
+                    style={{ top, height, left: `calc(${lay.col * widthPct}% + 2px)`, width: `calc(${widthPct}% - 4px)` }}
                   >
-                    <div className="font-semibold truncate">{it.title}</div>
-                    <div className="opacity-90 truncate">
-                      {format(it.date, "HH:mm")}{it.end ? `–${format(it.end, "HH:mm")}` : ""}
-                    </div>
-                  </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onItemClick(it); }}
+                      className="w-full h-full rounded text-right text-[11px] text-white px-1.5 py-1 shadow-sm overflow-hidden hover:opacity-90 hover:shadow-md transition"
+                      style={{ background: color }}
+                      title={`${it.title} · ${it.technician_name ?? "ללא טכנאי"}`}
+                    >
+                      <div className="font-semibold truncate">{it.title}</div>
+                      <div className="opacity-90 truncate">
+                        {format(it.date, "HH:mm")}{it.end ? `–${format(it.end, "HH:mm")}` : ""}
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); onItemDelete(it); }}
+                      title="הסר"
+                      className="absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition shadow"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
                 );
               })}
             </div>
