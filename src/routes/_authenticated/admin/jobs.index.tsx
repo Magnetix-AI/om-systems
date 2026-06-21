@@ -18,9 +18,11 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { statusLabel, statusColor } from "@/components/app-shell";
-import { Plus, Briefcase, Trash2 } from "lucide-react";
+import { Plus, Briefcase, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { deleteJobsCascade } from "@/lib/admin-deletes";
+import { AdminEditItemDialog, EditItem } from "@/components/admin-edit-item-dialog";
+
 
 export const Route = createFileRoute("/_authenticated/admin/jobs/")({
   ssr: false,
@@ -31,6 +33,8 @@ function AdminJobs() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [toDelete, setToDelete] = useState<{ id: string; title: string } | null>(null);
+  const [editItem, setEditItem] = useState<EditItem | null>(null);
+
 
   const { data: jobs = [] } = useQuery({
     queryKey: ["admin-jobs"],
@@ -116,11 +120,16 @@ function AdminJobs() {
                       <AssignTechnician job={j} onChange={() => qc.invalidateQueries({ queryKey: ["admin-jobs"] })} />
                     </TableCell>
                     <TableCell>
+                      <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary"
+                        onClick={() => setEditItem({ kind: "job", id: j.id })}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"
                         onClick={() => setToDelete({ id: j.id, title: j.title })}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </TableCell>
+
                   </TableRow>
                 ))}
               </TableBody>
@@ -157,6 +166,12 @@ function AdminJobs() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AdminEditItemDialog
+        item={editItem}
+        onClose={() => setEditItem(null)}
+        invalidateKeys={[["admin-jobs"]]}
+      />
     </div>
   );
 }
