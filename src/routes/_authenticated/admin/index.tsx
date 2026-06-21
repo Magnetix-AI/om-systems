@@ -496,10 +496,11 @@ function MonthGrid({ cursor, selected, items, onSelect, onAddOnDay, onItemClick,
 }
 
 
-function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemDelete, onAddOnDay, onDropOnDay }: {
+function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove, onItemReturnToUnscheduled, onAddOnDay, onDropOnDay }: {
   cursor: Date; selected: Date; items: CalendarItem[]; onSelect: (d: Date) => void;
   onItemClick: (i: CalendarItem) => void;
-  onItemDelete: (i: CalendarItem) => void;
+  onItemRemove: (i: CalendarItem) => void;
+  onItemReturnToUnscheduled: (i: CalendarItem) => void;
   onAddOnDay: (d: Date) => void;
   onDropOnDay: (kind: "job" | "project", id: string, date: Date) => void;
 }) {
