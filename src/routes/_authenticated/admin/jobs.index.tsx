@@ -120,11 +120,16 @@ function AdminJobs() {
                       <AssignTechnician job={j} onChange={() => qc.invalidateQueries({ queryKey: ["admin-jobs"] })} />
                     </TableCell>
                     <TableCell>
+                      <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary"
+                        onClick={() => setEditItem({ kind: "job", id: j.id })}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"
                         onClick={() => setToDelete({ id: j.id, title: j.title })}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </TableCell>
+
                   </TableRow>
                 ))}
               </TableBody>
