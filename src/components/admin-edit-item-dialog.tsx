@@ -12,6 +12,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { ProjectPicker } from "@/components/project-picker";
 
 export type EditItem = {
   kind: "job" | "project";
