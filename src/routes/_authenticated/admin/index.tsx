@@ -448,25 +448,40 @@ function MonthGrid({ cursor, selected, items, onSelect, onAddOnDay, onItemClick,
               </div>
               <div className="flex flex-col gap-0.5 overflow-hidden relative z-[1]">
                 {dayItems.slice(0, 2).map(it => (
-                  <div key={it.kind + it.id} className="group/item relative">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); onItemClick(it); }}
-                      className={cn(
-                        "w-full text-[10px] rounded px-1 py-0.5 truncate text-right",
-                        it.kind === "project" ? "bg-accent/40 text-accent-foreground" : "bg-primary/15 text-primary"
-                      )}
-                    >
-                      {format(it.date, "HH:mm")} {it.title}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); onItemDelete(it); }}
-                      title="הסר"
-                      className="absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition shadow"
-                    >
-                      <X className="h-2.5 w-2.5" />
-                    </button>
-                  </div>
+                  <ContextMenu key={it.kind + it.id}>
+                    <ContextMenuTrigger asChild>
+                      <div className="group/item relative">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onItemClick(it); }}
+                          className={cn(
+                            "w-full text-[10px] rounded px-1 py-0.5 truncate text-right",
+                            it.kind === "project" ? "bg-accent/40 text-accent-foreground" : "bg-primary/15 text-primary"
+                          )}
+                        >
+                          {format(it.date, "HH:mm")} {it.title}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); onItemRemove(it); }}
+                          title="הסר מהיומן"
+                          className="absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition shadow"
+                        >
+                          <X className="h-2.5 w-2.5" />
+                        </button>
+                      </div>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent>
+                      <ContextMenuItem onClick={() => onItemClick(it)}>
+                        <Pencil className="h-3.5 w-3.5 ml-2" /> ערוך
+                      </ContextMenuItem>
+                      <ContextMenuItem onClick={() => onItemReturnToUnscheduled(it)}>
+                        <AlertTriangle className="h-3.5 w-3.5 ml-2" /> החזר לקריאות לא מתואמות
+                      </ContextMenuItem>
+                      <ContextMenuItem className="text-destructive" onClick={() => onItemRemove(it)}>
+                        <Trash2 className="h-3.5 w-3.5 ml-2" /> הסר מהיומן
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
                 ))}
                 {dayItems.length > 2 && (
                   <div className="text-[10px] text-muted-foreground">+{dayItems.length - 2} נוספים</div>
