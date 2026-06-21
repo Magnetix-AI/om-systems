@@ -776,3 +776,96 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
     </Dialog>
   );
 }
+
+function RescheduleDialog({ target, onClose, onSaved }: {
+  target: { item: CalendarItem; date: Date } | null;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [start, setStart] = useState("09:00");
+  const [end, setEnd] = useState("10:00");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (target) {
+      const s = target.item.date;
+      const e = target.item.end;
+      setStart(`${String(s.getHours()).padStart(2, "0")}:${String(s.getMinutes()).padStart(2, "0")}`);
+      if (e) setEnd(`${String(e.getHours()).padStart(2, "0")}:${String(e.getMinutes()).padStart(2, "0")}`);
+      else {
+        const eh = (s.getHours() + 1) % 24;
+        setEnd(`${String(eh).padStart(2, "0")}:${String(s.getMinutes()).padStart(2, "0")}`);
+      }
+    }
+  }, [target]);
+
+  const handleSave = async () => {
+    if (!target) return;
+    setSaving(true);
+    try {
+      const [sh, sm] = start.split(":").map(Number);
+      const [eh, em] = end.split(":").map(Number);
+      const sd = new Date(target.date);
+      sd.setHours(sh || 0, sm || 0, 0, 0);
+      const ed = new Date(target.date);
+      ed.setHours(eh || 0, em || 0, 0, 0);
+      if (ed.getTime() <= sd.getTime()) {
+        toast.error("שעת הסיום חייבת להיות אחרי שעת ההתחלה");
+        setSaving(false);
+        return;
+      }
+      const startIso = sd.toISOString();
+      const endIso = ed.toISOString();
+      if (target.item.kind === "job") {
+        const { error } = await supabase.from("jobs").update({
+          scheduled_date: startIso,
+          start_time: startIso,
+          end_time: endIso,
+        }).eq("id", target.item.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("projects").update({
+          start_date: startIso,
+        }).eq("id", target.item.id);
+        if (error) throw error;
+      }
+      toast.success("הקריאה הועברה");
+      onSaved();
+    } catch (e: any) {
+      toast.error("שגיאה בעדכון", { description: e.message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={!!target} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent dir="rtl" className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>
+            העברת קריאה {target ? `· ${format(target.date, "EEEE, d בMMMM", { locale: he })}` : ""}
+          </DialogTitle>
+        </DialogHeader>
+        {target && (
+          <div className="space-y-3">
+            <div className="text-sm text-muted-foreground truncate">"{target.item.title}"</div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1.5">
+                <Label>שעת התחלה</Label>
+                <Input type="time" value={start} onChange={e => setStart(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>שעת סיום</Label>
+                <Input type="time" value={end} onChange={e => setEnd(e.target.value)} />
+              </div>
+            </div>
+          </div>
+        )}
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>ביטול</Button>
+          <Button onClick={handleSave} disabled={saving}>{saving ? "שומר..." : "העבר"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
