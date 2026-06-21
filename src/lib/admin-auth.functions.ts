@@ -35,8 +35,9 @@ export const adminLogin = createServerFn({ method: "POST" })
     const userOk = safeEqual(data.username, expectedUser);
     const passOk = safeEqual(data.password, expectedPass);
     if (!userOk || !passOk) {
-      // Generic message — don't reveal which field was wrong.
-      throw new Error("פרטי כניסה שגויים");
+      // Expected failure — return a result instead of throwing so it doesn't
+      // surface as an uncaught runtime error in the client.
+      return { ok: false as const, error: "פרטי כניסה שגויים" };
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
