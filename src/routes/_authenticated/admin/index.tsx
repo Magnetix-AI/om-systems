@@ -54,6 +54,15 @@ type CalendarItem = {
   client_name: string | null;
   client_address: string | null;
   status: string;
+  category_id: string | null;
+};
+
+type JobCategory = {
+  id: string;
+  name: string;
+  parent_id: string | null;
+  is_default: boolean;
+  sort_order: number;
 };
 
 function AdminMain() {
