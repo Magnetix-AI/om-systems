@@ -1046,7 +1046,7 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
       setTitle(""); setDescription(""); setClientId("__none"); setTechId("__none");
       setTime("09:00"); setEndTime("10:00");
       setUseNewClient(false); setNewClientName(""); setNewClientAddress(""); setNewClientContact("");
-      setSiteContactName(""); setSiteContactPhone("");
+      setSiteContactName(""); setSiteContactPhone(""); setSiteContactAddress("");
       setLinkProject(false); setProjectId(null);
     }
   }, [date]);
