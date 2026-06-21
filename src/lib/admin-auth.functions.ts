@@ -121,6 +121,7 @@ export const adminLogin = createServerFn({ method: "POST" })
     }
 
     return {
+      ok: true as const,
       access_token: signIn.data.session.access_token,
       refresh_token: signIn.data.session.refresh_token,
     };
