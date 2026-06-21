@@ -218,7 +218,15 @@ function AdminMain() {
               <MonthGrid cursor={cursor} selected={selected} items={items} onSelect={setSelected} />
             )}
             {view === "week" && (
-              <WeekGrid cursor={cursor} selected={selected} items={items} onSelect={setSelected} onItemClick={setEditItem} onItemDelete={setToDelete} onAddOnDay={setNewJobDate} />
+              <WeekGrid
+                cursor={cursor} selected={selected} items={items}
+                onSelect={setSelected} onItemClick={setEditItem} onItemDelete={setToDelete}
+                onAddOnDay={setNewJobDate}
+                onDropOnDay={(kind, id, date) => {
+                  const found = items.find(i => i.kind === kind && i.id === id);
+                  if (found) setRescheduleTarget({ item: found, date });
+                }}
+              />
             )}
             {view === "day" && (
               <DayGrid cursor={cursor} items={items.filter(i => isSameDay(i.date, cursor))} onItemClick={setEditItem} />
