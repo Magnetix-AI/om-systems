@@ -231,6 +231,15 @@ function AdminMain() {
 
       <AdminEditItemDialog item={editItem} onClose={() => setEditItem(null)} invalidateKeys={[["main-jobs"], ["main-projects"]]} />
 
+      <NewJobOnDateDialog
+        date={newJobDate}
+        onClose={() => setNewJobDate(null)}
+        onCreated={() => {
+          qc.invalidateQueries({ queryKey: ["main-jobs"] });
+          setNewJobDate(null);
+        }}
+      />
+
       <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
         <AlertDialogContent dir="rtl">
           <AlertDialogHeader>
