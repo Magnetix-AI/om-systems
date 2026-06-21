@@ -108,6 +108,7 @@ export function AdminEditItemDialog({
           setEndAt("");
           setSiteContactName("");
           setSiteContactPhone("");
+          setSiteContactAddress("");
         }
       } catch (e: any) {
         toast.error("שגיאה בטעינה", { description: e.message });
