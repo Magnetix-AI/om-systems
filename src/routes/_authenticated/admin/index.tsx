@@ -622,7 +622,7 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
                         draggable={it.kind === "job"}
                         onDragStart={(e) => {
                           e.dataTransfer.effectAllowed = "move";
-                          e.dataTransfer.setData("application/x-cal-item", JSON.stringify({ kind: it.kind, id: it.id }));
+                          e.dataTransfer.setData("application/x-cal-item", JSON.stringify({ kind: it.kind, id: it.id, fromCalendar: true }));
                         }}
                       >
                         <button
