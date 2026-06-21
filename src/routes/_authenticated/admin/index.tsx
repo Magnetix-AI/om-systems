@@ -791,30 +791,53 @@ function UnscheduledPanel({ items, categories, onEdit, onDelete }: {
         {isOpen && (
           <div className="space-y-1 mt-1">
             {own.map(it => (
-              <button
-                key={it.id}
-                draggable
-                onDragStart={(e) => {
-                  e.dataTransfer.effectAllowed = "move";
-                  e.dataTransfer.setData("application/x-cal-item", JSON.stringify({ kind: "job", id: it.id }));
-                }}
-                onClick={() => onEdit(it)}
-                className="w-full text-right p-2 rounded-md border bg-card hover:border-primary/50 hover:shadow-sm transition"
-                style={{ marginInlineStart: 14 + depth * 14 }}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="font-medium text-xs truncate">{it.title}</div>
-                  <Pencil className="h-3 w-3 text-muted-foreground shrink-0" />
-                </div>
-                {it.client_name && (
-                  <div className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
-                    <MapPin className="h-2.5 w-2.5" /> {it.client_name}
+              <ContextMenu key={it.id}>
+                <ContextMenuTrigger asChild>
+                  <div
+                    className="relative group/job"
+                    style={{ marginInlineStart: 14 + depth * 14 }}
+                  >
+                    <button
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.effectAllowed = "move";
+                        e.dataTransfer.setData("application/x-cal-item", JSON.stringify({ kind: "job", id: it.id }));
+                      }}
+                      onClick={() => onEdit(it)}
+                      className="w-full text-right p-2 rounded-md border bg-card hover:border-primary/50 hover:shadow-sm transition"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="font-medium text-xs truncate">{it.title}</div>
+                        <Pencil className="h-3 w-3 text-muted-foreground shrink-0" />
+                      </div>
+                      {it.client_name && (
+                        <div className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                          <MapPin className="h-2.5 w-2.5" /> {it.client_name}
+                        </div>
+                      )}
+                      {!it.technician_id && (
+                        <Badge variant="outline" className="mt-1 h-4 text-[9px] bg-warning/15 border-warning/40">ללא טכנאי</Badge>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); onDelete(it); }}
+                      title="מחק קריאה"
+                      className="absolute top-1 left-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 flex items-center justify-center opacity-0 group-hover/job:opacity-100 transition shadow"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
                   </div>
-                )}
-                {!it.technician_id && (
-                  <Badge variant="outline" className="mt-1 h-4 text-[9px] bg-warning/15 border-warning/40">ללא טכנאי</Badge>
-                )}
-              </button>
+                </ContextMenuTrigger>
+                <ContextMenuContent>
+                  <ContextMenuItem onClick={() => onEdit(it)}>
+                    <Pencil className="h-3.5 w-3.5 ml-2" /> ערוך
+                  </ContextMenuItem>
+                  <ContextMenuItem className="text-destructive" onClick={() => onDelete(it)}>
+                    <Trash2 className="h-3.5 w-3.5 ml-2" /> מחק
+                  </ContextMenuItem>
+                </ContextMenuContent>
+              </ContextMenu>
             ))}
             {kids.map(k => renderNode(k, depth + 1))}
           </div>
