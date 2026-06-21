@@ -451,7 +451,15 @@ function MonthGrid({ cursor, selected, items, onSelect, onAddOnDay, onItemClick,
                 {dayItems.slice(0, 2).map(it => (
                   <ContextMenu key={it.kind + it.id}>
                     <ContextMenuTrigger asChild>
-                      <div className="group/item relative">
+                      <div
+                        className="group/item relative"
+                        draggable={it.kind === "job"}
+                        onDragStart={(e) => {
+                          e.stopPropagation();
+                          e.dataTransfer.effectAllowed = "move";
+                          e.dataTransfer.setData("application/x-cal-item", JSON.stringify({ kind: it.kind, id: it.id, fromCalendar: true }));
+                        }}
+                      >
                         <button
                           onClick={(e) => { e.stopPropagation(); onItemClick(it); }}
                           className={cn(
