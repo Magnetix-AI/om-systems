@@ -198,13 +198,25 @@ export function AdminEditItemDialog({
             </div>
             <div className="space-y-1.5">
               <Label>לקוח</Label>
-              <Select value={clientId} onValueChange={setClientId}>
-                <SelectTrigger><SelectValue placeholder="בחר לקוח" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none">— ללא לקוח —</SelectItem>
-                  {(clients as any[]).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="editNewClient"
+                  checked={useNewClient}
+                  onCheckedChange={(c) => { setUseNewClient(!!c); if (!c) setNewClientName(""); }}
+                />
+                <Label htmlFor="editNewClient" className="cursor-pointer text-xs font-normal">לקוח חדש</Label>
+              </div>
+              {useNewClient ? (
+                <Input placeholder="שם לקוח חדש" value={newClientName} onChange={e => setNewClientName(e.target.value)} />
+              ) : (
+                <Select value={clientId} onValueChange={setClientId}>
+                  <SelectTrigger><SelectValue placeholder="בחר לקוח" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none">— ללא לקוח —</SelectItem>
+                    {(clients as any[]).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>טכנאי</Label>
