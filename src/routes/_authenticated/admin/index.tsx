@@ -10,9 +10,12 @@ import {
 } from "@/components/ui/select";
 
 import {
-  ChevronRight, ChevronLeft, Calendar as CalendarIcon, MapPin,
+  ChevronRight, ChevronLeft, ChevronDown, Calendar as CalendarIcon, MapPin,
   User, Clock, Briefcase, FolderKanban, AlertTriangle, Pencil, Trash2, Plus, X,
 } from "lucide-react";
+import {
+  ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -54,6 +57,15 @@ type CalendarItem = {
   client_name: string | null;
   client_address: string | null;
   status: string;
+  category_id: string | null;
+};
+
+type JobCategory = {
+  id: string;
+  name: string;
+  parent_id: string | null;
+  is_default: boolean;
+  sort_order: number;
 };
 
 function AdminMain() {
@@ -73,7 +85,7 @@ function AdminMain() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("jobs")
-        .select("id, title, description, status, scheduled_date, start_time, end_time, technician_id, client:clients(name, address)")
+        .select("id, title, description, status, scheduled_date, start_time, end_time, technician_id, category_id, client:clients(name, address)")
         .order("scheduled_date", { ascending: true });
       if (error) throw error;
       return data ?? [];
@@ -102,6 +114,19 @@ function AdminMain() {
     },
   });
 
+  const { data: categories = [] } = useQuery<JobCategory[]>({
+    queryKey: ["job-categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("job_categories")
+        .select("id, name, parent_id, is_default, sort_order")
+        .order("sort_order")
+        .order("name");
+      if (error) throw error;
+      return (data ?? []) as JobCategory[];
+    },
+  });
+
   const techMap = useMemo(
     () => Object.fromEntries((techs as any[]).map(t => [t.id, t])),
     [techs],
@@ -126,6 +151,7 @@ function AdminMain() {
           client_name: j.client?.name ?? null,
           client_address: j.client?.address ?? null,
           status: j.status,
+          category_id: j.category_id ?? null,
         };
       });
     const projItems = (projects as any[])
@@ -145,6 +171,7 @@ function AdminMain() {
           client_name: p.client?.name ?? null,
           client_address: p.client?.address ?? null,
           status: p.status,
+          category_id: null,
         };
       });
     return [...jobItems, ...projItems];
@@ -168,6 +195,7 @@ function AdminMain() {
           client_name: j.client?.name ?? null,
           client_address: j.client?.address ?? null,
           status: j.status,
+          category_id: j.category_id ?? null,
         };
       });
   }, [jobs, techMap]);
@@ -209,7 +237,7 @@ function AdminMain() {
 
       <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)_340px] gap-4">
         {/* Unscheduled — LEFT side. In RTL with grid this column appears on the visual left. */}
-        <UnscheduledPanel items={unscheduled} onEdit={setEditItem} />
+        <UnscheduledPanel items={unscheduled} categories={categories} onEdit={setEditItem} />
 
         {/* Calendar — center */}
         <Card>
@@ -552,7 +580,192 @@ function DayGrid({ cursor, items, onItemClick }: {
   );
 }
 
-function UnscheduledPanel({ items, onEdit }: { items: CalendarItem[]; onEdit: (i: CalendarItem) => void }) {
+function UnscheduledPanel({ items, categories, onEdit }: {
+  items: CalendarItem[]; categories: JobCategory[]; onEdit: (i: CalendarItem) => void;
+}) {
+  const qc = useQueryClient();
+  const defaultCat = categories.find(c => c.is_default);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [renameTarget, setRenameTarget] = useState<JobCategory | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [addParent, setAddParent] = useState<JobCategory | "root" | null>(null);
+  const [addName, setAddName] = useState("");
+
+  const buckets = useMemo(() => {
+    const m = new Map<string, CalendarItem[]>();
+    for (const it of items) {
+      const k = it.category_id ?? defaultCat?.id ?? "uncat";
+      if (!m.has(k)) m.set(k, []);
+      m.get(k)!.push(it);
+    }
+    return m;
+  }, [items, defaultCat]);
+
+  const childrenOf = useMemo(() => {
+    const m = new Map<string | null, JobCategory[]>();
+    for (const c of categories) {
+      const k = c.parent_id;
+      if (!m.has(k)) m.set(k, []);
+      m.get(k)!.push(c);
+    }
+    return m;
+  }, [categories]);
+
+  const descendants = (cid: string): string[] => {
+    const out = [cid];
+    for (const c of childrenOf.get(cid) ?? []) out.push(...descendants(c.id));
+    return out;
+  };
+  const totalCount = (cid: string) => descendants(cid).reduce((s, id) => s + (buckets.get(id)?.length ?? 0), 0);
+
+  const invalidateAll = () => {
+    qc.invalidateQueries({ queryKey: ["main-jobs"] });
+    qc.invalidateQueries({ queryKey: ["job-categories"] });
+  };
+
+  const moveJob = async (jobId: string, categoryId: string) => {
+    const { error } = await supabase.from("jobs").update({ category_id: categoryId }).eq("id", jobId);
+    if (error) return toast.error("שגיאה בהעברה", { description: error.message });
+    toast.success("הקריאה הועברה");
+    invalidateAll();
+  };
+  const reparent = async (catId: string, newParent: string | null) => {
+    if (catId === newParent) return;
+    if (newParent && descendants(catId).includes(newParent)) {
+      return toast.error("לא ניתן להעביר לתת-קטגוריה של עצמה");
+    }
+    const { error } = await supabase.from("job_categories").update({ parent_id: newParent }).eq("id", catId);
+    if (error) return toast.error("שגיאה", { description: error.message });
+    invalidateAll();
+  };
+  const createCategory = async (parent_id: string | null, name: string) => {
+    const n = name.trim();
+    if (!n) return;
+    const { error } = await supabase.from("job_categories").insert({ name: n, parent_id });
+    if (error) return toast.error("שגיאה", { description: error.message });
+    invalidateAll();
+  };
+  const renameCategory = async (id: string, name: string) => {
+    const n = name.trim();
+    if (!n) return;
+    const { error } = await supabase.from("job_categories").update({ name: n }).eq("id", id);
+    if (error) return toast.error("שגיאה", { description: error.message });
+    invalidateAll();
+  };
+  const deleteCategory = async (cat: JobCategory) => {
+    if (cat.is_default) return toast.error("לא ניתן למחוק את קטגוריית ברירת המחדל");
+    const fallback = cat.parent_id ?? defaultCat?.id ?? null;
+    if (fallback) {
+      await supabase.from("jobs").update({ category_id: fallback }).eq("category_id", cat.id);
+      await supabase.from("job_categories").update({ parent_id: fallback }).eq("parent_id", cat.id);
+    }
+    const { error } = await supabase.from("job_categories").delete().eq("id", cat.id);
+    if (error) return toast.error("שגיאה", { description: error.message });
+    toast.success("הקטגוריה נמחקה");
+    invalidateAll();
+  };
+
+  const handleCatDrop = (e: React.DragEvent, targetCatId: string | null) => {
+    const job = e.dataTransfer.getData("application/x-cal-item");
+    if (job) {
+      try {
+        const p = JSON.parse(job);
+        if (p.kind === "job" && targetCatId) { e.preventDefault(); moveJob(p.id, targetCatId); return; }
+      } catch { /* ignore */ }
+    }
+    const catId = e.dataTransfer.getData("application/x-cat");
+    if (catId) { e.preventDefault(); reparent(catId, targetCatId); }
+  };
+
+  const renderNode = (cat: JobCategory, depth = 0) => {
+    const kids = childrenOf.get(cat.id) ?? [];
+    const own = buckets.get(cat.id) ?? [];
+    const isOpen = expanded[cat.id] ?? true;
+    const hasContent = kids.length > 0 || own.length > 0;
+    return (
+      <div key={cat.id}>
+        <ContextMenu>
+          <ContextMenuTrigger asChild>
+            <div
+              className="flex items-center gap-1 px-1.5 py-1 rounded hover:bg-secondary/60 cursor-default"
+              style={{ paddingInlineStart: 6 + depth * 14 }}
+              draggable={!cat.is_default}
+              onDragStart={(e) => {
+                e.stopPropagation();
+                e.dataTransfer.effectAllowed = "move";
+                e.dataTransfer.setData("application/x-cat", cat.id);
+              }}
+              onDragOver={(e) => {
+                if (e.dataTransfer.types.includes("application/x-cal-item") ||
+                    e.dataTransfer.types.includes("application/x-cat")) {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                }
+              }}
+              onDrop={(e) => handleCatDrop(e, cat.id)}
+            >
+              <button
+                type="button"
+                onClick={() => setExpanded(s => ({ ...s, [cat.id]: !isOpen }))}
+                className="shrink-0 h-4 w-4 flex items-center justify-center"
+              >
+                {hasContent ? (
+                  isOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />
+                ) : <span className="inline-block w-3" />}
+              </button>
+              <span className="text-sm font-medium flex-1 truncate">{cat.name}</span>
+              <Badge variant="outline" className="h-5 text-[10px] px-1.5">{totalCount(cat.id)}</Badge>
+            </div>
+          </ContextMenuTrigger>
+          <ContextMenuContent>
+            <ContextMenuItem onClick={() => { setAddParent(cat); setAddName(""); }}>
+              <Plus className="h-3.5 w-3.5 ml-2" /> הוסף תת-קטגוריה
+            </ContextMenuItem>
+            <ContextMenuItem disabled={cat.is_default} onClick={() => { setRenameTarget(cat); setRenameValue(cat.name); }}>
+              <Pencil className="h-3.5 w-3.5 ml-2" /> שנה שם
+            </ContextMenuItem>
+            <ContextMenuItem disabled={cat.is_default} className="text-destructive" onClick={() => deleteCategory(cat)}>
+              <Trash2 className="h-3.5 w-3.5 ml-2" /> מחק
+            </ContextMenuItem>
+          </ContextMenuContent>
+        </ContextMenu>
+        {isOpen && (
+          <div className="space-y-1 mt-1">
+            {own.map(it => (
+              <button
+                key={it.id}
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.effectAllowed = "move";
+                  e.dataTransfer.setData("application/x-cal-item", JSON.stringify({ kind: "job", id: it.id }));
+                }}
+                onClick={() => onEdit(it)}
+                className="w-full text-right p-2 rounded-md border bg-card hover:border-primary/50 hover:shadow-sm transition"
+                style={{ marginInlineStart: 14 + depth * 14 }}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="font-medium text-xs truncate">{it.title}</div>
+                  <Pencil className="h-3 w-3 text-muted-foreground shrink-0" />
+                </div>
+                {it.client_name && (
+                  <div className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                    <MapPin className="h-2.5 w-2.5" /> {it.client_name}
+                  </div>
+                )}
+                {!it.technician_id && (
+                  <Badge variant="outline" className="mt-1 h-4 text-[9px] bg-warning/15 border-warning/40">ללא טכנאי</Badge>
+                )}
+              </button>
+            ))}
+            {kids.map(k => renderNode(k, depth + 1))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const roots = childrenOf.get(null) ?? [];
+
   return (
     <Card className="bg-warning/5 border-warning/30">
       <CardHeader className="pb-3">
@@ -562,30 +775,83 @@ function UnscheduledPanel({ items, onEdit }: { items: CalendarItem[]; onEdit: (i
           <Badge variant="outline" className="mr-auto bg-warning/20 border-warning/40">{items.length}</Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-2 max-h-[calc(100vh-260px)] overflow-y-auto">
-        {items.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-6">כל הקריאות מתואמות 🎉</p>
-        ) : items.map(it => (
-          <button
-            key={it.id}
-            onClick={() => onEdit(it)}
-            className="w-full text-right p-3 rounded-lg border bg-card hover:border-primary/50 hover:shadow-sm transition-all space-y-1"
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div className="font-medium text-sm truncate">{it.title}</div>
-              <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            </div>
-            {it.client_name && (
-              <div className="text-xs text-muted-foreground flex items-center gap-1">
-                <MapPin className="h-3 w-3" /> {it.client_name}
-              </div>
-            )}
-            <div className="flex gap-1 text-[10px]">
-              {!it.technician_id && <Badge variant="outline" className="bg-warning/15 border-warning/40">ללא טכנאי</Badge>}
-            </div>
-          </button>
-        ))}
+      <CardContent
+        className="space-y-1 max-h-[calc(100vh-260px)] overflow-y-auto"
+        onDragOver={(e) => { if (e.dataTransfer.types.includes("application/x-cat")) e.preventDefault(); }}
+        onDrop={(e) => {
+          const catId = e.dataTransfer.getData("application/x-cat");
+          if (catId) { e.preventDefault(); reparent(catId, null); }
+        }}
+      >
+        <div className="flex items-center justify-between mb-2">
+          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => { setAddParent("root"); setAddName(""); }}>
+            <Plus className="h-3 w-3 ml-1" /> קטגוריה חדשה
+          </Button>
+          <span className="text-[10px] text-muted-foreground">קליק ימני לעוד אפשרויות</span>
+        </div>
+        {categories.length === 0 ? (
+          <p className="text-xs text-muted-foreground text-center py-4">טוען קטגוריות…</p>
+        ) : roots.length === 0 ? (
+          <p className="text-xs text-muted-foreground text-center py-4">אין קטגוריות עדיין</p>
+        ) : (
+          roots.map(r => renderNode(r))
+        )}
       </CardContent>
+
+      <Dialog open={!!addParent} onOpenChange={(o) => !o && setAddParent(null)}>
+        <DialogContent dir="rtl" className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>
+              {addParent && addParent !== "root"
+                ? `תת-קטגוריה תחת "${(addParent as JobCategory).name}"`
+                : "קטגוריה חדשה"}
+            </DialogTitle>
+          </DialogHeader>
+          <Input
+            value={addName}
+            onChange={(e) => setAddName(e.target.value)}
+            placeholder="שם קטגוריה"
+            autoFocus
+            onKeyDown={async (e) => {
+              if (e.key === "Enter") {
+                await createCategory(addParent === "root" ? null : (addParent as JobCategory).id, addName);
+                setAddParent(null);
+              }
+            }}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddParent(null)}>ביטול</Button>
+            <Button onClick={async () => {
+              await createCategory(addParent === "root" ? null : (addParent as JobCategory).id, addName);
+              setAddParent(null);
+            }}>צור</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!renameTarget} onOpenChange={(o) => !o && setRenameTarget(null)}>
+        <DialogContent dir="rtl" className="max-w-sm">
+          <DialogHeader><DialogTitle>שינוי שם קטגוריה</DialogTitle></DialogHeader>
+          <Input
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            autoFocus
+            onKeyDown={async (e) => {
+              if (e.key === "Enter" && renameTarget) {
+                await renameCategory(renameTarget.id, renameValue);
+                setRenameTarget(null);
+              }
+            }}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenameTarget(null)}>ביטול</Button>
+            <Button onClick={async () => {
+              if (renameTarget) await renameCategory(renameTarget.id, renameValue);
+              setRenameTarget(null);
+            }}>שמור</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

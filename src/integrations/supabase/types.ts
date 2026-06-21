@@ -86,6 +86,44 @@ export type Database = {
         }
         Relationships: []
       }
+      job_categories: {
+        Row: {
+          created_at: string
+          id: string
+          is_default: boolean
+          name: string
+          parent_id: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name: string
+          parent_id?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          parent_id?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "job_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_items: {
         Row: {
           created_at: string
@@ -131,6 +169,7 @@ export type Database = {
       jobs: {
         Row: {
           arrival_time: string | null
+          category_id: string | null
           client_id: string | null
           completed_at: string | null
           created_at: string
@@ -153,6 +192,7 @@ export type Database = {
         }
         Insert: {
           arrival_time?: string | null
+          category_id?: string | null
           client_id?: string | null
           completed_at?: string | null
           created_at?: string
@@ -175,6 +215,7 @@ export type Database = {
         }
         Update: {
           arrival_time?: string | null
+          category_id?: string | null
           client_id?: string | null
           completed_at?: string | null
           created_at?: string
@@ -196,6 +237,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "jobs_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "job_categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "jobs_client_id_fkey"
             columns: ["client_id"]
