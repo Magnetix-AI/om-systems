@@ -33,7 +33,7 @@ function TechProjectDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("*, client:clients(name, address, phone)")
+        .select("*, client:clients(name, address)")
         .eq("id", projectId).maybeSingle();
       if (error) throw error;
       return data;

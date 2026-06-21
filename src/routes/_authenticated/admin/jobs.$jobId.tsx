@@ -34,7 +34,7 @@ export default function AdminJobDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("jobs")
-        .select("*, client:clients(name, phone, address), items:job_items(id, quantity, unit_price, product:products(name, unit))")
+        .select("*, client:clients(name, address), items:job_items(id, quantity, unit_price, product:products(name, unit))")
         .eq("id", jobId).maybeSingle();
       if (error) throw error;
       if (data?.technician_id) {
@@ -106,7 +106,17 @@ export default function AdminJobDetail() {
           </div>
           {job.description && <p className="text-sm text-muted-foreground">{job.description}</p>}
           <div className="text-sm text-muted-foreground mt-2 space-y-0.5">
-            <div>לקוח: {job.client?.name ?? "—"} {job.client?.phone && <span dir="ltr">({job.client.phone})</span>}</div>
+            <div>לקוח: {job.client?.name ?? "—"}</div>
+            {(job as any).site_contact_name || (job as any).site_contact_phone ? (
+              <div className="flex items-center gap-2 flex-wrap">
+                <span>איש קשר בשטח: {(job as any).site_contact_name || "—"}</span>
+                {(job as any).site_contact_phone && (
+                  <a href={`tel:${(job as any).site_contact_phone}`} dir="ltr" className="text-primary hover:underline inline-flex items-center gap-1">
+                    📞 {(job as any).site_contact_phone}
+                  </a>
+                )}
+              </div>
+            ) : null}
             <div>טכנאי: {(job as any).technician_name ?? "לא משויך"}</div>
             {job.scheduled_date && <div>תאריך מתוכנן: {new Date(job.scheduled_date).toLocaleString("he-IL")}</div>}
           </div>

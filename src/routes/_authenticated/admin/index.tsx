@@ -655,6 +655,7 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
   onClose: () => void;
   onCreated: () => void;
 }) {
+  const qc = useQueryClient();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [clientId, setClientId] = useState<string>("__none");
@@ -662,6 +663,16 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
   const [time, setTime] = useState("09:00");
   const [endTime, setEndTime] = useState("10:00");
   const [saving, setSaving] = useState(false);
+
+  // New client toggle
+  const [useNewClient, setUseNewClient] = useState(false);
+  const [newClientName, setNewClientName] = useState("");
+  const [newClientAddress, setNewClientAddress] = useState("");
+  const [newClientContact, setNewClientContact] = useState("");
+
+  // Site contact (per job)
+  const [siteContactName, setSiteContactName] = useState("");
+  const [siteContactPhone, setSiteContactPhone] = useState("");
 
   const { data: clients = [] } = useQuery({
     queryKey: ["clients"],
@@ -680,7 +691,10 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
   // reset when date changes
   useEffect(() => {
     if (date) {
-      setTitle(""); setDescription(""); setClientId("__none"); setTechId("__none"); setTime("09:00"); setEndTime("10:00");
+      setTitle(""); setDescription(""); setClientId("__none"); setTechId("__none");
+      setTime("09:00"); setEndTime("10:00");
+      setUseNewClient(false); setNewClientName(""); setNewClientAddress(""); setNewClientContact("");
+      setSiteContactName(""); setSiteContactPhone("");
     }
   }, [date]);
 
@@ -689,8 +703,24 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
       toast.error("יש להזין כותרת");
       return;
     }
+    if (useNewClient && !newClientName.trim()) {
+      toast.error("יש להזין שם לקוח");
+      return;
+    }
     setSaving(true);
     try {
+      let cid: string | null = clientId === "__none" ? null : clientId;
+      if (useNewClient && newClientName.trim()) {
+        const { data: nc, error: ce } = await supabase.from("clients").insert({
+          name: newClientName.trim(),
+          address: newClientAddress.trim() || null,
+          contact_name: newClientContact.trim() || null,
+        }).select("id").single();
+        if (ce) throw ce;
+        cid = nc.id;
+        qc.invalidateQueries({ queryKey: ["clients"] });
+      }
+
       const [shh, smm] = time.split(":").map(Number);
       const start = new Date(date);
       start.setHours(shh || 9, smm || 0, 0, 0);
@@ -702,11 +732,13 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
       const { error } = await supabase.from("jobs").insert({
         title,
         description: description || null,
-        client_id: clientId === "__none" ? null : clientId,
+        client_id: cid,
         technician_id: techId === "__none" ? null : techId,
         scheduled_date: startIso,
         start_time: startIso,
         end_time: endIso,
+        site_contact_name: siteContactName.trim() || null,
+        site_contact_phone: siteContactPhone.trim() || null,
       });
       if (error) throw error;
       toast.success("נוצרה קריאה");
@@ -720,7 +752,7 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
 
   return (
     <Dialog open={!!date} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent dir="rtl" className="max-w-md">
+      <DialogContent dir="rtl" className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             קריאה חדשה {date ? `· ${format(date, "EEEE, d בMMMM", { locale: he })}` : ""}
@@ -735,9 +767,22 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
             <Label>תיאור</Label>
             <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} />
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1.5">
+
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
               <Label>לקוח</Label>
+              <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs"
+                onClick={() => { setUseNewClient(v => !v); setClientId("__none"); }}>
+                {useNewClient ? "בחר מלקוחות קיימים" : "+ לקוח חדש"}
+              </Button>
+            </div>
+            {useNewClient ? (
+              <div className="space-y-2 border rounded-md p-2 bg-muted/30">
+                <Input placeholder="שם לקוח *" value={newClientName} onChange={e => setNewClientName(e.target.value)} />
+                <Input placeholder="איש קשר (אופציונלי)" value={newClientContact} onChange={e => setNewClientContact(e.target.value)} />
+                <Input placeholder="כתובת" value={newClientAddress} onChange={e => setNewClientAddress(e.target.value)} />
+              </div>
+            ) : (
               <Select value={clientId} onValueChange={setClientId}>
                 <SelectTrigger><SelectValue placeholder="בחר" /></SelectTrigger>
                 <SelectContent>
@@ -745,17 +790,26 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
                   {(clients as any[]).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 </SelectContent>
               </Select>
+            )}
+          </div>
+
+          <div className="space-y-1.5 border rounded-md p-2 bg-secondary/20">
+            <Label className="font-semibold text-sm">איש קשר בשטח</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <Input placeholder="שם" value={siteContactName} onChange={e => setSiteContactName(e.target.value)} />
+              <Input placeholder="טלפון" value={siteContactPhone} onChange={e => setSiteContactPhone(e.target.value)} dir="ltr" />
             </div>
-            <div className="space-y-1.5">
-              <Label>טכנאי</Label>
-              <Select value={techId} onValueChange={setTechId}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none">לא משויך</SelectItem>
-                  {(techs as any[]).map(t => <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>טכנאי</Label>
+            <Select value={techId} onValueChange={setTechId}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none">לא משויך</SelectItem>
+                {(techs as any[]).map(t => <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1.5">

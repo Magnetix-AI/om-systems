@@ -222,17 +222,23 @@ function JobDetail() {
                 <div className="font-semibold">פרטי לקוח</div>
                 <div>{job.client.name}</div>
                 {job.client.contact_name && <div className="text-muted-foreground">איש קשר: {job.client.contact_name}</div>}
-                {job.client.phone && (
+                {job.client.address && <div className="text-muted-foreground">{job.client.address}</div>}
+              </div>
+            )}
+            {((job as any).site_contact_name || (job as any).site_contact_phone) && (
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 space-y-1">
+                <div className="font-semibold">איש קשר בשטח</div>
+                {(job as any).site_contact_name && <div>{(job as any).site_contact_name}</div>}
+                {(job as any).site_contact_phone && (
                   <a
-                    href={`tel:${job.client.phone}`}
-                    className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors"
+                    href={`tel:${(job as any).site_contact_phone}`}
+                    className="inline-flex items-center gap-1.5 text-primary hover:underline"
                     dir="ltr"
                   >
                     <Phone className="h-3.5 w-3.5" />
-                    {job.client.phone}
+                    {(job as any).site_contact_phone}
                   </a>
                 )}
-                {job.client.address && <div className="text-muted-foreground">{job.client.address}</div>}
               </div>
             )}
           </CardContent>
