@@ -247,11 +247,7 @@ function NewJobDialog({ onClose }: { onClose: () => void }) {
       let cid: string | null = clientId || null;
       if (useNewClient && newClientName) {
         const { data, error } = await supabase.from("clients")
-          .insert({
-            name: newClientName,
-            address: newClientAddress || null,
-            contact_name: newClientContact || null,
-          })
+          .insert({ name: newClientName })
           .select("id").single();
         if (error) throw error;
         cid = data.id;
@@ -267,6 +263,7 @@ function NewJobDialog({ onClose }: { onClose: () => void }) {
         end_time: endIso,
         site_contact_name: siteContactName.trim() || null,
         site_contact_phone: siteContactPhone.trim() || null,
+        site_contact_address: siteContactAddress.trim() || null,
         project_id: linkProject ? projectId : null,
       }).select("id").single();
       if (error) throw error;
