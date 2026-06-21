@@ -238,13 +238,23 @@ function AdminMain() {
 
       <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)_340px] gap-4">
         {/* Unscheduled — LEFT side. In RTL with grid this column appears on the visual left. */}
-        <UnscheduledPanel items={unscheduled} categories={categories} onEdit={setEditItem} />
+        <UnscheduledPanel items={unscheduled} categories={categories} onEdit={setEditItem} onDelete={setToDelete} />
 
         {/* Calendar — center */}
         <Card>
           <CardContent className="p-3">
             {view === "month" && (
-              <MonthGrid cursor={cursor} selected={selected} items={items} onSelect={setSelected} />
+              <MonthGrid
+                cursor={cursor} selected={selected} items={items} onSelect={setSelected}
+                onAddOnDay={setNewJobDate}
+                onItemClick={setEditItem}
+                onItemDelete={setToDelete}
+                onDropOnDay={(kind, id, date) => {
+                  const all = [...items, ...unscheduled];
+                  const found = all.find(i => i.kind === kind && i.id === id);
+                  if (found) setRescheduleTarget({ item: found, date });
+                }}
+              />
             )}
             {view === "week" && (
               <WeekGrid
@@ -335,11 +345,12 @@ function getRange(cursor: Date, view: ViewMode) {
 
 const WEEKDAY_LABELS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
 
-function MonthGrid({ cursor, selected, items, onSelect, onAddOnDay, onItemClick, onItemDelete }: {
+function MonthGrid({ cursor, selected, items, onSelect, onAddOnDay, onItemClick, onItemDelete, onDropOnDay }: {
   cursor: Date; selected: Date; items: CalendarItem[]; onSelect: (d: Date) => void;
   onAddOnDay: (d: Date) => void;
   onItemClick: (i: CalendarItem) => void;
   onItemDelete: (i: CalendarItem) => void;
+  onDropOnDay: (kind: "job" | "project", id: string, date: Date) => void;
 }) {
   const days = getRange(cursor, "month");
   return (
@@ -355,6 +366,21 @@ function MonthGrid({ cursor, selected, items, onSelect, onAddOnDay, onItemClick,
           return (
             <div
               key={d.toISOString()}
+              onDragOver={(e) => {
+                if (e.dataTransfer.types.includes("application/x-cal-item")) {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                }
+              }}
+              onDrop={(e) => {
+                const raw = e.dataTransfer.getData("application/x-cal-item");
+                if (!raw) return;
+                e.preventDefault();
+                try {
+                  const parsed = JSON.parse(raw) as { kind: "job" | "project"; id: string };
+                  onDropOnDay(parsed.kind, parsed.id, d);
+                } catch { /* ignore */ }
+              }}
               className={cn(
                 "relative min-h-[88px] rounded-lg border p-1.5 text-right transition-all hover:border-primary/50 hover:shadow-sm flex flex-col gap-1 group/day",
                 inMonth ? "bg-card" : "bg-muted/30 text-muted-foreground",
@@ -611,8 +637,10 @@ function DayGrid({ cursor, items, onItemClick }: {
   );
 }
 
-function UnscheduledPanel({ items, categories, onEdit }: {
-  items: CalendarItem[]; categories: JobCategory[]; onEdit: (i: CalendarItem) => void;
+function UnscheduledPanel({ items, categories, onEdit, onDelete }: {
+  items: CalendarItem[]; categories: JobCategory[];
+  onEdit: (i: CalendarItem) => void;
+  onDelete: (i: CalendarItem) => void;
 }) {
   const qc = useQueryClient();
   const defaultCat = categories.find(c => c.is_default);
@@ -763,30 +791,53 @@ function UnscheduledPanel({ items, categories, onEdit }: {
         {isOpen && (
           <div className="space-y-1 mt-1">
             {own.map(it => (
-              <button
-                key={it.id}
-                draggable
-                onDragStart={(e) => {
-                  e.dataTransfer.effectAllowed = "move";
-                  e.dataTransfer.setData("application/x-cal-item", JSON.stringify({ kind: "job", id: it.id }));
-                }}
-                onClick={() => onEdit(it)}
-                className="w-full text-right p-2 rounded-md border bg-card hover:border-primary/50 hover:shadow-sm transition"
-                style={{ marginInlineStart: 14 + depth * 14 }}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="font-medium text-xs truncate">{it.title}</div>
-                  <Pencil className="h-3 w-3 text-muted-foreground shrink-0" />
-                </div>
-                {it.client_name && (
-                  <div className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
-                    <MapPin className="h-2.5 w-2.5" /> {it.client_name}
+              <ContextMenu key={it.id}>
+                <ContextMenuTrigger asChild>
+                  <div
+                    className="relative group/job"
+                    style={{ marginInlineStart: 14 + depth * 14 }}
+                  >
+                    <button
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.effectAllowed = "move";
+                        e.dataTransfer.setData("application/x-cal-item", JSON.stringify({ kind: "job", id: it.id }));
+                      }}
+                      onClick={() => onEdit(it)}
+                      className="w-full text-right p-2 rounded-md border bg-card hover:border-primary/50 hover:shadow-sm transition"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="font-medium text-xs truncate">{it.title}</div>
+                        <Pencil className="h-3 w-3 text-muted-foreground shrink-0" />
+                      </div>
+                      {it.client_name && (
+                        <div className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                          <MapPin className="h-2.5 w-2.5" /> {it.client_name}
+                        </div>
+                      )}
+                      {!it.technician_id && (
+                        <Badge variant="outline" className="mt-1 h-4 text-[9px] bg-warning/15 border-warning/40">ללא טכנאי</Badge>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); onDelete(it); }}
+                      title="מחק קריאה"
+                      className="absolute top-1 left-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 flex items-center justify-center opacity-0 group-hover/job:opacity-100 transition shadow"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
                   </div>
-                )}
-                {!it.technician_id && (
-                  <Badge variant="outline" className="mt-1 h-4 text-[9px] bg-warning/15 border-warning/40">ללא טכנאי</Badge>
-                )}
-              </button>
+                </ContextMenuTrigger>
+                <ContextMenuContent>
+                  <ContextMenuItem onClick={() => onEdit(it)}>
+                    <Pencil className="h-3.5 w-3.5 ml-2" /> ערוך
+                  </ContextMenuItem>
+                  <ContextMenuItem className="text-destructive" onClick={() => onDelete(it)}>
+                    <Trash2 className="h-3.5 w-3.5 ml-2" /> מחק
+                  </ContextMenuItem>
+                </ContextMenuContent>
+              </ContextMenu>
             ))}
             {kids.map(k => renderNode(k, depth + 1))}
           </div>
@@ -1143,7 +1194,18 @@ function RescheduleDialog({ target, onClose, onSaved }: {
 }) {
   const [start, setStart] = useState("09:00");
   const [end, setEnd] = useState("10:00");
+  const [techId, setTechId] = useState<string>("__none");
   const [saving, setSaving] = useState(false);
+
+  const { data: techs = [] } = useQuery({
+    queryKey: ["technicians"],
+    queryFn: async () => {
+      const { data: roles } = await supabase.from("user_roles").select("user_id").eq("role", "technician");
+      const ids = (roles ?? []).map(r => r.user_id);
+      if (!ids.length) return [];
+      return (await supabase.from("profiles").select("id, full_name, color").in("id", ids)).data ?? [];
+    },
+  });
 
   useEffect(() => {
     if (target) {
@@ -1155,6 +1217,7 @@ function RescheduleDialog({ target, onClose, onSaved }: {
         const eh = (s.getHours() + 1) % 24;
         setEnd(`${String(eh).padStart(2, "0")}:${String(s.getMinutes()).padStart(2, "0")}`);
       }
+      setTechId(target.item.technician_id ?? "__none");
     }
   }, [target]);
 
@@ -1180,11 +1243,13 @@ function RescheduleDialog({ target, onClose, onSaved }: {
           scheduled_date: startIso,
           start_time: startIso,
           end_time: endIso,
+          technician_id: techId === "__none" ? null : techId,
         }).eq("id", target.item.id);
         if (error) throw error;
       } else {
         const { error } = await supabase.from("projects").update({
           start_date: startIso,
+          technician_id: techId === "__none" ? null : techId,
         }).eq("id", target.item.id);
         if (error) throw error;
       }
@@ -1202,7 +1267,7 @@ function RescheduleDialog({ target, onClose, onSaved }: {
       <DialogContent dir="rtl" className="max-w-sm">
         <DialogHeader>
           <DialogTitle>
-            העברת קריאה {target ? `· ${format(target.date, "EEEE, d בMMMM", { locale: he })}` : ""}
+            שיבוץ ליום {target ? `· ${format(target.date, "EEEE, d בMMMM", { locale: he })}` : ""}
           </DialogTitle>
         </DialogHeader>
         {target && (
@@ -1218,11 +1283,21 @@ function RescheduleDialog({ target, onClose, onSaved }: {
                 <Input type="time" value={end} onChange={e => setEnd(e.target.value)} />
               </div>
             </div>
+            <div className="space-y-1.5">
+              <Label>טכנאי</Label>
+              <Select value={techId} onValueChange={setTechId}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none">לא משויך</SelectItem>
+                  {(techs as any[]).map(t => <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         )}
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>ביטול</Button>
-          <Button onClick={handleSave} disabled={saving}>{saving ? "שומר..." : "העבר"}</Button>
+          <Button onClick={handleSave} disabled={saving}>{saving ? "שומר..." : "שבץ"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
