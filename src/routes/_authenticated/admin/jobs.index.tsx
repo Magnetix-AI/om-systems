@@ -215,9 +215,11 @@ function NewJobDialog({ onClose }: { onClose: () => void }) {
   const [scheduled, setScheduled] = useState("");
   const [endAt, setEndAt] = useState("");
   const [newClientName, setNewClientName] = useState("");
-  const [newClientPhone, setNewClientPhone] = useState("");
   const [newClientAddress, setNewClientAddress] = useState("");
+  const [newClientContact, setNewClientContact] = useState("");
   const [useNewClient, setUseNewClient] = useState(false);
+  const [siteContactName, setSiteContactName] = useState("");
+  const [siteContactPhone, setSiteContactPhone] = useState("");
   const [saving, setSaving] = useState(false);
 
   const { data: clients = [] } = useQuery({
@@ -237,10 +239,14 @@ function NewJobDialog({ onClose }: { onClose: () => void }) {
   const handleCreate = async () => {
     setSaving(true);
     try {
-      let cid = clientId;
+      let cid: string | null = clientId || null;
       if (useNewClient && newClientName) {
         const { data, error } = await supabase.from("clients")
-          .insert({ name: newClientName, phone: newClientPhone, address: newClientAddress })
+          .insert({
+            name: newClientName,
+            address: newClientAddress || null,
+            contact_name: newClientContact || null,
+          })
           .select("id").single();
         if (error) throw error;
         cid = data.id;
@@ -249,11 +255,13 @@ function NewJobDialog({ onClose }: { onClose: () => void }) {
       const endIso = endAt ? new Date(endAt).toISOString() : null;
       const { data: created, error } = await supabase.from("jobs").insert({
         title, description,
-        client_id: cid || null,
+        client_id: cid,
         technician_id: techId === "__none" ? null : techId,
         scheduled_date: startIso,
         start_time: startIso,
         end_time: endIso,
+        site_contact_name: siteContactName.trim() || null,
+        site_contact_phone: siteContactPhone.trim() || null,
       }).select("id").single();
       if (error) throw error;
       toast.success("נוצרה קריאה — כעת ניתן להעלות תמונות");
@@ -281,10 +289,10 @@ function NewJobDialog({ onClose }: { onClose: () => void }) {
           <Label htmlFor="newClient" className="cursor-pointer">לקוח חדש</Label>
         </div>
         {useNewClient ? (
-          <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-2 border rounded-md p-3 bg-muted/30">
             <Input placeholder="שם לקוח" value={newClientName} onChange={e => setNewClientName(e.target.value)} />
-            <Input placeholder="טלפון" value={newClientPhone} onChange={e => setNewClientPhone(e.target.value)} dir="ltr" />
-            <Input className="col-span-2" placeholder="כתובת" value={newClientAddress} onChange={e => setNewClientAddress(e.target.value)} />
+            <Input placeholder="איש קשר (אופציונלי)" value={newClientContact} onChange={e => setNewClientContact(e.target.value)} />
+            <Input placeholder="כתובת" value={newClientAddress} onChange={e => setNewClientAddress(e.target.value)} />
           </div>
         ) : (
           <div className="space-y-1.5">
@@ -295,6 +303,13 @@ function NewJobDialog({ onClose }: { onClose: () => void }) {
             </Select>
           </div>
         )}
+        <div className="space-y-1.5 border rounded-md p-3 bg-secondary/20">
+          <Label className="font-semibold">איש קשר בשטח</Label>
+          <div className="grid grid-cols-2 gap-2">
+            <Input placeholder="שם" value={siteContactName} onChange={e => setSiteContactName(e.target.value)} />
+            <Input placeholder="טלפון (לחיוג מהיר)" value={siteContactPhone} onChange={e => setSiteContactPhone(e.target.value)} dir="ltr" />
+          </div>
+        </div>
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1.5">
             <Label>טכנאי משויך</Label>
