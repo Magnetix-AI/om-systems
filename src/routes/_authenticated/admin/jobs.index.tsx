@@ -221,6 +221,7 @@ function NewJobDialog({ onClose }: { onClose: () => void }) {
   const [useNewClient, setUseNewClient] = useState(false);
   const [siteContactName, setSiteContactName] = useState("");
   const [siteContactPhone, setSiteContactPhone] = useState("");
+  const [projectId, setProjectId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const { data: clients = [] } = useQuery({
