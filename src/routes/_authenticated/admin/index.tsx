@@ -637,8 +637,10 @@ function DayGrid({ cursor, items, onItemClick }: {
   );
 }
 
-function UnscheduledPanel({ items, categories, onEdit }: {
-  items: CalendarItem[]; categories: JobCategory[]; onEdit: (i: CalendarItem) => void;
+function UnscheduledPanel({ items, categories, onEdit, onDelete }: {
+  items: CalendarItem[]; categories: JobCategory[];
+  onEdit: (i: CalendarItem) => void;
+  onDelete: (i: CalendarItem) => void;
 }) {
   const qc = useQueryClient();
   const defaultCat = categories.find(c => c.is_default);
