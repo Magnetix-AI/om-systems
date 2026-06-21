@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ProjectPicker } from "@/components/project-picker";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -221,6 +222,7 @@ function NewJobDialog({ onClose }: { onClose: () => void }) {
   const [useNewClient, setUseNewClient] = useState(false);
   const [siteContactName, setSiteContactName] = useState("");
   const [siteContactPhone, setSiteContactPhone] = useState("");
+  const [linkProject, setLinkProject] = useState(false);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -264,7 +266,7 @@ function NewJobDialog({ onClose }: { onClose: () => void }) {
         end_time: endIso,
         site_contact_name: siteContactName.trim() || null,
         site_contact_phone: siteContactPhone.trim() || null,
-        project_id: projectId,
+        project_id: linkProject ? projectId : null,
       }).select("id").single();
       if (error) throw error;
       toast.success("נוצרה קריאה — כעת ניתן להעלות תמונות");
@@ -309,8 +311,11 @@ function NewJobDialog({ onClose }: { onClose: () => void }) {
         <div className="space-y-1.5 border rounded-md p-3 bg-secondary/20">
           <Label className="font-semibold">איש קשר בשטח</Label>
         <div className="space-y-1.5">
-          <Label>שייוך לפרוייקט</Label>
-          <ProjectPicker value={projectId} onChange={setProjectId} />
+          <div className="flex items-center gap-2">
+            <Checkbox id="linkProject" checked={linkProject} onCheckedChange={(c) => { setLinkProject(!!c); if (!c) setProjectId(null); }} />
+            <Label htmlFor="linkProject" className="cursor-pointer">שייך לפרוייקט</Label>
+          </div>
+          {linkProject && <ProjectPicker value={projectId} onChange={setProjectId} />}
         </div>
         <div className="grid grid-cols-2 gap-2">
             <Input placeholder="שם" value={siteContactName} onChange={e => setSiteContactName(e.target.value)} />
