@@ -179,6 +179,7 @@ function AdminMain() {
           client_name: j.client?.name ?? null,
           client_address: j.client?.address ?? null,
           status: j.status,
+          category_id: j.category_id ?? null,
         };
       });
   }, [jobs, techMap]);
