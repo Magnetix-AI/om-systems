@@ -111,6 +111,19 @@ function AdminMain() {
     },
   });
 
+  const { data: categories = [] } = useQuery<JobCategory[]>({
+    queryKey: ["job-categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("job_categories")
+        .select("id, name, parent_id, is_default, sort_order")
+        .order("sort_order")
+        .order("name");
+      if (error) throw error;
+      return (data ?? []) as JobCategory[];
+    },
+  });
+
   const techMap = useMemo(
     () => Object.fromEntries((techs as any[]).map(t => [t.id, t])),
     [techs],
