@@ -330,9 +330,11 @@ function MonthGrid({ cursor, selected, items, onSelect }: {
   );
 }
 
-function WeekGrid({ cursor, selected, items, onSelect, onItemClick }: {
+function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemDelete, onAddOnDay }: {
   cursor: Date; selected: Date; items: CalendarItem[]; onSelect: (d: Date) => void;
   onItemClick: (i: CalendarItem) => void;
+  onItemDelete: (i: CalendarItem) => void;
+  onAddOnDay: (d: Date) => void;
 }) {
   const days = getRange(cursor, "week");
   const HOUR_PX = 36;
