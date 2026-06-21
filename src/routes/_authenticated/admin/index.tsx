@@ -382,11 +382,12 @@ function getRange(cursor: Date, view: ViewMode) {
 
 const WEEKDAY_LABELS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
 
-function MonthGrid({ cursor, selected, items, onSelect, onAddOnDay, onItemClick, onItemDelete, onDropOnDay }: {
+function MonthGrid({ cursor, selected, items, onSelect, onAddOnDay, onItemClick, onItemRemove, onItemReturnToUnscheduled, onDropOnDay }: {
   cursor: Date; selected: Date; items: CalendarItem[]; onSelect: (d: Date) => void;
   onAddOnDay: (d: Date) => void;
   onItemClick: (i: CalendarItem) => void;
-  onItemDelete: (i: CalendarItem) => void;
+  onItemRemove: (i: CalendarItem) => void;
+  onItemReturnToUnscheduled: (i: CalendarItem) => void;
   onDropOnDay: (kind: "job" | "project", id: string, date: Date) => void;
 }) {
   const days = getRange(cursor, "month");
