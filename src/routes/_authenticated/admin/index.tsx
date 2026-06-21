@@ -335,8 +335,11 @@ function getRange(cursor: Date, view: ViewMode) {
 
 const WEEKDAY_LABELS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
 
-function MonthGrid({ cursor, selected, items, onSelect }: {
+function MonthGrid({ cursor, selected, items, onSelect, onAddOnDay, onItemClick, onItemDelete }: {
   cursor: Date; selected: Date; items: CalendarItem[]; onSelect: (d: Date) => void;
+  onAddOnDay: (d: Date) => void;
+  onItemClick: (i: CalendarItem) => void;
+  onItemDelete: (i: CalendarItem) => void;
 }) {
   const days = getRange(cursor, "month");
   return (
@@ -350,42 +353,69 @@ function MonthGrid({ cursor, selected, items, onSelect }: {
           const inMonth = isSameMonth(d, cursor);
           const sel = isSameDay(d, selected);
           return (
-            <button
+            <div
               key={d.toISOString()}
-              onClick={() => onSelect(d)}
               className={cn(
-                "min-h-[88px] rounded-lg border p-1.5 text-right transition-all hover:border-primary/50 hover:shadow-sm flex flex-col gap-1",
+                "relative min-h-[88px] rounded-lg border p-1.5 text-right transition-all hover:border-primary/50 hover:shadow-sm flex flex-col gap-1 group/day",
                 inMonth ? "bg-card" : "bg-muted/30 text-muted-foreground",
                 sel && "ring-2 ring-primary border-primary",
                 isToday(d) && !sel && "border-primary/60",
               )}
             >
-              <div className={cn("text-sm font-semibold flex items-center justify-between", isToday(d) && "text-primary")}>
+              <button
+                type="button"
+                onClick={() => onSelect(d)}
+                className="absolute inset-0 z-0"
+                aria-label={`בחר יום ${format(d, "d/M")}`}
+              />
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onAddOnDay(d); }}
+                title="הוסף קריאה ליום זה"
+                className="absolute top-1 left-1 z-10 h-6 w-6 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground flex items-center justify-center opacity-0 group-hover/day:opacity-100 transition"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+              <div className={cn("text-sm font-semibold flex items-center justify-between relative z-[1]", isToday(d) && "text-primary")}>
                 <span>{format(d, "d")}</span>
                 {dayItems.length > 0 && (
                   <span className="text-[10px] bg-primary/15 text-primary rounded-full px-1.5 py-0.5">{dayItems.length}</span>
                 )}
               </div>
-              <div className="flex flex-col gap-0.5 overflow-hidden">
+              <div className="flex flex-col gap-0.5 overflow-hidden relative z-[1]">
                 {dayItems.slice(0, 2).map(it => (
-                  <div key={it.kind + it.id} className={cn(
-                    "text-[10px] rounded px-1 py-0.5 truncate",
-                    it.kind === "project" ? "bg-accent/40 text-accent-foreground" : "bg-primary/15 text-primary"
-                  )}>
-                    {format(it.date, "HH:mm")} {it.title}
+                  <div key={it.kind + it.id} className="group/item relative">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onItemClick(it); }}
+                      className={cn(
+                        "w-full text-[10px] rounded px-1 py-0.5 truncate text-right",
+                        it.kind === "project" ? "bg-accent/40 text-accent-foreground" : "bg-primary/15 text-primary"
+                      )}
+                    >
+                      {format(it.date, "HH:mm")} {it.title}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); onItemDelete(it); }}
+                      title="הסר"
+                      className="absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition shadow"
+                    >
+                      <X className="h-2.5 w-2.5" />
+                    </button>
                   </div>
                 ))}
                 {dayItems.length > 2 && (
                   <div className="text-[10px] text-muted-foreground">+{dayItems.length - 2} נוספים</div>
                 )}
               </div>
-            </button>
+            </div>
           );
         })}
       </div>
     </div>
   );
 }
+
 
 function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemDelete, onAddOnDay, onDropOnDay }: {
   cursor: Date; selected: Date; items: CalendarItem[]; onSelect: (d: Date) => void;
