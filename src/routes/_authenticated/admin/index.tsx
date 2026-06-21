@@ -677,7 +677,7 @@ function UnscheduledPanel({ items, categories, onEdit }: {
     if (catId) { e.preventDefault(); reparent(catId, targetCatId); }
   };
 
-  const renderNode = (cat: JobCategory, depth = 0): JSX.Element => {
+  const renderNode = (cat: JobCategory, depth = 0) => {
     const kids = childrenOf.get(cat.id) ?? [];
     const own = buckets.get(cat.id) ?? [];
     const isOpen = expanded[cat.id] ?? true;
@@ -717,7 +717,7 @@ function UnscheduledPanel({ items, categories, onEdit }: {
               <Badge variant="outline" className="h-5 text-[10px] px-1.5">{totalCount(cat.id)}</Badge>
             </div>
           </ContextMenuTrigger>
-          <ContextMenuContent dir="rtl">
+          <ContextMenuContent>
             <ContextMenuItem onClick={() => { setAddParent(cat); setAddName(""); }}>
               <Plus className="h-3.5 w-3.5 ml-2" /> הוסף תת-קטגוריה
             </ContextMenuItem>
