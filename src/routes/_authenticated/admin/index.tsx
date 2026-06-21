@@ -451,7 +451,15 @@ function MonthGrid({ cursor, selected, items, onSelect, onAddOnDay, onItemClick,
                 {dayItems.slice(0, 2).map(it => (
                   <ContextMenu key={it.kind + it.id}>
                     <ContextMenuTrigger asChild>
-                      <div className="group/item relative">
+                      <div
+                        className="group/item relative"
+                        draggable={it.kind === "job"}
+                        onDragStart={(e) => {
+                          e.stopPropagation();
+                          e.dataTransfer.effectAllowed = "move";
+                          e.dataTransfer.setData("application/x-cal-item", JSON.stringify({ kind: it.kind, id: it.id, fromCalendar: true }));
+                        }}
+                      >
                         <button
                           onClick={(e) => { e.stopPropagation(); onItemClick(it); }}
                           className={cn(
@@ -622,7 +630,7 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
                         draggable={it.kind === "job"}
                         onDragStart={(e) => {
                           e.dataTransfer.effectAllowed = "move";
-                          e.dataTransfer.setData("application/x-cal-item", JSON.stringify({ kind: it.kind, id: it.id }));
+                          e.dataTransfer.setData("application/x-cal-item", JSON.stringify({ kind: it.kind, id: it.id, fromCalendar: true }));
                         }}
                       >
                         <button
@@ -751,10 +759,17 @@ function UnscheduledPanel({ items, categories, onEdit, onDelete }: {
     qc.invalidateQueries({ queryKey: ["job-categories"] });
   };
 
-  const moveJob = async (jobId: string, categoryId: string) => {
-    const { error } = await supabase.from("jobs").update({ category_id: categoryId }).eq("id", jobId);
+  const moveJob = async (jobId: string, categoryId: string, clearSchedule = false) => {
+    const update: any = { category_id: categoryId };
+    if (clearSchedule) {
+      update.scheduled_date = null;
+      update.start_time = null;
+      update.end_time = null;
+      update.technician_id = null;
+    }
+    const { error } = await supabase.from("jobs").update(update).eq("id", jobId);
     if (error) return toast.error("שגיאה בהעברה", { description: error.message });
-    toast.success("הקריאה הועברה");
+    toast.success(clearSchedule ? "הוחזרה לקריאות לא מתואמות" : "הקריאה הועברה");
     invalidateAll();
   };
   const reparent = async (catId: string, newParent: string | null) => {
@@ -798,7 +813,11 @@ function UnscheduledPanel({ items, categories, onEdit, onDelete }: {
     if (job) {
       try {
         const p = JSON.parse(job);
-        if (p.kind === "job" && targetCatId) { e.preventDefault(); moveJob(p.id, targetCatId); return; }
+        if (p.kind === "job" && targetCatId) {
+          e.preventDefault();
+          moveJob(p.id, targetCatId, !!p.fromCalendar);
+          return;
+        }
       } catch { /* ignore */ }
     }
     const catId = e.dataTransfer.getData("application/x-cat");
