@@ -63,6 +63,7 @@ function AdminMain() {
   const [editItem, setEditItem] = useState<CalendarItem | null>(null);
   const [toDelete, setToDelete] = useState<CalendarItem | null>(null);
   const [newJobDate, setNewJobDate] = useState<Date | null>(null);
+  const [rescheduleTarget, setRescheduleTarget] = useState<{ item: CalendarItem; date: Date } | null>(null);
   const qc = useQueryClient();
 
   const range = useMemo(() => getRange(cursor, view), [cursor, view]);
