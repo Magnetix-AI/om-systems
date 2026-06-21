@@ -1066,8 +1066,6 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
       if (useNewClient && newClientName.trim()) {
         const { data: nc, error: ce } = await supabase.from("clients").insert({
           name: newClientName.trim(),
-          address: newClientAddress.trim() || null,
-          contact_name: newClientContact.trim() || null,
         }).select("id").single();
         if (ce) throw ce;
         cid = nc.id;
@@ -1092,6 +1090,7 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
         end_time: endIso,
         site_contact_name: siteContactName.trim() || null,
         site_contact_phone: siteContactPhone.trim() || null,
+        site_contact_address: siteContactAddress.trim() || null,
         project_id: linkProject ? projectId : null,
       });
       if (error) throw error;
