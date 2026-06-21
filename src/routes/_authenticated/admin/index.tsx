@@ -963,6 +963,7 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
       setTime("09:00"); setEndTime("10:00");
       setUseNewClient(false); setNewClientName(""); setNewClientAddress(""); setNewClientContact("");
       setSiteContactName(""); setSiteContactPhone("");
+      setProjectId(null);
     }
   }, [date]);
 
