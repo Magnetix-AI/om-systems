@@ -222,6 +222,7 @@ function NewJobDialog({ onClose }: { onClose: () => void }) {
   const [useNewClient, setUseNewClient] = useState(false);
   const [siteContactName, setSiteContactName] = useState("");
   const [siteContactPhone, setSiteContactPhone] = useState("");
+  const [siteContactAddress, setSiteContactAddress] = useState("");
   const [linkProject, setLinkProject] = useState(false);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
