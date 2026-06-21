@@ -1160,7 +1160,8 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
             </div>
             {linkProject && <ProjectPicker value={projectId} onChange={setProjectId} />}
           </div>
-          </div>
+
+
 
           <div className="space-y-1.5">
             <Label>טכנאי</Label>
