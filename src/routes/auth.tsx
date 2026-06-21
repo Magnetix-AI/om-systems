@@ -113,10 +113,17 @@ function AuthPage() {
       // Server validates username+password against env secrets and returns
       // a real Supabase session for the admin account. Nothing sensitive
       // lives in the client bundle.
-      const { access_token, refresh_token } = await adminLoginFn({
+      const result = await adminLoginFn({
         data: { username: adminUser, password: adminPass },
       });
-      const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+      if (!result.ok) {
+        toast.error("שגיאה בהתחברות מנהל", { description: result.error });
+        return;
+      }
+      const { error } = await supabase.auth.setSession({
+        access_token: result.access_token,
+        refresh_token: result.refresh_token,
+      });
       if (error) throw new Error(error.message);
       toast.success("התחברת כמנהל");
       setAdminOpen(false);
