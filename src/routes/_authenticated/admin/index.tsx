@@ -282,7 +282,8 @@ function AdminMain() {
                 cursor={cursor} selected={selected} items={items} onSelect={setSelected}
                 onAddOnDay={setNewJobDate}
                 onItemClick={setEditItem}
-                onItemDelete={setToDelete}
+                onItemRemove={handleCalendarRemove}
+                onItemReturnToUnscheduled={handleReturnToUnscheduled}
                 onDropOnDay={(kind, id, date) => {
                   const all = [...items, ...unscheduled];
                   const found = all.find(i => i.kind === kind && i.id === id);
@@ -293,7 +294,9 @@ function AdminMain() {
             {view === "week" && (
               <WeekGrid
                 cursor={cursor} selected={selected} items={items}
-                onSelect={setSelected} onItemClick={setEditItem} onItemDelete={setToDelete}
+                onSelect={setSelected} onItemClick={setEditItem}
+                onItemRemove={handleCalendarRemove}
+                onItemReturnToUnscheduled={handleReturnToUnscheduled}
                 onAddOnDay={setNewJobDate}
                 onDropOnDay={(kind, id, date) => {
                   const found = items.find(i => i.kind === kind && i.id === id);
