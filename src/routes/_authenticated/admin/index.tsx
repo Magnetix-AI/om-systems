@@ -940,6 +940,7 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
   // Site contact (per job)
   const [siteContactName, setSiteContactName] = useState("");
   const [siteContactPhone, setSiteContactPhone] = useState("");
+  const [projectId, setProjectId] = useState<string | null>(null);
 
   const { data: clients = [] } = useQuery({
     queryKey: ["clients"],
