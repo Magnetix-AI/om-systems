@@ -7,13 +7,14 @@ import { useCurrentUser } from "@/hooks/use-current-user";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, Briefcase } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, Briefcase, History } from "lucide-react";
 import {
   addDays, addWeeks, eachDayOfInterval, endOfWeek, format,
   isSameDay, startOfWeek, isToday,
 } from "date-fns";
 import { he } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+
 
 export const Route = createFileRoute("/_authenticated/tech/")({
   ssr: false,

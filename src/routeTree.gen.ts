@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
 import { Route as AuthenticatedTechIndexRouteImport } from './routes/_authenticated/tech.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
+import { Route as AuthenticatedTechHistoryRouteImport } from './routes/_authenticated/tech.history'
 import { Route as AuthenticatedTechJobIdRouteImport } from './routes/_authenticated/tech.$jobId'
 import { Route as AuthenticatedAdminTechniciansRouteImport } from './routes/_authenticated/admin/technicians'
 import { Route as AuthenticatedAdminReportsRouteImport } from './routes/_authenticated/admin/reports'
@@ -57,6 +58,12 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAdminRouteRoute,
 } as any)
+const AuthenticatedTechHistoryRoute =
+  AuthenticatedTechHistoryRouteImport.update({
+    id: '/tech/history',
+    path: '/tech/history',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedTechJobIdRoute = AuthenticatedTechJobIdRouteImport.update({
   id: '/tech/$jobId',
   path: '/tech/$jobId',
@@ -138,6 +145,7 @@ export interface FileRoutesByFullPath {
   '/admin/reports': typeof AuthenticatedAdminReportsRoute
   '/admin/technicians': typeof AuthenticatedAdminTechniciansRoute
   '/tech/$jobId': typeof AuthenticatedTechJobIdRoute
+  '/tech/history': typeof AuthenticatedTechHistoryRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/tech/': typeof AuthenticatedTechIndexRoute
   '/admin/clients/$clientId': typeof AuthenticatedAdminClientsClientIdRoute
@@ -156,6 +164,7 @@ export interface FileRoutesByTo {
   '/admin/reports': typeof AuthenticatedAdminReportsRoute
   '/admin/technicians': typeof AuthenticatedAdminTechniciansRoute
   '/tech/$jobId': typeof AuthenticatedTechJobIdRoute
+  '/tech/history': typeof AuthenticatedTechHistoryRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/tech': typeof AuthenticatedTechIndexRoute
   '/admin/clients/$clientId': typeof AuthenticatedAdminClientsClientIdRoute
@@ -177,6 +186,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/reports': typeof AuthenticatedAdminReportsRoute
   '/_authenticated/admin/technicians': typeof AuthenticatedAdminTechniciansRoute
   '/_authenticated/tech/$jobId': typeof AuthenticatedTechJobIdRoute
+  '/_authenticated/tech/history': typeof AuthenticatedTechHistoryRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/tech/': typeof AuthenticatedTechIndexRoute
   '/_authenticated/admin/clients/$clientId': typeof AuthenticatedAdminClientsClientIdRoute
@@ -198,6 +208,7 @@ export interface FileRouteTypes {
     | '/admin/reports'
     | '/admin/technicians'
     | '/tech/$jobId'
+    | '/tech/history'
     | '/admin/'
     | '/tech/'
     | '/admin/clients/$clientId'
@@ -216,6 +227,7 @@ export interface FileRouteTypes {
     | '/admin/reports'
     | '/admin/technicians'
     | '/tech/$jobId'
+    | '/tech/history'
     | '/admin'
     | '/tech'
     | '/admin/clients/$clientId'
@@ -236,6 +248,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/reports'
     | '/_authenticated/admin/technicians'
     | '/_authenticated/tech/$jobId'
+    | '/_authenticated/tech/history'
     | '/_authenticated/admin/'
     | '/_authenticated/tech/'
     | '/_authenticated/admin/clients/$clientId'
@@ -296,6 +309,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/tech/history': {
+      id: '/_authenticated/tech/history'
+      path: '/tech/history'
+      fullPath: '/tech/history'
+      preLoaderRoute: typeof AuthenticatedTechHistoryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/tech/$jobId': {
       id: '/_authenticated/tech/$jobId'
@@ -423,6 +443,7 @@ const AuthenticatedAdminRouteRouteWithChildren =
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRouteRoute: typeof AuthenticatedAdminRouteRouteWithChildren
   AuthenticatedTechJobIdRoute: typeof AuthenticatedTechJobIdRoute
+  AuthenticatedTechHistoryRoute: typeof AuthenticatedTechHistoryRoute
   AuthenticatedTechIndexRoute: typeof AuthenticatedTechIndexRoute
   AuthenticatedTechProjectsProjectIdRoute: typeof AuthenticatedTechProjectsProjectIdRoute
 }
@@ -430,6 +451,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRouteRoute: AuthenticatedAdminRouteRouteWithChildren,
   AuthenticatedTechJobIdRoute: AuthenticatedTechJobIdRoute,
+  AuthenticatedTechHistoryRoute: AuthenticatedTechHistoryRoute,
   AuthenticatedTechIndexRoute: AuthenticatedTechIndexRoute,
   AuthenticatedTechProjectsProjectIdRoute:
     AuthenticatedTechProjectsProjectIdRoute,
