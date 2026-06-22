@@ -475,7 +475,7 @@ function CategoryTreePanel({
           type="button"
           onClick={() => onSelect(UNCAT)}
           onDragOver={dragOver}
-          onDrop={(e) => handleDrop(e, null)}
+          onDrop={(e) => { const pid = e.dataTransfer.getData("application/x-product"); if (pid) { e.preventDefault(); moveProduct(pid, null); } }}
           className={cn(
             "w-full flex items-center justify-between gap-1 px-2 py-1.5 rounded text-sm",
             selected === UNCAT ? "bg-primary/15 text-primary" : "hover:bg-secondary/60",
