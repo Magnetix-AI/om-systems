@@ -78,7 +78,31 @@ export const updateTechnician = createServerFn({ method: "POST" })
       });
       if (error) throw new Error(error.message);
     }
+    if (data.username) {
+      const newEmail = `${data.username.toLowerCase()}@om-tech.local`;
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
+        email: newEmail,
+        email_confirm: true,
+        user_metadata: { username: data.username },
+      });
+      if (error) throw new Error(error.message);
+    }
     return { ok: true };
+  });
+
+export const getTechnicianUsername = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => GetSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: res, error } = await supabaseAdmin.auth.admin.getUserById(data.userId);
+    if (error) throw new Error(error.message);
+    const email = res.user?.email ?? "";
+    const username = email.includes("@om-tech.local")
+      ? email.replace("@om-tech.local", "")
+      : email;
+    return { username, email };
   });
 
 export const deleteTechnician = createServerFn({ method: "POST" })
