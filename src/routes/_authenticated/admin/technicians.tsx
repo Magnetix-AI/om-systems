@@ -217,7 +217,7 @@ function TechnicianFormDialog({
   const [saving, setSaving] = useState(false);
 
   // Sync username when async-loaded for edit mode.
-  React.useEffect(() => {
+  useEffect(() => {
     if (mode === "edit" && initial?.username !== undefined) {
       setUsername(initial.username);
     }
