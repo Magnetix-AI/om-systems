@@ -127,7 +127,7 @@ function TechniciansAdmin() {
                     <TableCell className="text-sm text-muted-foreground">{t.phone ?? "—"}</TableCell>
                     <TableCell>
                       <div className="flex gap-1 justify-end">
-                        <Button variant="ghost" size="icon" onClick={() => setEditing(t)}>
+                        <Button variant="ghost" size="icon" onClick={() => openEdit(t)}>
                           <Pencil className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"
@@ -148,7 +148,7 @@ function TechniciansAdmin() {
         {editing && (
           <TechnicianFormDialog
             mode="edit"
-            initial={editing}
+            initial={{ ...editing, username: editingUsername }}
             onSubmit={async (vals) => {
               await updateFn({
                 data: {
@@ -156,6 +156,7 @@ function TechniciansAdmin() {
                   fullName: vals.firstName + " " + vals.lastName,
                   color: vals.color,
                   password: vals.password || undefined,
+                  username: vals.username && vals.username !== editingUsername ? vals.username : undefined,
                 },
               });
               toast.success("עודכן בהצלחה");
@@ -165,6 +166,7 @@ function TechniciansAdmin() {
           />
         )}
       </Dialog>
+
 
       <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
         <AlertDialogContent dir="rtl">
