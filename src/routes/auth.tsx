@@ -18,9 +18,14 @@ import {
 import { adminLogin } from "@/lib/admin-auth.functions";
 
 
+const PENDING_FACE_KEY = "fieldops.pendingFaceFlow";
+
 export const Route = createFileRoute("/auth")({
   ssr: false,
   beforeLoad: async () => {
+    // While the face setup/verify dialog is pending we must NOT redirect away
+    // even though a session exists — otherwise the dialog disappears instantly.
+    if (typeof sessionStorage !== "undefined" && sessionStorage.getItem(PENDING_FACE_KEY)) return;
     const { data: { user } } = await supabase.auth.getUser();
     if (user) throw redirect({ to: "/" });
   },
