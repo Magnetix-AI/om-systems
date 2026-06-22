@@ -24,7 +24,7 @@ function TechDashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("jobs")
-        .select("id, title, description, status, scheduled_date, completed_at, client:clients(name, address, phone)")
+        .select("id, title, description, status, scheduled_date, completed_at, client:clients(name, address)")
         .eq("technician_id", userId!)
         .order("scheduled_date", { ascending: true, nullsFirst: false });
       if (error) throw error;
@@ -38,7 +38,7 @@ function TechDashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("id, title, description, status, start_date, client:clients(name, address, phone)")
+        .select("id, title, description, status, start_date, client:clients(name, address)")
         .eq("technician_id", userId!)
         .order("created_at", { ascending: false });
       if (error) throw error;

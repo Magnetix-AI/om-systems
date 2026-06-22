@@ -25,7 +25,7 @@ function AdminReports() {
         .from("jobs")
         .select(`
           id, title, completed_at, sent_to_invoicing, sent_to_invoicing_at, technician_notes, technician_id,
-          client:clients(name, address, phone),
+          client:clients(name, address),
           items:job_items(quantity, unit_price, product:products(name, unit))
         `)
         .eq("status", "completed")
