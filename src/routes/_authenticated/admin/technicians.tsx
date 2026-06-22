@@ -41,6 +41,18 @@ function TechniciansAdmin() {
   const createFn = useServerFn(createTechnician);
   const updateFn = useServerFn(updateTechnician);
   const deleteFn = useServerFn(deleteTechnician);
+  const getUsernameFn = useServerFn(getTechnicianUsername);
+  const [editingUsername, setEditingUsername] = useState<string>("");
+
+  // Load username when opening edit dialog.
+  const openEdit = async (t: any) => {
+    setEditing(t);
+    setEditingUsername("");
+    try {
+      const res = await getUsernameFn({ data: { userId: t.id } });
+      setEditingUsername(res.username);
+    } catch { /* ignore */ }
+  };
 
   const { data: techs = [], isLoading } = useQuery({
     queryKey: ["admin-technicians-list"],
