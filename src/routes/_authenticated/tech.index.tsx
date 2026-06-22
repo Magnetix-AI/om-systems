@@ -2,12 +2,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { AppShell, statusLabel, statusColor } from "@/components/app-shell";
+import { AppShell, statusColor } from "@/components/app-shell";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, Briefcase } from "lucide-react";
 import {
   addDays, addWeeks, eachDayOfInterval, endOfWeek, format,
   isSameDay, startOfWeek, isToday,
@@ -21,6 +21,23 @@ export const Route = createFileRoute("/_authenticated/tech/")({
 });
 
 type ViewMode = "day" | "week";
+
+const HOUR_PX = 44;
+const START_HOUR = 6;
+const END_HOUR = 22;
+const HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i);
+const DAY_HEIGHT = (END_HOUR - START_HOUR) * HOUR_PX;
+
+type Job = any;
+
+type PositionedJob = Job & {
+  start: Date;
+  end: Date;
+  startMin: number;
+  endMin: number;
+  col: number;
+  cols: number;
+};
 
 function TechDashboard() {
   const { data: user } = useCurrentUser();
@@ -49,21 +66,6 @@ function TechDashboard() {
     const end = endOfWeek(cursor, { weekStartsOn: 0 });
     return eachDayOfInterval({ start, end });
   }, [view, cursor]);
-
-  const jobsByDay = useMemo(() => {
-    const map = new Map<string, any[]>();
-    for (const j of jobs as any[]) {
-      if (!j.scheduled_date) continue;
-      const d = new Date(j.scheduled_date);
-      const key = format(d, "yyyy-MM-dd");
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(j);
-    }
-    for (const arr of map.values()) {
-      arr.sort((a, b) => (a.start_time ?? "").localeCompare(b.start_time ?? ""));
-    }
-    return map;
-  }, [jobs]);
 
   const move = (dir: 1 | -1) => {
     setCursor(view === "day" ? addDays(cursor, dir) : addWeeks(cursor, dir));
@@ -117,37 +119,9 @@ function TechDashboard() {
 
         {!isLoading && (
           <div className="space-y-4">
-            {days.map((d) => {
-              const key = format(d, "yyyy-MM-dd");
-              const list = jobsByDay.get(key) ?? [];
-              return (
-                <div key={key}>
-                  <div className={cn(
-                    "flex items-center justify-between mb-2 px-1",
-                    isToday(d) && "text-primary",
-                  )}>
-                    <div className="font-semibold">
-                      {format(d, "EEEE", { locale: he })}
-                      <span className="text-muted-foreground font-normal mr-2">
-                        {format(d, "d/M", { locale: he })}
-                      </span>
-                    </div>
-                    {isToday(d) && <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">היום</Badge>}
-                  </div>
-                  {list.length === 0 ? (
-                    <Card className="border-dashed">
-                      <CardContent className="py-6 text-center text-sm text-muted-foreground">
-                        אין קריאות ביום זה
-                      </CardContent>
-                    </Card>
-                  ) : (
-                    <div className="space-y-2">
-                      {list.map((j: any) => <JobCard key={j.id} job={j} />)}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            {days.map((d) => (
+              <DayTimeGrid key={d.toISOString()} date={d} jobs={jobs} />
+            ))}
           </div>
         )}
       </div>
@@ -155,38 +129,158 @@ function TechDashboard() {
   );
 }
 
-function JobCard({ job }: { job: any }) {
-  const time = job.start_time
-    ? job.end_time
-      ? `${job.start_time.slice(0, 5)} – ${job.end_time.slice(0, 5)}`
-      : job.start_time.slice(0, 5)
-    : null;
+function DayTimeGrid({ date, jobs }: { date: Date; jobs: Job[] }) {
+  const positioned = useMemo<PositionedJob[]>(() => {
+    const dayJobs = (jobs as Job[]).filter(j =>
+      j.scheduled_date && isSameDay(new Date(j.scheduled_date), date)
+    );
+    const events = dayJobs.map((j) => {
+      const start = j.start_time ? new Date(j.start_time) : (j.scheduled_date ? new Date(j.scheduled_date) : new Date(date));
+      const end = j.end_time ? new Date(j.end_time) : new Date(start.getTime() + 60 * 60000);
+      const startMin = start.getHours() * 60 + start.getMinutes() - START_HOUR * 60;
+      const endMin = end.getHours() * 60 + end.getMinutes() - START_HOUR * 60;
+      return { ...j, start, end, startMin, endMin };
+    }).filter(e => e.endMin > e.startMin);
+    return layoutEvents(events);
+  }, [jobs, date]);
+
+  const hasJobs = positioned.length > 0;
+
   return (
-    <Link to="/tech/$jobId" params={{ jobId: job.id }}>
-      <Card className="hover:shadow-[var(--shadow-card)] transition-all hover:border-primary/40 cursor-pointer">
-        <CardContent className="p-4">
-          <div className="flex items-start justify-between gap-2 mb-2">
-            <h3 className="font-semibold leading-tight">{job.title}</h3>
-            <Badge variant="outline" className={statusColor(job.status)}>{statusLabel(job.status)}</Badge>
+    <Card>
+      <CardContent className="p-3 space-y-2">
+        <div className={cn("flex items-center justify-between", isToday(date) && "text-primary")}>
+          <div className="font-semibold">
+            {format(date, "EEEE", { locale: he })}
+            <span className="text-muted-foreground font-normal mr-2">
+              {format(date, "d/M", { locale: he })}
+            </span>
           </div>
-          {time && (
-            <div className="flex items-center gap-1 text-sm font-medium text-primary mb-1">
-              <Clock className="h-3.5 w-3.5" />{time}
-            </div>
-          )}
-          {job.client && (
-            <div className="text-sm text-muted-foreground space-y-1">
-              <div className="font-medium text-foreground">{job.client.name}</div>
-              {job.client.address && (
-                <div className="flex items-center gap-1"><MapPin className="h-3 w-3" />{job.client.address}</div>
-              )}
-            </div>
-          )}
-          <div className="flex justify-end mt-2 text-primary text-sm font-medium">
-            פתח קריאה <ChevronLeft className="h-4 w-4" />
+          {isToday(date) && <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">היום</Badge>}
+        </div>
+
+        {!hasJobs ? (
+          <div className="border border-dashed rounded-lg py-6 text-center text-sm text-muted-foreground">
+            אין קריאות ביום זה
           </div>
-        </CardContent>
-      </Card>
-    </Link>
+        ) : (
+          <div className="relative border rounded-lg overflow-hidden" style={{ height: DAY_HEIGHT }}>
+            <div className="absolute inset-0 flex">
+              {/* Hour labels — first child in RTL flow appears on the right side */}
+              <div className="w-12 relative shrink-0 border-l">
+                {HOURS.map((h) => {
+                  const top = ((h - START_HOUR) + 0.5) * HOUR_PX;
+                  return (
+                    <div
+                      key={h}
+                      className="absolute right-0 left-0 text-center text-[10px] text-muted-foreground leading-none"
+                      style={{ top }}
+                    >
+                      {String(h).padStart(2, "0")}:00
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Grid lines and job blocks */}
+              <div className="flex-1 relative">
+                {HOURS.map((h) => (
+                  <div
+                    key={h}
+                    className="absolute w-full border-b border-dashed border-border/50"
+                    style={{ top: (h - START_HOUR) * HOUR_PX }}
+                  />
+                ))}
+                {positioned.map((j) => {
+                  const top = Math.max(0, (j.startMin / 60) * HOUR_PX);
+                  const height = Math.max(28, ((j.endMin - j.startMin) / 60) * HOUR_PX);
+                  const widthPct = 100 / j.cols;
+                  const rightPct = j.col * widthPct;
+                  const timeText = `${format(j.start, "HH:mm")} – ${format(j.end, "HH:mm")}`;
+
+                  return (
+                    <Link
+                      key={j.id}
+                      to="/tech/$jobId"
+                      params={{ jobId: j.id }}
+                      className={cn(
+                        "absolute block rounded-md border px-2 py-1 shadow-sm overflow-hidden hover:shadow-md transition-all",
+                        statusColor(j.status)
+                      )}
+                      style={{
+                        top,
+                        height,
+                        right: `calc(${rightPct}% + 2px)`,
+                        width: `calc(${widthPct}% - 4px)`,
+                        minHeight: 28,
+                      }}
+                      title={j.title}
+                    >
+                      <div className="font-semibold leading-tight truncate">{j.title}</div>
+                      <div className="flex items-center gap-1 opacity-90 truncate">
+                        <Clock className="h-3 w-3 shrink-0" />
+                        {timeText}
+                      </div>
+                      {j.client?.name && (
+                        <div className="flex items-center gap-1 opacity-90 truncate">
+                          <Briefcase className="h-3 w-3 shrink-0" />
+                          {j.client.name}
+                        </div>
+                      )}
+                      {j.description && height > 48 && (
+                        <div className="mt-1 opacity-80 line-clamp-2 leading-tight">
+                          {j.description}
+                        </div>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
+}
+
+function layoutEvents<T extends { startMin: number; endMin: number }>(
+  events: T[]
+): (T & { col: number; cols: number })[] {
+  const sorted = [...events].sort((a, b) => a.startMin - b.startMin || a.endMin - b.endMin);
+  const out: (T & { col: number; cols: number })[] = [];
+  let cluster: T[] = [];
+  let clusterEnd = -Infinity;
+
+  const flush = () => {
+    if (!cluster.length) return;
+    const cols: { end: number }[] = [];
+    const assign = new Map<T, number>();
+    for (const it of cluster) {
+      let idx = cols.findIndex((c) => c.end <= it.startMin);
+      if (idx === -1) {
+        idx = cols.length;
+        cols.push({ end: it.endMin });
+      } else {
+        cols[idx].end = it.endMin;
+      }
+      assign.set(it, idx);
+    }
+    const total = cols.length;
+    for (const it of cluster) {
+      out.push({ ...it, col: assign.get(it)!, cols: total });
+    }
+    cluster = [];
+    clusterEnd = -Infinity;
+  };
+
+  for (const ev of sorted) {
+    if (cluster.length && ev.startMin >= clusterEnd) {
+      flush();
+    }
+    cluster.push(ev);
+    clusterEnd = Math.max(clusterEnd, ev.endMin);
+  }
+  flush();
+  return out;
 }
