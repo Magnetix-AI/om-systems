@@ -45,6 +45,8 @@ function AuthPage() {
 
   const [faceLoading, setFaceLoading] = useState(false);
   const [faceSetupOpen, setFaceSetupOpen] = useState(false);
+  const [faceVerifyOpen, setFaceVerifyOpen] = useState(false);
+  const [faceError, setFaceError] = useState<string | null>(null);
   const [pendingCreds, setPendingCreds] = useState<{ email: string; password: string } | null>(null);
   const faceSupported = typeof window !== "undefined" && isFaceAuthSupported();
   const hasFaceCred = typeof window !== "undefined" && !!getStoredFaceCred();
@@ -52,6 +54,20 @@ function AuthPage() {
   const finishLogin = () => {
     toast.success("התחברת בהצלחה");
     navigate({ to: "/" });
+  };
+
+  const runFaceVerify = async () => {
+    setFaceLoading(true);
+    setFaceError(null);
+    try {
+      await verifyFaceCred();
+      setFaceVerifyOpen(false);
+      finishLogin();
+    } catch (err: any) {
+      setFaceError(err?.message || "האימות נכשל");
+    } finally {
+      setFaceLoading(false);
+    }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -63,7 +79,14 @@ function AuthPage() {
     const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
     setLoading(false);
     if (error) return toast.error("שגיאה בהתחברות", { description: error.message });
-    if (faceSupported && !hasFaceCred) {
+    const stored = getStoredFaceCred();
+    if (faceSupported && stored && stored.email === loginEmail) {
+      // Mandatory second factor: verify face for this device's enrolled user.
+      setFaceVerifyOpen(true);
+      setTimeout(() => { runFaceVerify(); }, 200);
+      return;
+    }
+    if (faceSupported && !stored) {
       setPendingCreds({ email: loginEmail, password });
       setFaceSetupOpen(true);
       return;
