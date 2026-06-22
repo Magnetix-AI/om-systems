@@ -202,7 +202,7 @@ function TechnicianFormDialog({
   mode, initial, onSubmit,
 }: {
   mode: "create" | "edit";
-  initial?: { full_name?: string; color?: string };
+  initial?: { full_name?: string; color?: string; username?: string };
   onSubmit: (vals: {
     firstName: string; lastName: string; username: string; password: string; color: string;
   }) => Promise<void>;
@@ -211,14 +211,25 @@ function TechnicianFormDialog({
   const initLast = initial?.full_name?.split(" ").slice(1).join(" ") ?? "";
   const [firstName, setFirstName] = useState(initFirst);
   const [lastName, setLastName] = useState(initLast);
-  const [username, setUsername] = useState("");
+  const [username, setUsername] = useState(initial?.username ?? "");
   const [password, setPassword] = useState("");
   const [color, setColor] = useState(initial?.color ?? DEFAULT_COLORS[0]);
   const [saving, setSaving] = useState(false);
 
+  // Sync username when async-loaded for edit mode.
+  React.useEffect(() => {
+    if (mode === "edit" && initial?.username !== undefined) {
+      setUsername(initial.username);
+    }
+  }, [initial?.username, mode]);
+
   const submit = async () => {
     if (mode === "create" && (!username || !password || !firstName)) {
       toast.error("מלא שם, שם משתמש וסיסמה");
+      return;
+    }
+    if (mode === "edit" && !username) {
+      toast.error("שם משתמש לא יכול להיות ריק");
       return;
     }
     setSaving(true);
@@ -245,13 +256,12 @@ function TechnicianFormDialog({
             <Input value={lastName} onChange={(e) => setLastName(e.target.value)} />
           </div>
         </div>
-        {mode === "create" && (
-          <div className="space-y-1.5">
-            <Label>שם משתמש (לכניסה למערכת)</Label>
-            <Input value={username} onChange={(e) => setUsername(e.target.value)} dir="ltr" placeholder="e.g. yossi" />
-            <p className="text-[11px] text-muted-foreground">אותיות באנגלית, ספרות, נקודה/מקף בלבד</p>
-          </div>
-        )}
+        <div className="space-y-1.5">
+          <Label>שם משתמש (לכניסה למערכת)</Label>
+          <Input value={username} onChange={(e) => setUsername(e.target.value)} dir="ltr" placeholder="e.g. yossi" />
+          <p className="text-[11px] text-muted-foreground">אותיות באנגלית, ספרות, נקודה/מקף בלבד</p>
+        </div>
+
         <div className="space-y-1.5">
           <Label>{mode === "create" ? "סיסמה" : "סיסמה חדשה (אופציונלי)"}</Label>
           <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} dir="ltr" />
