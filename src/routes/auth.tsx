@@ -308,6 +308,7 @@ function AuthPage() {
               className="flex-1"
               disabled={faceLoading}
               onClick={async () => {
+                try { sessionStorage.removeItem(PENDING_FACE_KEY); } catch { /* ignore */ }
                 await supabase.auth.signOut();
                 setFaceVerifyOpen(false);
                 setFaceError(null);
