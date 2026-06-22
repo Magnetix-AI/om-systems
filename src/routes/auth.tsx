@@ -57,6 +57,7 @@ function AuthPage() {
   const hasFaceCred = typeof window !== "undefined" && !!getStoredFaceCred();
 
   const finishLogin = () => {
+    try { sessionStorage.removeItem(PENDING_FACE_KEY); } catch { /* ignore */ }
     toast.success("התחברת בהצלחה");
     navigate({ to: "/" });
   };
@@ -81,10 +82,20 @@ function AuthPage() {
     const id = email.trim();
     // Allow login via plain username — auto-map to internal email domain.
     const loginEmail = id.includes("@") ? id : `${id.toLowerCase()}@om-tech.local`;
+    const stored = getStoredFaceCred();
+    // Mark the face flow as pending BEFORE creating the session, so the
+    // auth-route beforeLoad doesn't redirect us away when onAuthStateChange
+    // invalidates the router.
+    const willNeedFaceFlow = faceSupported && (!stored || stored.email === loginEmail);
+    if (willNeedFaceFlow) {
+      try { sessionStorage.setItem(PENDING_FACE_KEY, "1"); } catch { /* ignore */ }
+    }
     const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
     setLoading(false);
-    if (error) return toast.error("שגיאה בהתחברות", { description: error.message });
-    const stored = getStoredFaceCred();
+    if (error) {
+      try { sessionStorage.removeItem(PENDING_FACE_KEY); } catch { /* ignore */ }
+      return toast.error("שגיאה בהתחברות", { description: error.message });
+    }
     if (faceSupported && stored && stored.email === loginEmail) {
       // Mandatory second factor: verify face for this device's enrolled user.
       setFaceVerifyOpen(true);
@@ -98,6 +109,7 @@ function AuthPage() {
     }
     finishLogin();
   };
+
 
   const handleFaceLogin = async () => {
     setFaceLoading(true);
