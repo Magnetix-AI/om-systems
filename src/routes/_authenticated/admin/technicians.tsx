@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,7 @@ import {
 import { Plus, Trash2, Pencil, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import {
-  createTechnician, updateTechnician, deleteTechnician,
+  createTechnician, updateTechnician, deleteTechnician, getTechnicianUsername,
 } from "@/lib/admin-technicians.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/technicians")({
@@ -41,6 +41,18 @@ function TechniciansAdmin() {
   const createFn = useServerFn(createTechnician);
   const updateFn = useServerFn(updateTechnician);
   const deleteFn = useServerFn(deleteTechnician);
+  const getUsernameFn = useServerFn(getTechnicianUsername);
+  const [editingUsername, setEditingUsername] = useState<string>("");
+
+  // Load username when opening edit dialog.
+  const openEdit = async (t: any) => {
+    setEditing(t);
+    setEditingUsername("");
+    try {
+      const res = await getUsernameFn({ data: { userId: t.id } });
+      setEditingUsername(res.username);
+    } catch { /* ignore */ }
+  };
 
   const { data: techs = [], isLoading } = useQuery({
     queryKey: ["admin-technicians-list"],
@@ -115,7 +127,7 @@ function TechniciansAdmin() {
                     <TableCell className="text-sm text-muted-foreground">{t.phone ?? "—"}</TableCell>
                     <TableCell>
                       <div className="flex gap-1 justify-end">
-                        <Button variant="ghost" size="icon" onClick={() => setEditing(t)}>
+                        <Button variant="ghost" size="icon" onClick={() => openEdit(t)}>
                           <Pencil className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"
@@ -136,7 +148,7 @@ function TechniciansAdmin() {
         {editing && (
           <TechnicianFormDialog
             mode="edit"
-            initial={editing}
+            initial={{ ...editing, username: editingUsername }}
             onSubmit={async (vals) => {
               await updateFn({
                 data: {
@@ -144,6 +156,7 @@ function TechniciansAdmin() {
                   fullName: vals.firstName + " " + vals.lastName,
                   color: vals.color,
                   password: vals.password || undefined,
+                  username: vals.username && vals.username !== editingUsername ? vals.username : undefined,
                 },
               });
               toast.success("עודכן בהצלחה");
@@ -153,6 +166,7 @@ function TechniciansAdmin() {
           />
         )}
       </Dialog>
+
 
       <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
         <AlertDialogContent dir="rtl">
@@ -188,7 +202,7 @@ function TechnicianFormDialog({
   mode, initial, onSubmit,
 }: {
   mode: "create" | "edit";
-  initial?: { full_name?: string; color?: string };
+  initial?: { full_name?: string; color?: string; username?: string };
   onSubmit: (vals: {
     firstName: string; lastName: string; username: string; password: string; color: string;
   }) => Promise<void>;
@@ -197,14 +211,25 @@ function TechnicianFormDialog({
   const initLast = initial?.full_name?.split(" ").slice(1).join(" ") ?? "";
   const [firstName, setFirstName] = useState(initFirst);
   const [lastName, setLastName] = useState(initLast);
-  const [username, setUsername] = useState("");
+  const [username, setUsername] = useState(initial?.username ?? "");
   const [password, setPassword] = useState("");
   const [color, setColor] = useState(initial?.color ?? DEFAULT_COLORS[0]);
   const [saving, setSaving] = useState(false);
 
+  // Sync username when async-loaded for edit mode.
+  useEffect(() => {
+    if (mode === "edit" && initial?.username !== undefined) {
+      setUsername(initial.username);
+    }
+  }, [initial?.username, mode]);
+
   const submit = async () => {
     if (mode === "create" && (!username || !password || !firstName)) {
       toast.error("מלא שם, שם משתמש וסיסמה");
+      return;
+    }
+    if (mode === "edit" && !username) {
+      toast.error("שם משתמש לא יכול להיות ריק");
       return;
     }
     setSaving(true);
@@ -231,13 +256,12 @@ function TechnicianFormDialog({
             <Input value={lastName} onChange={(e) => setLastName(e.target.value)} />
           </div>
         </div>
-        {mode === "create" && (
-          <div className="space-y-1.5">
-            <Label>שם משתמש (לכניסה למערכת)</Label>
-            <Input value={username} onChange={(e) => setUsername(e.target.value)} dir="ltr" placeholder="e.g. yossi" />
-            <p className="text-[11px] text-muted-foreground">אותיות באנגלית, ספרות, נקודה/מקף בלבד</p>
-          </div>
-        )}
+        <div className="space-y-1.5">
+          <Label>שם משתמש (לכניסה למערכת)</Label>
+          <Input value={username} onChange={(e) => setUsername(e.target.value)} dir="ltr" placeholder="e.g. yossi" />
+          <p className="text-[11px] text-muted-foreground">אותיות באנגלית, ספרות, נקודה/מקף בלבד</p>
+        </div>
+
         <div className="space-y-1.5">
           <Label>{mode === "create" ? "סיסמה" : "סיסמה חדשה (אופציונלי)"}</Label>
           <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} dir="ltr" />

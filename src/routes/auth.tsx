@@ -45,6 +45,8 @@ function AuthPage() {
 
   const [faceLoading, setFaceLoading] = useState(false);
   const [faceSetupOpen, setFaceSetupOpen] = useState(false);
+  const [faceVerifyOpen, setFaceVerifyOpen] = useState(false);
+  const [faceError, setFaceError] = useState<string | null>(null);
   const [pendingCreds, setPendingCreds] = useState<{ email: string; password: string } | null>(null);
   const faceSupported = typeof window !== "undefined" && isFaceAuthSupported();
   const hasFaceCred = typeof window !== "undefined" && !!getStoredFaceCred();
@@ -52,6 +54,20 @@ function AuthPage() {
   const finishLogin = () => {
     toast.success("התחברת בהצלחה");
     navigate({ to: "/" });
+  };
+
+  const runFaceVerify = async () => {
+    setFaceLoading(true);
+    setFaceError(null);
+    try {
+      await verifyFaceCred();
+      setFaceVerifyOpen(false);
+      finishLogin();
+    } catch (err: any) {
+      setFaceError(err?.message || "האימות נכשל");
+    } finally {
+      setFaceLoading(false);
+    }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -63,7 +79,14 @@ function AuthPage() {
     const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
     setLoading(false);
     if (error) return toast.error("שגיאה בהתחברות", { description: error.message });
-    if (faceSupported && !hasFaceCred) {
+    const stored = getStoredFaceCred();
+    if (faceSupported && stored && stored.email === loginEmail) {
+      // Mandatory second factor: verify face for this device's enrolled user.
+      setFaceVerifyOpen(true);
+      setTimeout(() => { runFaceVerify(); }, 200);
+      return;
+    }
+    if (faceSupported && !stored) {
       setPendingCreds({ email: loginEmail, password });
       setFaceSetupOpen(true);
       return;
@@ -221,7 +244,7 @@ function AuthPage() {
               <ScanFace className="h-5 w-5" /> הפעלת זיהוי פנים
             </DialogTitle>
             <DialogDescription className="text-right">
-              להפעלת כניסה מהירה במכשיר זה באמצעות זיהוי פנים / טביעת אצבע. בכניסות הבאות לא תידרש להזין סיסמה.
+              לאבטחה מוגברת מומלץ להפעיל זיהוי פנים / טביעת אצבע במכשיר זה. בכניסות הבאות יידרש אימות ביומטרי נוסף לאחר הסיסמה.
             </DialogDescription>
           </DialogHeader>
           <div className="flex gap-2">
@@ -229,12 +252,47 @@ function AuthPage() {
               {faceLoading ? "מגדיר..." : "הפעל זיהוי פנים"}
             </Button>
             <Button variant="outline" className="flex-1" onClick={skipFaceSetup} disabled={faceLoading}>
-              דלג
+              דלג בפעם זו
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={faceVerifyOpen} onOpenChange={() => { /* mandatory — cannot dismiss */ }}>
+        <DialogContent dir="rtl" className="sm:max-w-sm" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle className="text-right flex items-center gap-2">
+              <ScanFace className="h-5 w-5" /> אימות זיהוי פנים
+            </DialogTitle>
+            <DialogDescription className="text-right">
+              שלב אבטחה נוסף: יש לאמת את זהותך באמצעות זיהוי פנים / טביעת אצבע במכשיר זה.
+            </DialogDescription>
+          </DialogHeader>
+          {faceError && (
+            <p className="text-sm text-destructive text-right">{faceError}</p>
+          )}
+          <div className="flex gap-2">
+            <Button className="flex-1" onClick={runFaceVerify} disabled={faceLoading}>
+              {faceLoading ? "מאמת..." : faceError ? "נסה שוב" : "אמת זיהוי פנים"}
+            </Button>
+            <Button
+              variant="outline"
+              className="flex-1"
+              disabled={faceLoading}
+              onClick={async () => {
+                await supabase.auth.signOut();
+                setFaceVerifyOpen(false);
+                setFaceError(null);
+                toast.info("האימות בוטל");
+              }}
+            >
+              ביטול
             </Button>
           </div>
         </DialogContent>
       </Dialog>
     </div>
+
   );
 }
 
