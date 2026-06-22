@@ -20,7 +20,7 @@ import {
 import { Plus, Trash2, Pencil, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import {
-  createTechnician, updateTechnician, deleteTechnician,
+  createTechnician, updateTechnician, deleteTechnician, getTechnicianUsername,
 } from "@/lib/admin-technicians.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/technicians")({
