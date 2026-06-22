@@ -260,14 +260,46 @@ function CategoryTreePanel({
   const reparent = async (catId: string, newParent: string | null) => {
     if (catId === newParent) return;
     if (newParent && descendants(catId).includes(newParent)) return toast.error("לא ניתן להעביר לתת-קטגוריה של עצמה");
-    const { error } = await supabase.from("product_categories").update({ parent_id: newParent }).eq("id", catId);
+    const siblings = (childrenOf.get(newParent) ?? []).filter(c => c.id !== catId);
+    const nextOrder = siblings.reduce((m, c) => Math.max(m, c.sort_order), -1) + 1;
+    const { error } = await supabase.from("product_categories").update({ parent_id: newParent, sort_order: nextOrder }).eq("id", catId);
     if (error) return toast.error("שגיאה", { description: error.message });
+    invalidate();
+  };
+  const reorderSibling = async (
+    draggedId: string,
+    targetId: string,
+    position: "before" | "after",
+  ) => {
+    const target = categories.find(c => c.id === targetId);
+    const dragged = categories.find(c => c.id === draggedId);
+    if (!target || !dragged) return;
+    if (draggedId === targetId) return;
+    if (descendants(draggedId).includes(targetId)) return toast.error("לא ניתן להעביר לתת-קטגוריה של עצמה");
+    const newParent = target.parent_id;
+    const siblings = (childrenOf.get(newParent) ?? [])
+      .filter(c => c.id !== draggedId)
+      .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name));
+    const idx = siblings.findIndex(c => c.id === targetId);
+    const insertAt = position === "before" ? idx : idx + 1;
+    siblings.splice(insertAt, 0, { ...dragged, parent_id: newParent });
+    const results = await Promise.all(
+      siblings.map((c, i) =>
+        supabase.from("product_categories")
+          .update({ sort_order: i, parent_id: newParent })
+          .eq("id", c.id),
+      ),
+    );
+    const err = results.find(r => r.error)?.error;
+    if (err) return toast.error("שגיאה בסידור", { description: err.message });
     invalidate();
   };
   const createCat = async (parent_id: string | null, name: string) => {
     const n = name.trim();
     if (!n) return;
-    const { error } = await supabase.from("product_categories").insert({ name: n, parent_id });
+    const siblings = childrenOf.get(parent_id) ?? [];
+    const nextOrder = siblings.reduce((m, c) => Math.max(m, c.sort_order), -1) + 1;
+    const { error } = await supabase.from("product_categories").insert({ name: n, parent_id, sort_order: nextOrder });
     if (error) return toast.error("שגיאה", { description: error.message });
     invalidate();
   };
@@ -289,12 +321,49 @@ function CategoryTreePanel({
     invalidate();
   };
 
-  const handleDrop = (e: React.DragEvent, targetCatId: string | null) => {
-    const productId = e.dataTransfer.getData("application/x-product");
-    if (productId) { e.preventDefault(); moveProduct(productId, targetCatId); return; }
-    const catId = e.dataTransfer.getData("application/x-pcat");
-    if (catId) { e.preventDefault(); reparent(catId, targetCatId); }
+  const [dropHint, setDropHint] = useState<{ id: string; pos: "before" | "after" | "inside" } | null>(null);
+
+  const computePos = (e: React.DragEvent<HTMLDivElement>): "before" | "after" | "inside" => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    const h = rect.height;
+    if (y < h * 0.3) return "before";
+    if (y > h * 0.7) return "after";
+    return "inside";
   };
+
+  const handleCatDragOver = (e: React.DragEvent<HTMLDivElement>, catId: string) => {
+    if (e.dataTransfer.types.includes("application/x-product")) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      setDropHint({ id: catId, pos: "inside" });
+      return;
+    }
+    if (e.dataTransfer.types.includes("application/x-pcat")) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      setDropHint({ id: catId, pos: computePos(e) });
+    }
+  };
+
+  const handleCatDrop = (e: React.DragEvent<HTMLDivElement>, targetCatId: string) => {
+    const productId = e.dataTransfer.getData("application/x-product");
+    if (productId) {
+      e.preventDefault();
+      setDropHint(null);
+      moveProduct(productId, targetCatId);
+      return;
+    }
+    const catId = e.dataTransfer.getData("application/x-pcat");
+    if (catId) {
+      e.preventDefault();
+      const pos = computePos(e);
+      setDropHint(null);
+      if (pos === "inside") reparent(catId, targetCatId);
+      else reorderSibling(catId, targetCatId, pos);
+    }
+  };
+
   const dragOver = (e: React.DragEvent) => {
     if (e.dataTransfer.types.includes("application/x-product") ||
         e.dataTransfer.types.includes("application/x-pcat")) {
