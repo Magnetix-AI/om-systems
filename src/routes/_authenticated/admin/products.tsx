@@ -260,14 +260,46 @@ function CategoryTreePanel({
   const reparent = async (catId: string, newParent: string | null) => {
     if (catId === newParent) return;
     if (newParent && descendants(catId).includes(newParent)) return toast.error("לא ניתן להעביר לתת-קטגוריה של עצמה");
-    const { error } = await supabase.from("product_categories").update({ parent_id: newParent }).eq("id", catId);
+    const siblings = (childrenOf.get(newParent) ?? []).filter(c => c.id !== catId);
+    const nextOrder = siblings.reduce((m, c) => Math.max(m, c.sort_order), -1) + 1;
+    const { error } = await supabase.from("product_categories").update({ parent_id: newParent, sort_order: nextOrder }).eq("id", catId);
     if (error) return toast.error("שגיאה", { description: error.message });
+    invalidate();
+  };
+  const reorderSibling = async (
+    draggedId: string,
+    targetId: string,
+    position: "before" | "after",
+  ) => {
+    const target = categories.find(c => c.id === targetId);
+    const dragged = categories.find(c => c.id === draggedId);
+    if (!target || !dragged) return;
+    if (draggedId === targetId) return;
+    if (descendants(draggedId).includes(targetId)) return toast.error("לא ניתן להעביר לתת-קטגוריה של עצמה");
+    const newParent = target.parent_id;
+    const siblings = (childrenOf.get(newParent) ?? [])
+      .filter(c => c.id !== draggedId)
+      .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name));
+    const idx = siblings.findIndex(c => c.id === targetId);
+    const insertAt = position === "before" ? idx : idx + 1;
+    siblings.splice(insertAt, 0, { ...dragged, parent_id: newParent });
+    const results = await Promise.all(
+      siblings.map((c, i) =>
+        supabase.from("product_categories")
+          .update({ sort_order: i, parent_id: newParent })
+          .eq("id", c.id),
+      ),
+    );
+    const err = results.find(r => r.error)?.error;
+    if (err) return toast.error("שגיאה בסידור", { description: err.message });
     invalidate();
   };
   const createCat = async (parent_id: string | null, name: string) => {
     const n = name.trim();
     if (!n) return;
-    const { error } = await supabase.from("product_categories").insert({ name: n, parent_id });
+    const siblings = childrenOf.get(parent_id) ?? [];
+    const nextOrder = siblings.reduce((m, c) => Math.max(m, c.sort_order), -1) + 1;
+    const { error } = await supabase.from("product_categories").insert({ name: n, parent_id, sort_order: nextOrder });
     if (error) return toast.error("שגיאה", { description: error.message });
     invalidate();
   };
@@ -289,12 +321,49 @@ function CategoryTreePanel({
     invalidate();
   };
 
-  const handleDrop = (e: React.DragEvent, targetCatId: string | null) => {
-    const productId = e.dataTransfer.getData("application/x-product");
-    if (productId) { e.preventDefault(); moveProduct(productId, targetCatId); return; }
-    const catId = e.dataTransfer.getData("application/x-pcat");
-    if (catId) { e.preventDefault(); reparent(catId, targetCatId); }
+  const [dropHint, setDropHint] = useState<{ id: string; pos: "before" | "after" | "inside" } | null>(null);
+
+  const computePos = (e: React.DragEvent<HTMLDivElement>): "before" | "after" | "inside" => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    const h = rect.height;
+    if (y < h * 0.3) return "before";
+    if (y > h * 0.7) return "after";
+    return "inside";
   };
+
+  const handleCatDragOver = (e: React.DragEvent<HTMLDivElement>, catId: string) => {
+    if (e.dataTransfer.types.includes("application/x-product")) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      setDropHint({ id: catId, pos: "inside" });
+      return;
+    }
+    if (e.dataTransfer.types.includes("application/x-pcat")) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      setDropHint({ id: catId, pos: computePos(e) });
+    }
+  };
+
+  const handleCatDrop = (e: React.DragEvent<HTMLDivElement>, targetCatId: string) => {
+    const productId = e.dataTransfer.getData("application/x-product");
+    if (productId) {
+      e.preventDefault();
+      setDropHint(null);
+      moveProduct(productId, targetCatId);
+      return;
+    }
+    const catId = e.dataTransfer.getData("application/x-pcat");
+    if (catId) {
+      e.preventDefault();
+      const pos = computePos(e);
+      setDropHint(null);
+      if (pos === "inside") reparent(catId, targetCatId);
+      else reorderSibling(catId, targetCatId, pos);
+    }
+  };
+
   const dragOver = (e: React.DragEvent) => {
     if (e.dataTransfer.types.includes("application/x-product") ||
         e.dataTransfer.types.includes("application/x-pcat")) {
@@ -313,8 +382,9 @@ function CategoryTreePanel({
           <ContextMenuTrigger asChild>
             <div
               className={cn(
-                "flex items-center gap-1 px-1.5 py-1 rounded cursor-pointer transition-colors",
+                "relative flex items-center gap-1 px-1.5 py-1 rounded cursor-pointer transition-colors",
                 isSelected ? "bg-primary/15 text-primary" : "hover:bg-secondary/60",
+                dropHint?.id === cat.id && dropHint.pos === "inside" && "ring-2 ring-primary bg-primary/10",
               )}
               style={{ paddingInlineStart: 6 + depth * 14 }}
               draggable
@@ -323,10 +393,17 @@ function CategoryTreePanel({
                 e.dataTransfer.effectAllowed = "move";
                 e.dataTransfer.setData("application/x-pcat", cat.id);
               }}
-              onDragOver={dragOver}
-              onDrop={(e) => handleDrop(e, cat.id)}
+              onDragOver={(e) => handleCatDragOver(e, cat.id)}
+              onDragLeave={() => setDropHint(h => (h?.id === cat.id ? null : h))}
+              onDrop={(e) => handleCatDrop(e, cat.id)}
               onClick={() => onSelect(cat.id)}
             >
+              {dropHint?.id === cat.id && dropHint.pos === "before" && (
+                <span className="absolute inset-x-1 -top-px h-0.5 bg-primary rounded pointer-events-none" />
+              )}
+              {dropHint?.id === cat.id && dropHint.pos === "after" && (
+                <span className="absolute inset-x-1 -bottom-px h-0.5 bg-primary rounded pointer-events-none" />
+              )}
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); setExpanded(s => ({ ...s, [cat.id]: !isOpen })); }}
@@ -340,6 +417,7 @@ function CategoryTreePanel({
               <span className="text-sm font-medium flex-1 truncate">{cat.name}</span>
               <Badge variant="outline" className="h-5 text-[10px] px-1.5">{totalInCat(cat.id)}</Badge>
             </div>
+
           </ContextMenuTrigger>
           <ContextMenuContent>
             <ContextMenuItem onClick={() => { setAddParent(cat); setAddName(""); }}>
@@ -384,7 +462,7 @@ function CategoryTreePanel({
           type="button"
           onClick={() => onSelect(ALL)}
           onDragOver={dragOver}
-          onDrop={(e) => handleDrop(e, null)}
+          onDrop={(e) => { const pid = e.dataTransfer.getData("application/x-product"); if (pid) { e.preventDefault(); moveProduct(pid, null); } }}
           className={cn(
             "w-full flex items-center justify-between gap-1 px-2 py-1.5 rounded text-sm",
             selected === ALL ? "bg-primary/15 text-primary" : "hover:bg-secondary/60",
@@ -397,7 +475,7 @@ function CategoryTreePanel({
           type="button"
           onClick={() => onSelect(UNCAT)}
           onDragOver={dragOver}
-          onDrop={(e) => handleDrop(e, null)}
+          onDrop={(e) => { const pid = e.dataTransfer.getData("application/x-product"); if (pid) { e.preventDefault(); moveProduct(pid, null); } }}
           className={cn(
             "w-full flex items-center justify-between gap-1 px-2 py-1.5 rounded text-sm",
             selected === UNCAT ? "bg-primary/15 text-primary" : "hover:bg-secondary/60",
