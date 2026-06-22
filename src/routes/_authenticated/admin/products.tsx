@@ -382,8 +382,9 @@ function CategoryTreePanel({
           <ContextMenuTrigger asChild>
             <div
               className={cn(
-                "flex items-center gap-1 px-1.5 py-1 rounded cursor-pointer transition-colors",
+                "relative flex items-center gap-1 px-1.5 py-1 rounded cursor-pointer transition-colors",
                 isSelected ? "bg-primary/15 text-primary" : "hover:bg-secondary/60",
+                dropHint?.id === cat.id && dropHint.pos === "inside" && "ring-2 ring-primary bg-primary/10",
               )}
               style={{ paddingInlineStart: 6 + depth * 14 }}
               draggable
@@ -392,10 +393,17 @@ function CategoryTreePanel({
                 e.dataTransfer.effectAllowed = "move";
                 e.dataTransfer.setData("application/x-pcat", cat.id);
               }}
-              onDragOver={dragOver}
-              onDrop={(e) => handleDrop(e, cat.id)}
+              onDragOver={(e) => handleCatDragOver(e, cat.id)}
+              onDragLeave={() => setDropHint(h => (h?.id === cat.id ? null : h))}
+              onDrop={(e) => handleCatDrop(e, cat.id)}
               onClick={() => onSelect(cat.id)}
             >
+              {dropHint?.id === cat.id && dropHint.pos === "before" && (
+                <span className="absolute inset-x-1 -top-px h-0.5 bg-primary rounded pointer-events-none" />
+              )}
+              {dropHint?.id === cat.id && dropHint.pos === "after" && (
+                <span className="absolute inset-x-1 -bottom-px h-0.5 bg-primary rounded pointer-events-none" />
+              )}
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); setExpanded(s => ({ ...s, [cat.id]: !isOpen })); }}
@@ -409,6 +417,7 @@ function CategoryTreePanel({
               <span className="text-sm font-medium flex-1 truncate">{cat.name}</span>
               <Badge variant="outline" className="h-5 text-[10px] px-1.5">{totalInCat(cat.id)}</Badge>
             </div>
+
           </ContextMenuTrigger>
           <ContextMenuContent>
             <ContextMenuItem onClick={() => { setAddParent(cat); setAddName(""); }}>
