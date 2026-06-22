@@ -237,22 +237,32 @@ function AuthPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={faceSetupOpen} onOpenChange={(o) => { if (!o) skipFaceSetup(); }}>
-        <DialogContent dir="rtl" className="sm:max-w-sm">
+      <Dialog open={faceSetupOpen} onOpenChange={() => { /* mandatory — cannot dismiss */ }}>
+        <DialogContent dir="rtl" className="sm:max-w-sm" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-2">
-              <ScanFace className="h-5 w-5" /> הפעלת זיהוי פנים
+              <ScanFace className="h-5 w-5" /> הגדרת זיהוי פנים
             </DialogTitle>
             <DialogDescription className="text-right">
-              לאבטחה מוגברת מומלץ להפעיל זיהוי פנים / טביעת אצבע במכשיר זה. בכניסות הבאות יידרש אימות ביומטרי נוסף לאחר הסיסמה.
+              בכניסה הראשונית למערכת חובה להגדיר זיהוי פנים / טביעת אצבע במכשיר זה. בכניסות הבאות יידרש אימות ביומטרי נוסף לאחר הסיסמה.
             </DialogDescription>
           </DialogHeader>
           <div className="flex gap-2">
             <Button className="flex-1" onClick={handleEnableFace} disabled={faceLoading}>
               {faceLoading ? "מגדיר..." : "הפעל זיהוי פנים"}
             </Button>
-            <Button variant="outline" className="flex-1" onClick={skipFaceSetup} disabled={faceLoading}>
-              דלג בפעם זו
+            <Button
+              variant="outline"
+              className="flex-1"
+              disabled={faceLoading}
+              onClick={async () => {
+                await supabase.auth.signOut();
+                setFaceSetupOpen(false);
+                setPendingCreds(null);
+                toast.info("ההגדרה בוטלה");
+              }}
+            >
+              ביטול
             </Button>
           </div>
         </DialogContent>
