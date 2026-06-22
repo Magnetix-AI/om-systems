@@ -15,9 +15,11 @@ const UpdateSchema = z.object({
   fullName: z.string().min(1).max(128).optional(),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/).nullable().optional(),
   password: z.string().min(6).max(128).optional(),
+  username: z.string().min(2).max(64).regex(/^[a-zA-Z0-9._-]+$/, "username invalid").optional(),
 });
 
 const DeleteSchema = z.object({ userId: z.string().uuid() });
+const GetSchema = z.object({ userId: z.string().uuid() });
 
 async function assertAdmin(ctx: { supabase: any; userId: string }) {
   const { data, error } = await ctx.supabase.rpc("has_role", {
