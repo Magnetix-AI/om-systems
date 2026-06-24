@@ -517,7 +517,7 @@ function MonthGrid({ cursor, selected, items, onSelect, onAddOnDay, onItemClick,
                     </ContextMenuTrigger>
                     <ContextMenuContent>
                       <ContextMenuItem onClick={() => onItemClick(it)}>
-                        <Pencil className="h-3.5 w-3.5 ml-2" /> ערוך
+                        <Pencil className="h-3.5 w-3.5 ml-2" /> {isCompletedCalendarJob(it) ? "פרטים" : "ערוך"}
                       </ContextMenuItem>
                       <ContextMenuItem onClick={() => onItemReturnToUnscheduled(it)}>
                         <AlertTriangle className="h-3.5 w-3.5 ml-2" /> החזר לקריאות לא מתואמות
@@ -692,7 +692,7 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
                     </ContextMenuTrigger>
                     <ContextMenuContent>
                       <ContextMenuItem onClick={() => onItemClick(it)}>
-                        <Pencil className="h-3.5 w-3.5 ml-2" /> ערוך
+                        <Pencil className="h-3.5 w-3.5 ml-2" /> {isCompletedCalendarJob(it) ? "פרטים" : "ערוך"}
                       </ContextMenuItem>
                       <ContextMenuItem onClick={() => onItemReturnToUnscheduled(it)}>
                         <AlertTriangle className="h-3.5 w-3.5 ml-2" /> החזר לקריאות לא מתואמות
@@ -1108,7 +1108,7 @@ function DayDetailsPanel({ date, items, onEdit, onDelete }: {
             </div>
             <div className="flex gap-1">
               <Button variant="ghost" size="sm" className="flex-1 h-7 text-xs" onClick={() => onEdit(it)}>
-                <Pencil className="h-3 w-3 ml-1" /> ערוך
+                <Pencil className="h-3 w-3 ml-1" /> {isCompletedCalendarJob(it) ? "פרטים" : "ערוך"}
               </Button>
               <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive hover:text-destructive" onClick={() => onDelete(it)}>
                 <Trash2 className="h-3 w-3 ml-1" /> מחק
