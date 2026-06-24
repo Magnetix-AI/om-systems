@@ -60,8 +60,12 @@ type CalendarItem = {
   client_name: string | null;
   client_address: string | null;
   status: string;
+  completed_at?: string | null;
   category_id: string | null;
 };
+
+const isCompletedCalendarJob = (it: CalendarItem) =>
+  it.kind === "job" && (it.status === "completed" || it.completed_at != null || statusLabel(it.status) === "הושלמה");
 
 type JobCategory = {
   id: string;
@@ -84,10 +88,26 @@ function AdminMain() {
 
   // If a job is already completed by the technician, admin clicking it in the
   // calendar opens a read-only details view instead of the edit dialog.
-  const handleCalendarItemClick = (it: CalendarItem) => {
-    if (it.kind === "job" && it.status === "completed") {
+  const handleCalendarItemClick = async (it: CalendarItem) => {
+    if (it.kind === "job") {
+      const { data } = await supabase
+        .from("jobs")
+        .select("status, completed_at")
+        .eq("id", it.id)
+        .maybeSingle();
+      const currentStatus = data?.status ?? it.status;
+      const currentCompletedAt = data?.completed_at ?? it.completed_at ?? null;
+      if (currentStatus === "completed" || currentCompletedAt != null || statusLabel(currentStatus) === "הושלמה") {
+        setEditItem(null);
+        setViewJobId(it.id);
+        return;
+      }
+    }
+    if (isCompletedCalendarJob(it)) {
+      setEditItem(null);
       setViewJobId(it.id);
     } else {
+      setViewJobId(null);
       setEditItem(it);
     }
   };
@@ -132,7 +152,7 @@ function AdminMain() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("jobs")
-        .select("id, title, description, status, scheduled_date, start_time, end_time, technician_id, category_id, client:clients(name, address)")
+        .select("id, title, description, status, completed_at, scheduled_date, start_time, end_time, technician_id, category_id, client:clients(name, address)")
         .order("scheduled_date", { ascending: true });
       if (error) throw error;
       return data ?? [];
@@ -198,6 +218,7 @@ function AdminMain() {
           client_name: j.client?.name ?? null,
           client_address: j.client?.address ?? null,
           status: j.status,
+          completed_at: j.completed_at ?? null,
           category_id: j.category_id ?? null,
         };
       });
@@ -218,6 +239,7 @@ function AdminMain() {
           client_name: p.client?.name ?? null,
           client_address: p.client?.address ?? null,
           status: p.status,
+          completed_at: null,
           category_id: null,
         };
       });
@@ -242,6 +264,7 @@ function AdminMain() {
           client_name: j.client?.name ?? null,
           client_address: j.client?.address ?? null,
           status: j.status,
+          completed_at: j.completed_at ?? null,
           category_id: j.category_id ?? null,
         };
       });
@@ -494,7 +517,7 @@ function MonthGrid({ cursor, selected, items, onSelect, onAddOnDay, onItemClick,
                     </ContextMenuTrigger>
                     <ContextMenuContent>
                       <ContextMenuItem onClick={() => onItemClick(it)}>
-                        <Pencil className="h-3.5 w-3.5 ml-2" /> ערוך
+                        <Pencil className="h-3.5 w-3.5 ml-2" /> {isCompletedCalendarJob(it) ? "פרטים" : "ערוך"}
                       </ContextMenuItem>
                       <ContextMenuItem onClick={() => onItemReturnToUnscheduled(it)}>
                         <AlertTriangle className="h-3.5 w-3.5 ml-2" /> החזר לקריאות לא מתואמות
@@ -669,7 +692,7 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
                     </ContextMenuTrigger>
                     <ContextMenuContent>
                       <ContextMenuItem onClick={() => onItemClick(it)}>
-                        <Pencil className="h-3.5 w-3.5 ml-2" /> ערוך
+                        <Pencil className="h-3.5 w-3.5 ml-2" /> {isCompletedCalendarJob(it) ? "פרטים" : "ערוך"}
                       </ContextMenuItem>
                       <ContextMenuItem onClick={() => onItemReturnToUnscheduled(it)}>
                         <AlertTriangle className="h-3.5 w-3.5 ml-2" /> החזר לקריאות לא מתואמות
@@ -1085,7 +1108,7 @@ function DayDetailsPanel({ date, items, onEdit, onDelete }: {
             </div>
             <div className="flex gap-1">
               <Button variant="ghost" size="sm" className="flex-1 h-7 text-xs" onClick={() => onEdit(it)}>
-                <Pencil className="h-3 w-3 ml-1" /> ערוך
+                <Pencil className="h-3 w-3 ml-1" /> {isCompletedCalendarJob(it) ? "פרטים" : "ערוך"}
               </Button>
               <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive hover:text-destructive" onClick={() => onDelete(it)}>
                 <Trash2 className="h-3 w-3 ml-1" /> מחק
