@@ -328,6 +328,7 @@ function AdminMain() {
       </div>
 
       <AdminEditItemDialog item={editItem} onClose={() => setEditItem(null)} invalidateKeys={[["main-jobs"], ["main-projects"]]} />
+      <AdminViewJobDialog jobId={viewJobId} onClose={() => setViewJobId(null)} />
 
       <NewJobOnDateDialog
         date={newJobDate}
