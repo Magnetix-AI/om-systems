@@ -60,8 +60,12 @@ type CalendarItem = {
   client_name: string | null;
   client_address: string | null;
   status: string;
+  completed_at?: string | null;
   category_id: string | null;
 };
+
+const isCompletedCalendarJob = (it: CalendarItem) =>
+  it.kind === "job" && (it.status === "completed" || it.completed_at != null || statusLabel(it.status) === "הושלמה");
 
 type JobCategory = {
   id: string;
@@ -85,9 +89,11 @@ function AdminMain() {
   // If a job is already completed by the technician, admin clicking it in the
   // calendar opens a read-only details view instead of the edit dialog.
   const handleCalendarItemClick = (it: CalendarItem) => {
-    if (it.kind === "job" && it.status === "completed") {
+    if (isCompletedCalendarJob(it)) {
+      setEditItem(null);
       setViewJobId(it.id);
     } else {
+      setViewJobId(null);
       setEditItem(it);
     }
   };
@@ -132,7 +138,7 @@ function AdminMain() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("jobs")
-        .select("id, title, description, status, scheduled_date, start_time, end_time, technician_id, category_id, client:clients(name, address)")
+        .select("id, title, description, status, completed_at, scheduled_date, start_time, end_time, technician_id, category_id, client:clients(name, address)")
         .order("scheduled_date", { ascending: true });
       if (error) throw error;
       return data ?? [];
@@ -198,6 +204,7 @@ function AdminMain() {
           client_name: j.client?.name ?? null,
           client_address: j.client?.address ?? null,
           status: j.status,
+          completed_at: j.completed_at ?? null,
           category_id: j.category_id ?? null,
         };
       });
@@ -218,6 +225,7 @@ function AdminMain() {
           client_name: p.client?.name ?? null,
           client_address: p.client?.address ?? null,
           status: p.status,
+          completed_at: null,
           category_id: null,
         };
       });
@@ -242,6 +250,7 @@ function AdminMain() {
           client_name: j.client?.name ?? null,
           client_address: j.client?.address ?? null,
           status: j.status,
+          completed_at: j.completed_at ?? null,
           category_id: j.category_id ?? null,
         };
       });
