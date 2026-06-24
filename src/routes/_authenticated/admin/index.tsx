@@ -88,7 +88,21 @@ function AdminMain() {
 
   // If a job is already completed by the technician, admin clicking it in the
   // calendar opens a read-only details view instead of the edit dialog.
-  const handleCalendarItemClick = (it: CalendarItem) => {
+  const handleCalendarItemClick = async (it: CalendarItem) => {
+    if (it.kind === "job") {
+      const { data } = await supabase
+        .from("jobs")
+        .select("status, completed_at")
+        .eq("id", it.id)
+        .maybeSingle();
+      const currentStatus = data?.status ?? it.status;
+      const currentCompletedAt = data?.completed_at ?? it.completed_at ?? null;
+      if (currentStatus === "completed" || currentCompletedAt != null || statusLabel(currentStatus) === "הושלמה") {
+        setEditItem(null);
+        setViewJobId(it.id);
+        return;
+      }
+    }
     if (isCompletedCalendarJob(it)) {
       setEditItem(null);
       setViewJobId(it.id);
