@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { deleteJobsCascade, deleteProjectsCascade } from "@/lib/admin-deletes";
 import { AdminEditItemDialog } from "@/components/admin-edit-item-dialog";
+import { AdminViewJobDialog } from "@/components/admin-view-job-dialog";
 import { ProjectPicker } from "@/components/project-picker";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
