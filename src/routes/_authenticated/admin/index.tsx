@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { deleteJobsCascade, deleteProjectsCascade } from "@/lib/admin-deletes";
 import { AdminEditItemDialog } from "@/components/admin-edit-item-dialog";
+import { AdminViewJobDialog } from "@/components/admin-view-job-dialog";
 import { ProjectPicker } from "@/components/project-picker";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
@@ -75,10 +76,21 @@ function AdminMain() {
   const [cursor, setCursor] = useState(new Date());
   const [selected, setSelected] = useState<Date>(new Date());
   const [editItem, setEditItem] = useState<CalendarItem | null>(null);
+  const [viewJobId, setViewJobId] = useState<string | null>(null);
   const [toDelete, setToDelete] = useState<CalendarItem | null>(null);
   const [newJobDate, setNewJobDate] = useState<Date | null>(null);
   const [rescheduleTarget, setRescheduleTarget] = useState<{ item: CalendarItem; date: Date } | null>(null);
   const qc = useQueryClient();
+
+  // If a job is already completed by the technician, admin clicking it in the
+  // calendar opens a read-only details view instead of the edit dialog.
+  const handleCalendarItemClick = (it: CalendarItem) => {
+    if (it.kind === "job" && it.status === "completed") {
+      setViewJobId(it.id);
+    } else {
+      setEditItem(it);
+    }
+  };
 
   // X on a calendar item: if partial (no technician), just clear schedule fields
   // and keep it under "unscheduled". If fully scheduled, confirm a full delete.
@@ -281,7 +293,7 @@ function AdminMain() {
               <MonthGrid
                 cursor={cursor} selected={selected} items={items} onSelect={setSelected}
                 onAddOnDay={setNewJobDate}
-                onItemClick={setEditItem}
+                onItemClick={handleCalendarItemClick}
                 onItemRemove={handleCalendarRemove}
                 onItemReturnToUnscheduled={handleReturnToUnscheduled}
                 onDropOnDay={(kind, id, date) => {
@@ -294,7 +306,7 @@ function AdminMain() {
             {view === "week" && (
               <WeekGrid
                 cursor={cursor} selected={selected} items={items}
-                onSelect={setSelected} onItemClick={setEditItem}
+                onSelect={setSelected} onItemClick={handleCalendarItemClick}
                 onItemRemove={handleCalendarRemove}
                 onItemReturnToUnscheduled={handleReturnToUnscheduled}
                 onAddOnDay={setNewJobDate}
@@ -306,7 +318,7 @@ function AdminMain() {
               />
             )}
             {view === "day" && (
-              <DayGrid cursor={cursor} items={items.filter(i => isSameDay(i.date, cursor))} onItemClick={setEditItem} />
+              <DayGrid cursor={cursor} items={items.filter(i => isSameDay(i.date, cursor))} onItemClick={handleCalendarItemClick} />
             )}
           </CardContent>
         </Card>
@@ -316,6 +328,7 @@ function AdminMain() {
       </div>
 
       <AdminEditItemDialog item={editItem} onClose={() => setEditItem(null)} invalidateKeys={[["main-jobs"], ["main-projects"]]} />
+      <AdminViewJobDialog jobId={viewJobId} onClose={() => setViewJobId(null)} />
 
       <NewJobOnDateDialog
         date={newJobDate}
