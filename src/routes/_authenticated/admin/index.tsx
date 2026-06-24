@@ -293,7 +293,7 @@ function AdminMain() {
               <MonthGrid
                 cursor={cursor} selected={selected} items={items} onSelect={setSelected}
                 onAddOnDay={setNewJobDate}
-                onItemClick={setEditItem}
+                onItemClick={handleCalendarItemClick}
                 onItemRemove={handleCalendarRemove}
                 onItemReturnToUnscheduled={handleReturnToUnscheduled}
                 onDropOnDay={(kind, id, date) => {
@@ -306,7 +306,7 @@ function AdminMain() {
             {view === "week" && (
               <WeekGrid
                 cursor={cursor} selected={selected} items={items}
-                onSelect={setSelected} onItemClick={setEditItem}
+                onSelect={setSelected} onItemClick={handleCalendarItemClick}
                 onItemRemove={handleCalendarRemove}
                 onItemReturnToUnscheduled={handleReturnToUnscheduled}
                 onAddOnDay={setNewJobDate}
@@ -318,7 +318,7 @@ function AdminMain() {
               />
             )}
             {view === "day" && (
-              <DayGrid cursor={cursor} items={items.filter(i => isSameDay(i.date, cursor))} onItemClick={setEditItem} />
+              <DayGrid cursor={cursor} items={items.filter(i => isSameDay(i.date, cursor))} onItemClick={handleCalendarItemClick} />
             )}
           </CardContent>
         </Card>
