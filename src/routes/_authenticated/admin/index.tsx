@@ -76,10 +76,21 @@ function AdminMain() {
   const [cursor, setCursor] = useState(new Date());
   const [selected, setSelected] = useState<Date>(new Date());
   const [editItem, setEditItem] = useState<CalendarItem | null>(null);
+  const [viewJobId, setViewJobId] = useState<string | null>(null);
   const [toDelete, setToDelete] = useState<CalendarItem | null>(null);
   const [newJobDate, setNewJobDate] = useState<Date | null>(null);
   const [rescheduleTarget, setRescheduleTarget] = useState<{ item: CalendarItem; date: Date } | null>(null);
   const qc = useQueryClient();
+
+  // If a job is already completed by the technician, admin clicking it in the
+  // calendar opens a read-only details view instead of the edit dialog.
+  const handleCalendarItemClick = (it: CalendarItem) => {
+    if (it.kind === "job" && it.status === "completed") {
+      setViewJobId(it.id);
+    } else {
+      setEditItem(it);
+    }
+  };
 
   // X on a calendar item: if partial (no technician), just clear schedule fields
   // and keep it under "unscheduled". If fully scheduled, confirm a full delete.
