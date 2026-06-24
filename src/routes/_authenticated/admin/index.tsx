@@ -324,7 +324,7 @@ function AdminMain() {
         </Card>
 
         {/* Day details — RIGHT side */}
-        <DayDetailsPanel date={selected} items={dayItems} onEdit={setEditItem} onDelete={setToDelete} />
+        <DayDetailsPanel date={selected} items={dayItems} onEdit={handleCalendarItemClick} onDelete={setToDelete} />
       </div>
 
       <AdminEditItemDialog item={editItem} onClose={() => setEditItem(null)} invalidateKeys={[["main-jobs"], ["main-projects"]]} />
