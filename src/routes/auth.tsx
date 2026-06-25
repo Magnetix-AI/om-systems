@@ -52,7 +52,8 @@ function AuthPage() {
   const [faceSetupOpen, setFaceSetupOpen] = useState(false);
   const [faceVerifyOpen, setFaceVerifyOpen] = useState(false);
   const [faceError, setFaceError] = useState<string | null>(null);
-  const [pendingCreds, setPendingCreds] = useState<{ email: string; password: string } | null>(null);
+  const [pendingFaceSetup, setPendingFaceSetup] = useState<{ email: string; refreshToken: string } | null>(null);
+  const [pendingFaceVerify, setPendingFaceVerify] = useState<{ refreshToken: string } | null>(null);
   const faceSupported = typeof window !== "undefined" && isFaceAuthSupported();
   const hasFaceCred = typeof window !== "undefined" && !!getStoredFaceCred();
 
@@ -62,12 +63,13 @@ function AuthPage() {
     navigate({ to: "/" });
   };
 
-  const runFaceVerify = async () => {
+  const runFaceVerify = async (refreshTokenOverride?: string) => {
     setFaceLoading(true);
     setFaceError(null);
     try {
-      await verifyFaceCred();
+      await verifyFaceCred(refreshTokenOverride || pendingFaceVerify?.refreshToken);
       setFaceVerifyOpen(false);
+      setPendingFaceVerify(null);
       finishLogin();
     } catch (err: any) {
       setFaceError(err?.message || "האימות נכשל");
@@ -86,24 +88,37 @@ function AuthPage() {
     // Mark the face flow as pending BEFORE creating the session, so the
     // auth-route beforeLoad doesn't redirect us away when onAuthStateChange
     // invalidates the router.
-    const willNeedFaceFlow = faceSupported && (!stored || stored.email === loginEmail);
+    const willNeedFaceFlow = faceSupported;
     if (willNeedFaceFlow) {
       try { sessionStorage.setItem(PENDING_FACE_KEY, "1"); } catch { /* ignore */ }
     }
-    const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
     setLoading(false);
     if (error) {
       try { sessionStorage.removeItem(PENDING_FACE_KEY); } catch { /* ignore */ }
       return toast.error("שגיאה בהתחברות", { description: error.message });
     }
     if (faceSupported && stored && stored.email === loginEmail) {
+      const refreshToken = data.session?.refresh_token;
+      if (!refreshToken) {
+        try { sessionStorage.removeItem(PENDING_FACE_KEY); } catch { /* ignore */ }
+        await supabase.auth.signOut();
+        return toast.error("שגיאה באימות זיהוי פנים", { description: "ההתחברות לא הושלמה. נסה להתחבר שוב." });
+      }
       // Mandatory second factor: verify face for this device's enrolled user.
+      setPendingFaceVerify({ refreshToken });
       setFaceVerifyOpen(true);
-      setTimeout(() => { runFaceVerify(); }, 200);
+      setTimeout(() => { runFaceVerify(refreshToken); }, 200);
       return;
     }
-    if (faceSupported && !stored) {
-      setPendingCreds({ email: loginEmail, password });
+    if (faceSupported && (!stored || stored.email !== loginEmail)) {
+      const refreshToken = data.session?.refresh_token;
+      if (!refreshToken) {
+        try { sessionStorage.removeItem(PENDING_FACE_KEY); } catch { /* ignore */ }
+        await supabase.auth.signOut();
+        return toast.error("שגיאה בהפעלת זיהוי פנים", { description: "ההתחברות לא הושלמה. נסה להתחבר שוב." });
+      }
+      setPendingFaceSetup({ email: loginEmail, refreshToken });
       setFaceSetupOpen(true);
       return;
     }
@@ -126,12 +141,13 @@ function AuthPage() {
   };
 
   const handleEnableFace = async () => {
-    if (!pendingCreds) return;
+    if (!pendingFaceSetup) return;
     setFaceLoading(true);
     try {
-      await registerFaceCred(pendingCreds.email, pendingCreds.password);
+      await registerFaceCred(pendingFaceSetup.email, pendingFaceSetup.refreshToken);
       toast.success("זיהוי פנים הופעל בהצלחה");
       setFaceSetupOpen(false);
+      setPendingFaceSetup(null);
       finishLogin();
     } catch (err: any) {
       toast.error("הגדרת זיהוי פנים נכשלה", { description: err.message });
@@ -142,6 +158,7 @@ function AuthPage() {
 
   const skipFaceSetup = () => {
     setFaceSetupOpen(false);
+    setPendingFaceSetup(null);
     finishLogin();
   };
 
@@ -276,7 +293,7 @@ function AuthPage() {
                 try { sessionStorage.removeItem(PENDING_FACE_KEY); } catch { /* ignore */ }
                 await supabase.auth.signOut();
                 setFaceSetupOpen(false);
-                setPendingCreds(null);
+                setPendingFaceSetup(null);
                 toast.info("ההגדרה בוטלה");
               }}
             >
@@ -300,7 +317,7 @@ function AuthPage() {
             <p className="text-sm text-destructive text-right">{faceError}</p>
           )}
           <div className="flex gap-2">
-            <Button className="flex-1" onClick={runFaceVerify} disabled={faceLoading}>
+            <Button className="flex-1" onClick={() => runFaceVerify()} disabled={faceLoading}>
               {faceLoading ? "מאמת..." : faceError ? "נסה שוב" : "אמת זיהוי פנים"}
             </Button>
             <Button
@@ -312,6 +329,7 @@ function AuthPage() {
                 await supabase.auth.signOut();
                 setFaceVerifyOpen(false);
                 setFaceError(null);
+                setPendingFaceVerify(null);
                 toast.info("האימות בוטל");
               }}
             >
