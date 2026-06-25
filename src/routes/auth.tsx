@@ -53,6 +53,7 @@ function AuthPage() {
   const [faceVerifyOpen, setFaceVerifyOpen] = useState(false);
   const [faceError, setFaceError] = useState<string | null>(null);
   const [pendingFaceSetup, setPendingFaceSetup] = useState<{ email: string; refreshToken: string } | null>(null);
+  const [pendingFaceVerify, setPendingFaceVerify] = useState<{ refreshToken: string } | null>(null);
   const faceSupported = typeof window !== "undefined" && isFaceAuthSupported();
   const hasFaceCred = typeof window !== "undefined" && !!getStoredFaceCred();
 
@@ -66,8 +67,9 @@ function AuthPage() {
     setFaceLoading(true);
     setFaceError(null);
     try {
-      await verifyFaceCred();
+      await verifyFaceCred(pendingFaceVerify?.refreshToken);
       setFaceVerifyOpen(false);
+      setPendingFaceVerify(null);
       finishLogin();
     } catch (err: any) {
       setFaceError(err?.message || "האימות נכשל");
@@ -97,7 +99,14 @@ function AuthPage() {
       return toast.error("שגיאה בהתחברות", { description: error.message });
     }
     if (faceSupported && stored && stored.email === loginEmail) {
+      const refreshToken = data.session?.refresh_token;
+      if (!refreshToken) {
+        try { sessionStorage.removeItem(PENDING_FACE_KEY); } catch { /* ignore */ }
+        await supabase.auth.signOut();
+        return toast.error("שגיאה באימות זיהוי פנים", { description: "ההתחברות לא הושלמה. נסה להתחבר שוב." });
+      }
       // Mandatory second factor: verify face for this device's enrolled user.
+      setPendingFaceVerify({ refreshToken });
       setFaceVerifyOpen(true);
       setTimeout(() => { runFaceVerify(); }, 200);
       return;
@@ -320,6 +329,7 @@ function AuthPage() {
                 await supabase.auth.signOut();
                 setFaceVerifyOpen(false);
                 setFaceError(null);
+                setPendingFaceVerify(null);
                 toast.info("האימות בוטל");
               }}
             >
