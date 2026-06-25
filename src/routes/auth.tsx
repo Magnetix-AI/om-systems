@@ -63,11 +63,11 @@ function AuthPage() {
     navigate({ to: "/" });
   };
 
-  const runFaceVerify = async () => {
+  const runFaceVerify = async (refreshTokenOverride?: string) => {
     setFaceLoading(true);
     setFaceError(null);
     try {
-      await verifyFaceCred(pendingFaceVerify?.refreshToken);
+      await verifyFaceCred(refreshTokenOverride || pendingFaceVerify?.refreshToken);
       setFaceVerifyOpen(false);
       setPendingFaceVerify(null);
       finishLogin();
@@ -88,7 +88,7 @@ function AuthPage() {
     // Mark the face flow as pending BEFORE creating the session, so the
     // auth-route beforeLoad doesn't redirect us away when onAuthStateChange
     // invalidates the router.
-    const willNeedFaceFlow = faceSupported && (!stored || stored.email === loginEmail);
+    const willNeedFaceFlow = faceSupported;
     if (willNeedFaceFlow) {
       try { sessionStorage.setItem(PENDING_FACE_KEY, "1"); } catch { /* ignore */ }
     }
@@ -108,10 +108,10 @@ function AuthPage() {
       // Mandatory second factor: verify face for this device's enrolled user.
       setPendingFaceVerify({ refreshToken });
       setFaceVerifyOpen(true);
-      setTimeout(() => { runFaceVerify(); }, 200);
+      setTimeout(() => { runFaceVerify(refreshToken); }, 200);
       return;
     }
-    if (faceSupported && !stored) {
+    if (faceSupported && (!stored || stored.email !== loginEmail)) {
       const refreshToken = data.session?.refresh_token;
       if (!refreshToken) {
         try { sessionStorage.removeItem(PENDING_FACE_KEY); } catch { /* ignore */ }
