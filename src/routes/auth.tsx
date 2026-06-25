@@ -317,7 +317,7 @@ function AuthPage() {
             <p className="text-sm text-destructive text-right">{faceError}</p>
           )}
           <div className="flex gap-2">
-            <Button className="flex-1" onClick={runFaceVerify} disabled={faceLoading}>
+            <Button className="flex-1" onClick={() => runFaceVerify()} disabled={faceLoading}>
               {faceLoading ? "מאמת..." : faceError ? "נסה שוב" : "אמת זיהוי פנים"}
             </Button>
             <Button
