@@ -52,7 +52,7 @@ function AuthPage() {
   const [faceSetupOpen, setFaceSetupOpen] = useState(false);
   const [faceVerifyOpen, setFaceVerifyOpen] = useState(false);
   const [faceError, setFaceError] = useState<string | null>(null);
-  const [pendingCreds, setPendingCreds] = useState<{ email: string; password: string } | null>(null);
+  const [pendingFaceSetup, setPendingFaceSetup] = useState<{ email: string; refreshToken: string } | null>(null);
   const faceSupported = typeof window !== "undefined" && isFaceAuthSupported();
   const hasFaceCred = typeof window !== "undefined" && !!getStoredFaceCred();
 
@@ -90,7 +90,7 @@ function AuthPage() {
     if (willNeedFaceFlow) {
       try { sessionStorage.setItem(PENDING_FACE_KEY, "1"); } catch { /* ignore */ }
     }
-    const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
     setLoading(false);
     if (error) {
       try { sessionStorage.removeItem(PENDING_FACE_KEY); } catch { /* ignore */ }
@@ -103,7 +103,13 @@ function AuthPage() {
       return;
     }
     if (faceSupported && !stored) {
-      setPendingCreds({ email: loginEmail, password });
+      const refreshToken = data.session?.refresh_token;
+      if (!refreshToken) {
+        try { sessionStorage.removeItem(PENDING_FACE_KEY); } catch { /* ignore */ }
+        await supabase.auth.signOut();
+        return toast.error("שגיאה בהפעלת זיהוי פנים", { description: "ההתחברות לא הושלמה. נסה להתחבר שוב." });
+      }
+      setPendingFaceSetup({ email: loginEmail, refreshToken });
       setFaceSetupOpen(true);
       return;
     }
@@ -126,12 +132,13 @@ function AuthPage() {
   };
 
   const handleEnableFace = async () => {
-    if (!pendingCreds) return;
+    if (!pendingFaceSetup) return;
     setFaceLoading(true);
     try {
-      await registerFaceCred(pendingCreds.email, pendingCreds.password);
+      await registerFaceCred(pendingFaceSetup.email, pendingFaceSetup.refreshToken);
       toast.success("זיהוי פנים הופעל בהצלחה");
       setFaceSetupOpen(false);
+      setPendingFaceSetup(null);
       finishLogin();
     } catch (err: any) {
       toast.error("הגדרת זיהוי פנים נכשלה", { description: err.message });
@@ -142,6 +149,7 @@ function AuthPage() {
 
   const skipFaceSetup = () => {
     setFaceSetupOpen(false);
+    setPendingFaceSetup(null);
     finishLogin();
   };
 
@@ -276,7 +284,7 @@ function AuthPage() {
                 try { sessionStorage.removeItem(PENDING_FACE_KEY); } catch { /* ignore */ }
                 await supabase.auth.signOut();
                 setFaceSetupOpen(false);
-                setPendingCreds(null);
+                setPendingFaceSetup(null);
                 toast.info("ההגדרה בוטלה");
               }}
             >
