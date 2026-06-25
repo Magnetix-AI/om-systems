@@ -118,11 +118,7 @@ export async function registerFaceCred(email: string, refreshTokenFromLogin?: st
   localStorage.removeItem(LEGACY_KEY);
 }
 
-export async function verifyFaceCred(): Promise<{ email: string }> {
-  const stored = getStoredFaceCred();
-  if (!stored) throw new FaceAuthError("missing", "לא הוגדר זיהוי פנים במכשיר זה");
-  if (!isFaceAuthSupported()) throw new FaceAuthError("unsupported", "המכשיר אינו תומך בזיהוי ביומטרי");
-
+async function requestFaceAssertion(stored: StoredCred) {
   const challenge = crypto.getRandomValues(new Uint8Array(32));
   const assertion = await navigator.credentials.get({
     publicKey: {
@@ -133,7 +129,20 @@ export async function verifyFaceCred(): Promise<{ email: string }> {
       allowCredentials: [{ id: b64uDecode(stored.credentialId), type: "public-key" }],
     },
   });
-  if (!assertion) throw new Error("האימות נכשל");
+  if (!assertion) throw new FaceAuthError("failed", "האימות נכשל");
+}
+
+export async function verifyFaceCred(refreshTokenFromCurrentLogin?: string): Promise<{ email: string }> {
+  const stored = getStoredFaceCred();
+  if (!stored) throw new FaceAuthError("missing", "לא הוגדר זיהוי פנים במכשיר זה");
+  if (!isFaceAuthSupported()) throw new FaceAuthError("unsupported", "המכשיר אינו תומך בזיהוי ביומטרי");
+
+  await requestFaceAssertion(stored);
+
+  if (refreshTokenFromCurrentLogin) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...stored, refreshToken: refreshTokenFromCurrentLogin }));
+    return { email: stored.email };
+  }
 
   // Exchange the stored refresh token for a fresh Supabase session.
   const { data, error } = await supabase.auth.refreshSession({ refresh_token: stored.refreshToken });
