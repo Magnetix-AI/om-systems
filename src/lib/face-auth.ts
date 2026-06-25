@@ -18,6 +18,16 @@ type StoredCred = {
   rpId: string;
 };
 
+export class FaceAuthError extends Error {
+  code: "missing" | "unsupported" | "setup_session_missing" | "expired" | "failed";
+
+  constructor(code: FaceAuthError["code"], message: string) {
+    super(message);
+    this.name = "FaceAuthError";
+    this.code = code;
+  }
+}
+
 const b64uEncode = (buf: ArrayBuffer) => {
   const bytes = new Uint8Array(buf);
   let s = "";
@@ -56,13 +66,22 @@ export const clearFaceCred = () => {
   } catch { /* ignore */ }
 };
 
-export async function registerFaceCred(email: string, _passwordIgnored?: string) {
-  if (!isFaceAuthSupported()) throw new Error("המכשיר אינו תומך בזיהוי ביומטרי");
+export async function registerFaceCred(email: string, refreshTokenFromLogin?: string) {
+  if (!isFaceAuthSupported()) throw new FaceAuthError("unsupported", "המכשיר אינו תומך בזיהוי ביומטרי");
 
-  // Require an active session — we store its refresh token, not the password.
-  const { data: sessionData } = await supabase.auth.getSession();
-  const refreshToken = sessionData.session?.refresh_token;
-  if (!refreshToken) throw new Error("נדרשת התחברות פעילה כדי להפעיל זיהוי פנים");
+  // Prefer the refresh token returned by the password login itself. This avoids
+  // races where localStorage/session propagation has not completed yet.
+  let refreshToken = refreshTokenFromLogin;
+  if (!refreshToken) {
+    const { data: sessionData } = await supabase.auth.getSession();
+    refreshToken = sessionData.session?.refresh_token;
+  }
+  if (!refreshToken) {
+    throw new FaceAuthError(
+      "setup_session_missing",
+      "החיבור למערכת עדיין נטען. לחץ שוב על הפעלת זיהוי פנים בעוד רגע",
+    );
+  }
 
   const rpId = window.location.hostname;
   const challenge = crypto.getRandomValues(new Uint8Array(32));
@@ -86,7 +105,7 @@ export async function registerFaceCred(email: string, _passwordIgnored?: string)
       attestation: "none",
     },
   })) as PublicKeyCredential | null;
-  if (!cred) throw new Error("הרישום נכשל");
+  if (!cred) throw new FaceAuthError("failed", "הרישום נכשל");
 
   const stored: StoredCred = {
     credentialId: b64uEncode(cred.rawId),
@@ -101,8 +120,8 @@ export async function registerFaceCred(email: string, _passwordIgnored?: string)
 
 export async function verifyFaceCred(): Promise<{ email: string }> {
   const stored = getStoredFaceCred();
-  if (!stored) throw new Error("לא הוגדר זיהוי פנים במכשיר זה");
-  if (!isFaceAuthSupported()) throw new Error("המכשיר אינו תומך בזיהוי ביומטרי");
+  if (!stored) throw new FaceAuthError("missing", "לא הוגדר זיהוי פנים במכשיר זה");
+  if (!isFaceAuthSupported()) throw new FaceAuthError("unsupported", "המכשיר אינו תומך בזיהוי ביומטרי");
 
   const challenge = crypto.getRandomValues(new Uint8Array(32));
   const assertion = await navigator.credentials.get({
@@ -121,7 +140,7 @@ export async function verifyFaceCred(): Promise<{ email: string }> {
   if (error || !data.session) {
     // Refresh token is invalid/expired — clear and require password login again.
     clearFaceCred();
-    throw new Error("פג תוקף ההרשאה הביומטרית, נדרשת התחברות מחדש");
+    throw new FaceAuthError("expired", "פג תוקף ההרשאה הביומטרית, נדרשת התחברות מחדש");
   }
 
   // Rotate: persist the new refresh token for next time.
