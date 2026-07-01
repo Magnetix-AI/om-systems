@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Plus, Trash2, Pencil, UserPlus } from "lucide-react";
 import { toast } from "sonner";
+import { HexColorPicker } from "react-colorful";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   createTechnician, updateTechnician, deleteTechnician, getTechnicianUsername,
 } from "@/lib/admin-technicians.functions";
