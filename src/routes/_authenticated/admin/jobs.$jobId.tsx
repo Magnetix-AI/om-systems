@@ -21,6 +21,35 @@ const toLocalInput = (t?: string | null) => {
 };
 const fromLocalInput = (v: string) => (v ? new Date(v).toISOString() : null);
 
+const APP_TIME_ZONE = "Asia/Jerusalem";
+
+const getDatePartsInAppTimeZone = (value: string | Date) => {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: APP_TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(new Date(value));
+  const v = Object.fromEntries(parts.filter(p => p.type !== "literal").map(p => [p.type, p.value]));
+  return { year: Number(v.year), month: Number(v.month), day: Number(v.day) };
+};
+const getTimeInAppTimeZone = (value: string | Date) =>
+  new Intl.DateTimeFormat("en-GB", { timeZone: APP_TIME_ZONE, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(value));
+const getTimeZoneOffsetMs = (date: Date, timeZone: string) => {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23",
+  }).formatToParts(date);
+  const v = Object.fromEntries(parts.filter(p => p.type !== "literal").map(p => [p.type, p.value]));
+  const zonedAsUtc = Date.UTC(Number(v.year), Number(v.month) - 1, Number(v.day), Number(v.hour), Number(v.minute), Number(v.second));
+  return zonedAsUtc - date.getTime();
+};
+const buildAttendanceTimestamp = (baseDate: string | Date, hhmm: string) => {
+  const [hour, minute] = hhmm.split(":").map(Number);
+  const { year, month, day } = getDatePartsInAppTimeZone(baseDate);
+  const wallTimeAsUtc = Date.UTC(year, month - 1, day, hour, minute, 0, 0);
+  const firstPass = wallTimeAsUtc - getTimeZoneOffsetMs(new Date(wallTimeAsUtc), APP_TIME_ZONE);
+  const finalPass = wallTimeAsUtc - getTimeZoneOffsetMs(new Date(firstPass), APP_TIME_ZONE);
+  return new Date(finalPass).toISOString();
+};
+
+
 export const Route = createFileRoute("/_authenticated/admin/jobs/$jobId")({
   ssr: false,
   component: AdminJobDetail,
@@ -59,8 +88,8 @@ export default function AdminJobDetail() {
     setTimes({
       start_time: toLocalInput(j.start_time),
       end_time: toLocalInput(j.end_time),
-      arrival_time: toLocalInput(j.arrival_time),
-      departure_time: toLocalInput(j.departure_time),
+      arrival_time: j.arrival_time ? getTimeInAppTimeZone(j.arrival_time) : "",
+      departure_time: j.departure_time ? getTimeInAppTimeZone(j.departure_time) : "",
       completed_at: toLocalInput(j.completed_at),
     });
   }, [job?.id, (job as any)?.start_time, (job as any)?.end_time, (job as any)?.arrival_time, (job as any)?.departure_time, (job as any)?.completed_at]);
@@ -76,11 +105,12 @@ export default function AdminJobDetail() {
 
   const saveTimes = async () => {
     setSavingTimes(true);
+    const base = ((job as any)?.scheduled_date ?? (job as any)?.start_time ?? new Date().toISOString()) as string;
     const payload: any = {
       start_time: fromLocalInput(times.start_time),
       end_time: fromLocalInput(times.end_time),
-      arrival_time: fromLocalInput(times.arrival_time),
-      departure_time: fromLocalInput(times.departure_time),
+      arrival_time: times.arrival_time ? buildAttendanceTimestamp(base, times.arrival_time) : null,
+      departure_time: times.departure_time ? buildAttendanceTimestamp(base, times.departure_time) : null,
       completed_at: fromLocalInput(times.completed_at),
     };
     const { error } = await supabase.from("jobs").update(payload).eq("id", jobId);
@@ -89,6 +119,7 @@ export default function AdminJobDetail() {
     toast.success("שעות עודכנו");
     qc.invalidateQueries({ queryKey: ["admin-job", jobId] });
   };
+
 
   if (!job) return <div className="p-6 text-center text-muted-foreground">טוען...</div>;
 
@@ -140,21 +171,23 @@ export default function AdminJobDetail() {
             <div className="font-medium">שעות פעילות</div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {([
-                ["start_time", "התחלה"],
-                ["end_time", "סיום"],
-                ["arrival_time", "כניסה"],
-                ["departure_time", "יציאה"],
-                ["completed_at", "הושלמה"],
-              ] as const).map(([k, label]) => (
+                ["start_time", "התחלה", "datetime-local"],
+                ["end_time", "סיום", "datetime-local"],
+                ["arrival_time", "כניסה", "time"],
+                ["departure_time", "יציאה", "time"],
+                ["completed_at", "הושלמה", "datetime-local"],
+              ] as const).map(([k, label, inputType]) => (
                 <div key={k} className="space-y-1">
                   <Label className="text-xs">{label}</Label>
                   <Input
-                    type="datetime-local"
+                    type={inputType}
                     value={times[k]}
+                    dir={inputType === "time" ? "ltr" : undefined}
                     onChange={(e) => setTimes((t) => ({ ...t, [k]: e.target.value }))}
                   />
                 </div>
               ))}
+
             </div>
             <div className="flex justify-end">
               <Button size="sm" onClick={saveTimes} disabled={savingTimes}>

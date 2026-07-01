@@ -34,6 +34,7 @@ export function AdminViewJobDialog({
   });
 
   const fmt = (t?: string | null) => t ? new Date(t).toLocaleString("he-IL") : "—";
+  const fmtTime = (t?: string | null) => t ? new Date(t).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jerusalem" }) : "—";
 
   return (
     <Dialog open={!!jobId} onOpenChange={(o) => !o && onClose()}>
@@ -58,8 +59,8 @@ export function AdminViewJobDialog({
               <div><span className="text-muted-foreground">טכנאי: </span>{(job as any).technician_name ?? "לא משויך"}</div>
               <div><span className="text-muted-foreground">התחלה: </span>{fmt((job as any).start_time ?? job.scheduled_date)}</div>
               <div><span className="text-muted-foreground">סיום: </span>{fmt((job as any).end_time)}</div>
-              <div><span className="text-muted-foreground">כניסה: </span>{fmt((job as any).arrival_time)}</div>
-              <div><span className="text-muted-foreground">יציאה: </span>{fmt((job as any).departure_time)}</div>
+              <div><span className="text-muted-foreground">כניסה: </span>{fmtTime((job as any).arrival_time)}</div>
+              <div><span className="text-muted-foreground">יציאה: </span>{fmtTime((job as any).departure_time)}</div>
               <div className="col-span-2"><span className="text-muted-foreground">זמן עדכון הקריאה: </span>{fmt((job as any).completed_at)}</div>
             </div>
 
