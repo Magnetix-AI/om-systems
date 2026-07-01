@@ -60,7 +60,7 @@ export function AdminViewJobDialog({
               <div><span className="text-muted-foreground">סיום: </span>{fmt((job as any).end_time)}</div>
               <div><span className="text-muted-foreground">כניסה: </span>{fmt((job as any).arrival_time)}</div>
               <div><span className="text-muted-foreground">יציאה: </span>{fmt((job as any).departure_time)}</div>
-              <div className="col-span-2"><span className="text-muted-foreground">הושלמה: </span>{fmt((job as any).completed_at)}</div>
+              <div className="col-span-2"><span className="text-muted-foreground">זמן עדכון הקריאה: </span>{fmt((job as any).completed_at)}</div>
             </div>
 
             {((job as any).site_contact_name || (job as any).site_contact_phone || (job as any).site_contact_address) && (
