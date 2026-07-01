@@ -142,7 +142,7 @@ export function AdminEditItemDialog({
         cid = data.id;
       }
       if (item.kind === "job") {
-        const { error } = await supabase.from("jobs").update({
+        const patch: any = {
           title,
           description,
           client_id: cid,
@@ -154,7 +154,11 @@ export function AdminEditItemDialog({
           site_contact_phone: siteContactPhone.trim() || null,
           site_contact_address: siteContactAddress.trim() || null,
           project_id: projectId,
-        }).eq("id", item.id);
+          status,
+        };
+        if (status === "completed") patch.completed_at = new Date().toISOString();
+        else patch.completed_at = null;
+        const { error } = await supabase.from("jobs").update(patch).eq("id", item.id);
         if (error) throw error;
       } else {
         const { error } = await supabase.from("projects").update({
