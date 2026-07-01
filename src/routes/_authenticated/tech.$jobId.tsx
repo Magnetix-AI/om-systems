@@ -109,7 +109,9 @@ function JobDetail() {
   const toTs = (hhmm: string) => {
     if (!hhmm) return null;
     const [h, m] = hhmm.split(":").map(Number);
-    const d = new Date();
+    // Anchor arrival/departure to the job's scheduled date, not the day the technician edits it
+    const base = job?.scheduled_date ? new Date(job.scheduled_date as any) : new Date();
+    const d = new Date(base);
     d.setHours(h, m, 0, 0);
     return d.toISOString();
   };
