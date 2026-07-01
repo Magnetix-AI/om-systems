@@ -36,6 +36,25 @@ export const Route = createFileRoute("/_authenticated/admin")({
 
 function AdminLayout() {
   const pathname = useRouterState({ select: s => s.location.pathname });
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const raw = localStorage.getItem(ADMIN_SESSION_KEY);
+    const started = raw ? parseInt(raw, 10) : Date.now();
+    if (!raw) localStorage.setItem(ADMIN_SESSION_KEY, String(started));
+    const remaining = Math.max(0, started + ADMIN_MAX_MS - Date.now());
+    const logout = async () => {
+      localStorage.removeItem(ADMIN_SESSION_KEY);
+      toast.warning("חלפו 4 שעות — מבוצע ניתוק אוטומטי");
+      await supabase.auth.signOut();
+      navigate({ to: "/auth" });
+    };
+    if (remaining === 0) { logout(); return; }
+    const t = setTimeout(logout, remaining);
+    return () => clearTimeout(t);
+  }, [navigate]);
+
+
   const tabs = [
     { to: "/admin", label: "ראשי", icon: LayoutDashboard },
     { to: "/admin/jobs", label: "קריאות", icon: Briefcase },
