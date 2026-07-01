@@ -766,6 +766,26 @@ function DayGrid({ cursor, items, onItemClick }: {
   );
 }
 
+function CollapsedPanelBar({ side, label, count, onExpand }: {
+  side: "left" | "right"; label: string; count: number; onExpand: () => void;
+}) {
+  const Icon = side === "left" ? ChevronsLeft : ChevronsRight;
+  return (
+    <Card className="flex flex-col items-center py-2 gap-2 min-h-[120px]">
+      <button type="button" onClick={onExpand} title="הרחב" className="h-7 w-7 rounded hover:bg-muted flex items-center justify-center">
+        <Icon className="h-4 w-4" />
+      </button>
+      <Badge variant="outline" className="text-[10px] px-1.5">{count}</Badge>
+      <div
+        className="text-[11px] text-muted-foreground font-medium whitespace-nowrap mt-1"
+        style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+      >
+        {label}
+      </div>
+    </Card>
+  );
+}
+
 function UnscheduledPanel({ items, categories, onEdit, onDelete, onCollapse }: {
   items: CalendarItem[]; categories: JobCategory[];
   onEdit: (i: CalendarItem) => void;
