@@ -39,6 +39,7 @@ import { deleteJobsCascade, deleteProjectsCascade } from "@/lib/admin-deletes";
 import { AdminEditItemDialog } from "@/components/admin-edit-item-dialog";
 import { AdminViewJobDialog } from "@/components/admin-view-job-dialog";
 import { ProjectPicker } from "@/components/project-picker";
+import { GlobalSearch } from "@/components/global-search";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   ssr: false,
@@ -288,6 +289,9 @@ function AdminMain() {
             <CalendarIcon className="h-6 w-6 text-primary" /> ראשי
           </h1>
           <p className="text-sm text-muted-foreground">לוח שנה מרכזי לקריאות ופרוייקטים</p>
+        </div>
+        <div className="flex-1 flex justify-center min-w-[220px] order-last lg:order-none w-full lg:w-auto">
+          <GlobalSearch />
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Button variant="outline" size="sm" onClick={() => { setCursor(new Date()); setSelected(new Date()); }}>היום</Button>
