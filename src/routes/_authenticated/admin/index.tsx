@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/select";
 
 import {
-  ChevronRight, ChevronLeft, ChevronDown, Calendar as CalendarIcon, MapPin,
+  ChevronRight, ChevronLeft, ChevronDown, ChevronsRight, ChevronsLeft, Calendar as CalendarIcon, MapPin,
   User, Clock, Briefcase, FolderKanban, AlertTriangle, Pencil, Trash2, Plus, X,
 } from "lucide-react";
 import {
