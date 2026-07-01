@@ -281,7 +281,7 @@ function AdminMain() {
   const navNext = () => setCursor(c => view === "month" ? addMonths(c, 1) : view === "week" ? addWeeks(c, 1) : addDays(c, 1));
 
   return (
-    <div className="max-w-[1600px] mx-auto p-4 lg:p-6 space-y-4">
+    <div className="w-full mx-auto p-4 lg:p-6 space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
