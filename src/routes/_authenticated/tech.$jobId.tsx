@@ -12,6 +12,70 @@ import { Trash2, Plus, ArrowRight, CheckCircle2, Search, Mic, MicOff, Phone } fr
 import { toast } from "sonner";
 import { AttachmentsGallery } from "@/components/attachments-gallery";
 
+const APP_TIME_ZONE = "Asia/Jerusalem";
+
+const getDatePartsInAppTimeZone = (value: string | Date) => {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: APP_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date(value));
+  const values = Object.fromEntries(
+    parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]),
+  );
+
+  return {
+    year: Number(values.year),
+    month: Number(values.month),
+    day: Number(values.day),
+  };
+};
+
+const getTimeInAppTimeZone = (value: string | Date) =>
+  new Intl.DateTimeFormat("en-GB", {
+    timeZone: APP_TIME_ZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(new Date(value));
+
+const getTimeZoneOffsetMs = (date: Date, timeZone: string) => {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+  const values = Object.fromEntries(
+    parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]),
+  );
+  const zonedAsUtc = Date.UTC(
+    Number(values.year),
+    Number(values.month) - 1,
+    Number(values.day),
+    Number(values.hour),
+    Number(values.minute),
+    Number(values.second),
+  );
+
+  return zonedAsUtc - date.getTime();
+};
+
+const buildAttendanceTimestamp = (baseDate: string | Date, hhmm: string) => {
+  const [hour, minute] = hhmm.split(":").map(Number);
+  const { year, month, day } = getDatePartsInAppTimeZone(baseDate);
+  const wallTimeAsUtc = Date.UTC(year, month - 1, day, hour, minute, 0, 0);
+  const firstPass = wallTimeAsUtc - getTimeZoneOffsetMs(new Date(wallTimeAsUtc), APP_TIME_ZONE);
+  const finalPass = wallTimeAsUtc - getTimeZoneOffsetMs(new Date(firstPass), APP_TIME_ZONE);
+
+  return new Date(finalPass).toISOString();
+};
+
 export const Route = createFileRoute("/_authenticated/tech/$jobId")({
   ssr: false,
   component: JobDetail,
@@ -57,8 +121,8 @@ function JobDetail() {
 
   useEffect(() => {
     if (job?.technician_notes) setNotes(job.technician_notes);
-    if (job?.arrival_time) setArrival(new Date(job.arrival_time).toTimeString().slice(0, 5));
-    if (job?.departure_time) setDeparture(new Date(job.departure_time).toTimeString().slice(0, 5));
+    if (job?.arrival_time) setArrival(getTimeInAppTimeZone(job.arrival_time));
+    if (job?.departure_time) setDeparture(getTimeInAppTimeZone(job.departure_time));
     if (job?.draft_quantities && typeof job.draft_quantities === "object") {
       setQuantities(job.draft_quantities as Record<string, number>);
     }
@@ -108,12 +172,9 @@ function JobDetail() {
 
   const toTs = (hhmm: string) => {
     if (!hhmm) return null;
-    const [h, m] = hhmm.split(":").map(Number);
-    // Anchor arrival/departure to the job's scheduled date, not the day the technician edits it
-    const base = job?.scheduled_date ? new Date(job.scheduled_date as any) : new Date();
-    const d = new Date(base);
-    d.setHours(h, m, 0, 0);
-    return d.toISOString();
+    // Anchor attendance to the job date in Israel time, not to the day the technician edits it.
+    const base = (job?.scheduled_date ?? job?.start_time ?? new Date().toISOString()) as string;
+    return buildAttendanceTimestamp(base, hhmm);
   };
 
   const handleSubmit = async () => {
