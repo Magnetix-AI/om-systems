@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/select";
 
 import {
-  ChevronRight, ChevronLeft, ChevronDown, Calendar as CalendarIcon, MapPin,
+  ChevronRight, ChevronLeft, ChevronDown, ChevronsRight, ChevronsLeft, Calendar as CalendarIcon, MapPin,
   User, Clock, Briefcase, FolderKanban, AlertTriangle, Pencil, Trash2, Plus, X,
 } from "lucide-react";
 import {
@@ -84,6 +84,8 @@ function AdminMain() {
   const [toDelete, setToDelete] = useState<CalendarItem | null>(null);
   const [newJobDate, setNewJobDate] = useState<Date | null>(null);
   const [rescheduleTarget, setRescheduleTarget] = useState<{ item: CalendarItem; date: Date } | null>(null);
+  const [leftCollapsed, setLeftCollapsed] = useState(false);
+  const [rightCollapsed, setRightCollapsed] = useState(false);
   const qc = useQueryClient();
 
   // If a job is already completed by the technician, admin clicking it in the
@@ -305,9 +307,19 @@ function AdminMain() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)_340px] gap-4">
+      <div
+        className="grid grid-cols-1 lg:grid-cols-[var(--left)_minmax(0,1fr)_var(--right)] gap-4"
+        style={{
+          ["--left" as any]: leftCollapsed ? "40px" : "280px",
+          ["--right" as any]: rightCollapsed ? "40px" : "340px",
+        }}
+      >
         {/* Unscheduled — LEFT side. In RTL with grid this column appears on the visual left. */}
-        <UnscheduledPanel items={unscheduled} categories={categories} onEdit={setEditItem} onDelete={setToDelete} />
+        {leftCollapsed ? (
+          <CollapsedPanelBar side="left" label="קריאות לא מתואמות" count={unscheduled.length} onExpand={() => setLeftCollapsed(false)} />
+        ) : (
+          <UnscheduledPanel items={unscheduled} categories={categories} onEdit={setEditItem} onDelete={setToDelete} onCollapse={() => setLeftCollapsed(true)} />
+        )}
 
         {/* Calendar — center */}
         <Card>
@@ -347,7 +359,11 @@ function AdminMain() {
         </Card>
 
         {/* Day details — RIGHT side */}
-        <DayDetailsPanel date={selected} items={dayItems} onEdit={handleCalendarItemClick} onDelete={setToDelete} />
+        {rightCollapsed ? (
+          <CollapsedPanelBar side="right" label={format(selected, "d בMMMM", { locale: he })} count={dayItems.length} onExpand={() => setRightCollapsed(false)} />
+        ) : (
+          <DayDetailsPanel date={selected} items={dayItems} onEdit={handleCalendarItemClick} onDelete={setToDelete} onCollapse={() => setRightCollapsed(true)} />
+        )}
       </div>
 
       <AdminEditItemDialog item={editItem} onClose={() => setEditItem(null)} invalidateKeys={[["main-jobs"], ["main-projects"]]} />
@@ -679,6 +695,9 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
                           <div className="opacity-90 truncate">
                             {format(it.date, "HH:mm")}{it.end ? `–${format(it.end, "HH:mm")}` : ""}
                           </div>
+                          {it.technician_name && (
+                            <div className="opacity-90 truncate text-[10px]">{it.technician_name}</div>
+                          )}
                         </button>
                         <button
                           type="button"
@@ -750,10 +769,31 @@ function DayGrid({ cursor, items, onItemClick }: {
   );
 }
 
-function UnscheduledPanel({ items, categories, onEdit, onDelete }: {
+function CollapsedPanelBar({ side, label, count, onExpand }: {
+  side: "left" | "right"; label: string; count: number; onExpand: () => void;
+}) {
+  const Icon = side === "left" ? ChevronsLeft : ChevronsRight;
+  return (
+    <Card className="flex flex-col items-center py-2 gap-2 min-h-[120px]">
+      <button type="button" onClick={onExpand} title="הרחב" className="h-7 w-7 rounded hover:bg-muted flex items-center justify-center">
+        <Icon className="h-4 w-4" />
+      </button>
+      <Badge variant="outline" className="text-[10px] px-1.5">{count}</Badge>
+      <div
+        className="text-[11px] text-muted-foreground font-medium whitespace-nowrap mt-1"
+        style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+      >
+        {label}
+      </div>
+    </Card>
+  );
+}
+
+function UnscheduledPanel({ items, categories, onEdit, onDelete, onCollapse }: {
   items: CalendarItem[]; categories: JobCategory[];
   onEdit: (i: CalendarItem) => void;
   onDelete: (i: CalendarItem) => void;
+  onCollapse: () => void;
 }) {
   const qc = useQueryClient();
   const defaultCat = categories.find(c => c.is_default);
@@ -976,6 +1016,9 @@ function UnscheduledPanel({ items, categories, onEdit, onDelete }: {
     <Card className="bg-warning/5 border-warning/30">
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
+          <button type="button" onClick={onCollapse} title="מזער" className="h-6 w-6 rounded hover:bg-muted flex items-center justify-center shrink-0">
+            <ChevronsRight className="h-4 w-4" />
+          </button>
           <AlertTriangle className="h-4 w-4 text-warning" />
           קריאות לא מתואמות
           <Badge variant="outline" className="mr-auto bg-warning/20 border-warning/40">{items.length}</Badge>
@@ -1062,15 +1105,19 @@ function UnscheduledPanel({ items, categories, onEdit, onDelete }: {
   );
 }
 
-function DayDetailsPanel({ date, items, onEdit, onDelete }: {
+function DayDetailsPanel({ date, items, onEdit, onDelete, onCollapse }: {
   date: Date; items: CalendarItem[];
   onEdit: (i: CalendarItem) => void;
   onDelete: (i: CalendarItem) => void;
+  onCollapse: () => void;
 }) {
   return (
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
+          <button type="button" onClick={onCollapse} title="מזער" className="h-6 w-6 rounded hover:bg-muted flex items-center justify-center shrink-0">
+            <ChevronsLeft className="h-4 w-4" />
+          </button>
           <CalendarIcon className="h-4 w-4 text-primary" />
           {format(date, "EEEE, d בMMMM", { locale: he })}
         </CardTitle>
