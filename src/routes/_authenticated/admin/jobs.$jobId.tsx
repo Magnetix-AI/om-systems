@@ -88,8 +88,8 @@ export default function AdminJobDetail() {
     setTimes({
       start_time: toLocalInput(j.start_time),
       end_time: toLocalInput(j.end_time),
-      arrival_time: toLocalInput(j.arrival_time),
-      departure_time: toLocalInput(j.departure_time),
+      arrival_time: j.arrival_time ? getTimeInAppTimeZone(j.arrival_time) : "",
+      departure_time: j.departure_time ? getTimeInAppTimeZone(j.departure_time) : "",
       completed_at: toLocalInput(j.completed_at),
     });
   }, [job?.id, (job as any)?.start_time, (job as any)?.end_time, (job as any)?.arrival_time, (job as any)?.departure_time, (job as any)?.completed_at]);
