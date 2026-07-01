@@ -262,6 +262,19 @@ export function AdminEditItemDialog({
                 <ProjectPicker value={projectId} onChange={setProjectId} />
               </div>
             )}
+            {item.kind === "job" && (
+              <div className="space-y-1.5">
+                <Label>סטטוס</Label>
+                <Select value={status} onValueChange={setStatus}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="open">פתוחה</SelectItem>
+                    <SelectItem value="in_progress">בטיפול</SelectItem>
+                    <SelectItem value="completed">הושלמה</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
         )}
         <DialogFooter>
