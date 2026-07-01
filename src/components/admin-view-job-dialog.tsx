@@ -34,6 +34,7 @@ export function AdminViewJobDialog({
   });
 
   const fmt = (t?: string | null) => t ? new Date(t).toLocaleString("he-IL") : "—";
+  const fmtTime = (t?: string | null) => t ? new Date(t).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jerusalem" }) : "—";
 
   return (
     <Dialog open={!!jobId} onOpenChange={(o) => !o && onClose()}>
