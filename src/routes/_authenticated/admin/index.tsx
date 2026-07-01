@@ -566,14 +566,14 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
   onDropOnDay: (kind: "job" | "project", id: string, date: Date) => void;
 }) {
   const days = getRange(cursor, "week");
-  const HOUR_PX = 36;
+  const HOUR_PX = 64;
   const START_HOUR = 6;
   const END_HOUR = 22;
   const hours = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i);
 
   return (
     <div className="overflow-x-auto">
-      <div className="grid" style={{ gridTemplateColumns: "48px repeat(7, minmax(110px, 1fr))" }}>
+      <div className="grid min-w-full" style={{ gridTemplateColumns: "56px repeat(7, minmax(160px, 1fr))" }}>
         {/* Header row */}
         <div />
         {days.map(d => {
