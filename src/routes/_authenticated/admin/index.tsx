@@ -290,6 +290,9 @@ function AdminMain() {
           </h1>
           <p className="text-sm text-muted-foreground">לוח שנה מרכזי לקריאות ופרוייקטים</p>
         </div>
+        <div className="flex-1 flex justify-center min-w-[220px] order-last lg:order-none w-full lg:w-auto">
+          <GlobalSearch />
+        </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Button variant="outline" size="sm" onClick={() => { setCursor(new Date()); setSelected(new Date()); }}>היום</Button>
           <Button variant="outline" size="icon" onClick={navPrev}><ChevronRight className="h-4 w-4" /></Button>
