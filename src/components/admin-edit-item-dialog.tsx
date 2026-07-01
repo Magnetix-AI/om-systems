@@ -54,6 +54,7 @@ export function AdminEditItemDialog({
   const [siteContactPhone, setSiteContactPhone] = useState("");
   const [siteContactAddress, setSiteContactAddress] = useState("");
   const [projectId, setProjectId] = useState<string | null>(null);
+  const [status, setStatus] = useState<string>("open");
   const [useNewClient, setUseNewClient] = useState(false);
   const [newClientName, setNewClientName] = useState("");
   const [saving, setSaving] = useState(false);
@@ -84,7 +85,7 @@ export function AdminEditItemDialog({
         if (item.kind === "job") {
           const { data, error } = await supabase
             .from("jobs")
-            .select("title, description, client_id, technician_id, start_time, end_time, scheduled_date, site_contact_name, site_contact_phone, site_contact_address, project_id")
+            .select("title, description, client_id, technician_id, start_time, end_time, scheduled_date, site_contact_name, site_contact_phone, site_contact_address, project_id, status")
             .eq("id", item.id).single();
           if (error) throw error;
           if (cancelled || !data) return;
@@ -98,6 +99,7 @@ export function AdminEditItemDialog({
           setSiteContactPhone((data as any).site_contact_phone ?? "");
           setSiteContactAddress((data as any).site_contact_address ?? "");
           setProjectId((data as any).project_id ?? null);
+          setStatus((data as any).status ?? "open");
         } else {
           const { data, error } = await supabase
             .from("projects")
@@ -140,7 +142,7 @@ export function AdminEditItemDialog({
         cid = data.id;
       }
       if (item.kind === "job") {
-        const { error } = await supabase.from("jobs").update({
+        const patch: any = {
           title,
           description,
           client_id: cid,
@@ -152,7 +154,11 @@ export function AdminEditItemDialog({
           site_contact_phone: siteContactPhone.trim() || null,
           site_contact_address: siteContactAddress.trim() || null,
           project_id: projectId,
-        }).eq("id", item.id);
+          status,
+        };
+        if (status === "completed") patch.completed_at = new Date().toISOString();
+        else patch.completed_at = null;
+        const { error } = await supabase.from("jobs").update(patch).eq("id", item.id);
         if (error) throw error;
       } else {
         const { error } = await supabase.from("projects").update({
@@ -228,6 +234,19 @@ export function AdminEditItemDialog({
                 </SelectContent>
               </Select>
             </div>
+            {item.kind === "job" && (
+              <div className="space-y-1.5">
+                <Label>סטטוס</Label>
+                <Select value={status} onValueChange={setStatus}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="open">פתוחה</SelectItem>
+                    <SelectItem value="in_progress">בטיפול</SelectItem>
+                    <SelectItem value="completed">הושלמה</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1.5">
                 <Label>תחילת קריאה</Label>
