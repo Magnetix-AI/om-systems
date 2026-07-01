@@ -307,9 +307,19 @@ function AdminMain() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)_340px] gap-4">
+      <div
+        className="grid grid-cols-1 lg:grid-cols-[var(--left)_minmax(0,1fr)_var(--right)] gap-4"
+        style={{
+          ["--left" as any]: leftCollapsed ? "40px" : "280px",
+          ["--right" as any]: rightCollapsed ? "40px" : "340px",
+        }}
+      >
         {/* Unscheduled — LEFT side. In RTL with grid this column appears on the visual left. */}
-        <UnscheduledPanel items={unscheduled} categories={categories} onEdit={setEditItem} onDelete={setToDelete} />
+        {leftCollapsed ? (
+          <CollapsedPanelBar side="left" label="קריאות לא מתואמות" count={unscheduled.length} onExpand={() => setLeftCollapsed(false)} />
+        ) : (
+          <UnscheduledPanel items={unscheduled} categories={categories} onEdit={setEditItem} onDelete={setToDelete} onCollapse={() => setLeftCollapsed(true)} />
+        )}
 
         {/* Calendar — center */}
         <Card>
