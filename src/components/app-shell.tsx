@@ -11,6 +11,7 @@ export function AppShell({ children, nav }: { children?: ReactNode; nav?: ReactN
   const router = useRouter();
 
   const handleLogout = async () => {
+    try { localStorage.removeItem("admin_session_started_at"); } catch {}
     await supabase.auth.signOut();
     router.invalidate();
     navigate({ to: "/auth" });
