@@ -112,7 +112,7 @@ export default function AdminJobDetail() {
                 <span>איש קשר בשטח: {(job as any).site_contact_name || "—"}</span>
                 {(job as any).site_contact_phone && (
                   <a href={`tel:${(job as any).site_contact_phone}`} dir="ltr" className="text-primary hover:underline inline-flex items-center gap-1">
-                    📞 {(job as any).site_contact_phone}
+                    {(job as any).site_contact_phone}
                   </a>
                 )}
               </div>

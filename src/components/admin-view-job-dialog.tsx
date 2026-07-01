@@ -69,7 +69,7 @@ export function AdminViewJobDialog({
                 <div>{(job as any).site_contact_name || "—"}</div>
                 {(job as any).site_contact_phone && (
                   <a href={`tel:${(job as any).site_contact_phone}`} dir="ltr" className="text-primary hover:underline block">
-                    📞 {(job as any).site_contact_phone}
+                    {(job as any).site_contact_phone}
                   </a>
                 )}
                 {(job as any).site_contact_address && <div>{(job as any).site_contact_address}</div>}

@@ -693,16 +693,16 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
                         >
                           <div className="font-semibold truncate leading-tight">{it.title}</div>
                           <div className="opacity-95 truncate leading-tight">
-                            🕒 {format(it.date, "HH:mm")}{it.end ? `–${format(it.end, "HH:mm")}` : ""}
+                            {format(it.date, "HH:mm")}{it.end ? `–${format(it.end, "HH:mm")}` : ""}
                           </div>
                           {it.client_name && (
-                            <div className="opacity-90 truncate leading-tight text-[10px]">👤 {it.client_name}</div>
+                            <div className="opacity-90 truncate leading-tight text-[10px]">{it.client_name}</div>
                           )}
                           {it.technician_name && (
-                            <div className="opacity-90 truncate leading-tight text-[10px]">🔧 {it.technician_name}</div>
+                            <div className="opacity-90 truncate leading-tight text-[10px]">{it.technician_name}</div>
                           )}
                           {it.client_address && height > 90 && (
-                            <div className="opacity-80 truncate leading-tight text-[10px]">📍 {it.client_address}</div>
+                            <div className="opacity-80 truncate leading-tight text-[10px]">{it.client_address}</div>
                           )}
                           {it.description && height > 110 && (
                             <div className="opacity-80 line-clamp-2 leading-tight text-[10px] mt-0.5">{it.description}</div>
