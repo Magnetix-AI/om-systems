@@ -234,6 +234,19 @@ export function AdminEditItemDialog({
                 </SelectContent>
               </Select>
             </div>
+            {item.kind === "job" && (
+              <div className="space-y-1.5">
+                <Label>סטטוס</Label>
+                <Select value={status} onValueChange={setStatus}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="open">פתוחה</SelectItem>
+                    <SelectItem value="in_progress">בטיפול</SelectItem>
+                    <SelectItem value="completed">הושלמה</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1.5">
                 <Label>תחילת קריאה</Label>
