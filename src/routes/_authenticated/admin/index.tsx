@@ -1082,15 +1082,19 @@ function UnscheduledPanel({ items, categories, onEdit, onDelete, onCollapse }: {
   );
 }
 
-function DayDetailsPanel({ date, items, onEdit, onDelete }: {
+function DayDetailsPanel({ date, items, onEdit, onDelete, onCollapse }: {
   date: Date; items: CalendarItem[];
   onEdit: (i: CalendarItem) => void;
   onDelete: (i: CalendarItem) => void;
+  onCollapse: () => void;
 }) {
   return (
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
+          <button type="button" onClick={onCollapse} title="מזער" className="h-6 w-6 rounded hover:bg-muted flex items-center justify-center shrink-0">
+            <ChevronsLeft className="h-4 w-4" />
+          </button>
           <CalendarIcon className="h-4 w-4 text-primary" />
           {format(date, "EEEE, d בMMMM", { locale: he })}
         </CardTitle>
