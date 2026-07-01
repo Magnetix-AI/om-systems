@@ -281,7 +281,7 @@ function AdminMain() {
   const navNext = () => setCursor(c => view === "month" ? addMonths(c, 1) : view === "week" ? addWeeks(c, 1) : addDays(c, 1));
 
   return (
-    <div className="max-w-[1600px] mx-auto p-4 lg:p-6 space-y-4">
+    <div className="w-full mx-auto p-4 lg:p-6 space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -566,14 +566,14 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
   onDropOnDay: (kind: "job" | "project", id: string, date: Date) => void;
 }) {
   const days = getRange(cursor, "week");
-  const HOUR_PX = 36;
+  const HOUR_PX = 64;
   const START_HOUR = 6;
   const END_HOUR = 22;
   const hours = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i);
 
   return (
     <div className="overflow-x-auto">
-      <div className="grid" style={{ gridTemplateColumns: "48px repeat(7, minmax(110px, 1fr))" }}>
+      <div className="grid min-w-full" style={{ gridTemplateColumns: "56px repeat(7, minmax(160px, 1fr))" }}>
         {/* Header row */}
         <div />
         {days.map(d => {
@@ -687,16 +687,25 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
                       >
                         <button
                           onClick={(e) => { e.stopPropagation(); onItemClick(it); }}
-                          className="w-full h-full rounded text-right text-[11px] text-white px-1.5 py-1 shadow-sm overflow-hidden hover:opacity-90 hover:shadow-md transition"
+                          className="w-full h-full rounded text-right text-[11px] text-white px-1.5 py-1 shadow-sm overflow-hidden hover:opacity-90 hover:shadow-md transition flex flex-col gap-0.5"
                           style={{ background: color }}
-                          title={`${it.title} · ${it.technician_name ?? "ללא טכנאי"}`}
+                          title={`${it.title} · ${it.technician_name ?? "ללא טכנאי"}${it.client_name ? " · " + it.client_name : ""}`}
                         >
-                          <div className="font-semibold truncate">{it.title}</div>
-                          <div className="opacity-90 truncate">
-                            {format(it.date, "HH:mm")}{it.end ? `–${format(it.end, "HH:mm")}` : ""}
+                          <div className="font-semibold truncate leading-tight">{it.title}</div>
+                          <div className="opacity-95 truncate leading-tight">
+                            🕒 {format(it.date, "HH:mm")}{it.end ? `–${format(it.end, "HH:mm")}` : ""}
                           </div>
+                          {it.client_name && (
+                            <div className="opacity-90 truncate leading-tight text-[10px]">👤 {it.client_name}</div>
+                          )}
                           {it.technician_name && (
-                            <div className="opacity-90 truncate text-[10px]">{it.technician_name}</div>
+                            <div className="opacity-90 truncate leading-tight text-[10px]">🔧 {it.technician_name}</div>
+                          )}
+                          {it.client_address && height > 90 && (
+                            <div className="opacity-80 truncate leading-tight text-[10px]">📍 {it.client_address}</div>
+                          )}
+                          {it.description && height > 110 && (
+                            <div className="opacity-80 line-clamp-2 leading-tight text-[10px] mt-0.5">{it.description}</div>
                           )}
                         </button>
                         <button
