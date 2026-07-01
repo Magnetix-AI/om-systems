@@ -687,16 +687,25 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
                       >
                         <button
                           onClick={(e) => { e.stopPropagation(); onItemClick(it); }}
-                          className="w-full h-full rounded text-right text-[11px] text-white px-1.5 py-1 shadow-sm overflow-hidden hover:opacity-90 hover:shadow-md transition"
+                          className="w-full h-full rounded text-right text-[11px] text-white px-1.5 py-1 shadow-sm overflow-hidden hover:opacity-90 hover:shadow-md transition flex flex-col gap-0.5"
                           style={{ background: color }}
-                          title={`${it.title} · ${it.technician_name ?? "ללא טכנאי"}`}
+                          title={`${it.title} · ${it.technician_name ?? "ללא טכנאי"}${it.client_name ? " · " + it.client_name : ""}`}
                         >
-                          <div className="font-semibold truncate">{it.title}</div>
-                          <div className="opacity-90 truncate">
-                            {format(it.date, "HH:mm")}{it.end ? `–${format(it.end, "HH:mm")}` : ""}
+                          <div className="font-semibold truncate leading-tight">{it.title}</div>
+                          <div className="opacity-95 truncate leading-tight">
+                            🕒 {format(it.date, "HH:mm")}{it.end ? `–${format(it.end, "HH:mm")}` : ""}
                           </div>
+                          {it.client_name && (
+                            <div className="opacity-90 truncate leading-tight text-[10px]">👤 {it.client_name}</div>
+                          )}
                           {it.technician_name && (
-                            <div className="opacity-90 truncate text-[10px]">{it.technician_name}</div>
+                            <div className="opacity-90 truncate leading-tight text-[10px]">🔧 {it.technician_name}</div>
+                          )}
+                          {it.client_address && height > 90 && (
+                            <div className="opacity-80 truncate leading-tight text-[10px]">📍 {it.client_address}</div>
+                          )}
+                          {it.description && height > 110 && (
+                            <div className="opacity-80 line-clamp-2 leading-tight text-[10px] mt-0.5">{it.description}</div>
                           )}
                         </button>
                         <button
