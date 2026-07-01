@@ -695,6 +695,9 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
                           <div className="opacity-90 truncate">
                             {format(it.date, "HH:mm")}{it.end ? `–${format(it.end, "HH:mm")}` : ""}
                           </div>
+                          {it.technician_name && (
+                            <div className="opacity-90 truncate text-[10px]">{it.technician_name}</div>
+                          )}
                         </button>
                         <button
                           type="button"
