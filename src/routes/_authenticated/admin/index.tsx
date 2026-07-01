@@ -359,7 +359,11 @@ function AdminMain() {
         </Card>
 
         {/* Day details — RIGHT side */}
-        <DayDetailsPanel date={selected} items={dayItems} onEdit={handleCalendarItemClick} onDelete={setToDelete} />
+        {rightCollapsed ? (
+          <CollapsedPanelBar side="right" label={format(selected, "d בMMMM", { locale: he })} count={dayItems.length} onExpand={() => setRightCollapsed(false)} />
+        ) : (
+          <DayDetailsPanel date={selected} items={dayItems} onEdit={handleCalendarItemClick} onDelete={setToDelete} onCollapse={() => setRightCollapsed(true)} />
+        )}
       </div>
 
       <AdminEditItemDialog item={editItem} onClose={() => setEditItem(null)} invalidateKeys={[["main-jobs"], ["main-projects"]]} />
