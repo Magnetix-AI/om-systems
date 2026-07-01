@@ -39,6 +39,7 @@ import { deleteJobsCascade, deleteProjectsCascade } from "@/lib/admin-deletes";
 import { AdminEditItemDialog } from "@/components/admin-edit-item-dialog";
 import { AdminViewJobDialog } from "@/components/admin-view-job-dialog";
 import { ProjectPicker } from "@/components/project-picker";
+import { GlobalSearch } from "@/components/global-search";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   ssr: false,
