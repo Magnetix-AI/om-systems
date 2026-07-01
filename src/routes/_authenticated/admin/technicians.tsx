@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Plus, Trash2, Pencil, UserPlus } from "lucide-react";
 import { toast } from "sonner";
+import { HexColorPicker } from "react-colorful";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   createTechnician, updateTechnician, deleteTechnician, getTechnicianUsername,
 } from "@/lib/admin-technicians.functions";
@@ -268,17 +270,39 @@ function TechnicianFormDialog({
         </div>
         <div className="space-y-1.5">
           <Label>צבע ביומן</Label>
-          <div className="flex gap-2 flex-wrap items-center">
-            {DEFAULT_COLORS.map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setColor(c)}
-                className={`h-8 w-8 rounded-full border-2 transition-transform ${color === c ? "ring-2 ring-foreground scale-110" : "border-transparent"}`}
-                style={{ background: c }}
+          <div className="space-y-3">
+            <HexColorPicker color={color} onChange={setColor} style={{ width: "100%" }} />
+            <div className="flex items-center gap-2">
+              <div className="h-9 w-9 rounded-md border shrink-0" style={{ background: color }} />
+              <Input
+                value={color}
+                onChange={(e) => {
+                  const v = e.target.value.trim();
+                  if (/^#[0-9a-fA-F]{0,6}$/.test(v)) setColor(v);
+                }}
+                dir="ltr"
+                className="font-mono"
+                placeholder="#3b82f6"
               />
-            ))}
-            <Input type="color" value={color} onChange={(e) => setColor(e.target.value)} className="h-8 w-12 p-1" />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button type="button" variant="outline" size="sm">מהיר</Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-2" dir="rtl">
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {DEFAULT_COLORS.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setColor(c)}
+                        className={`h-7 w-7 rounded-full border-2 ${color.toLowerCase() === c ? "ring-2 ring-foreground" : "border-transparent"}`}
+                        style={{ background: c }}
+                      />
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
         </div>
       </div>
