@@ -28,6 +28,7 @@ export const Route = createFileRoute("/_authenticated/admin/jobs/$jobId")({
 
 export default function AdminJobDetail() {
   const { jobId } = Route.useParams();
+  const router = useRouter();
   const qc = useQueryClient();
   const { data: job } = useQuery({
     queryKey: ["admin-job", jobId],
