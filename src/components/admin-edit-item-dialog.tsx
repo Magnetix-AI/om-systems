@@ -54,6 +54,7 @@ export function AdminEditItemDialog({
   const [siteContactPhone, setSiteContactPhone] = useState("");
   const [siteContactAddress, setSiteContactAddress] = useState("");
   const [projectId, setProjectId] = useState<string | null>(null);
+  const [status, setStatus] = useState<string>("open");
   const [useNewClient, setUseNewClient] = useState(false);
   const [newClientName, setNewClientName] = useState("");
   const [saving, setSaving] = useState(false);
