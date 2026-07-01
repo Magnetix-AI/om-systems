@@ -993,6 +993,9 @@ function UnscheduledPanel({ items, categories, onEdit, onDelete, onCollapse }: {
     <Card className="bg-warning/5 border-warning/30">
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
+          <button type="button" onClick={onCollapse} title="מזער" className="h-6 w-6 rounded hover:bg-muted flex items-center justify-center shrink-0">
+            <ChevronsRight className="h-4 w-4" />
+          </button>
           <AlertTriangle className="h-4 w-4 text-warning" />
           קריאות לא מתואמות
           <Badge variant="outline" className="mr-auto bg-warning/20 border-warning/40">{items.length}</Badge>
