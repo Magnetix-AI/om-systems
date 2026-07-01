@@ -171,21 +171,23 @@ export default function AdminJobDetail() {
             <div className="font-medium">שעות פעילות</div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {([
-                ["start_time", "התחלה"],
-                ["end_time", "סיום"],
-                ["arrival_time", "כניסה"],
-                ["departure_time", "יציאה"],
-                ["completed_at", "הושלמה"],
-              ] as const).map(([k, label]) => (
+                ["start_time", "התחלה", "datetime-local"],
+                ["end_time", "סיום", "datetime-local"],
+                ["arrival_time", "כניסה", "time"],
+                ["departure_time", "יציאה", "time"],
+                ["completed_at", "הושלמה", "datetime-local"],
+              ] as const).map(([k, label, inputType]) => (
                 <div key={k} className="space-y-1">
                   <Label className="text-xs">{label}</Label>
                   <Input
-                    type="datetime-local"
+                    type={inputType}
                     value={times[k]}
+                    dir={inputType === "time" ? "ltr" : undefined}
                     onChange={(e) => setTimes((t) => ({ ...t, [k]: e.target.value }))}
                   />
                 </div>
               ))}
+
             </div>
             <div className="flex justify-end">
               <Button size="sm" onClick={saveTimes} disabled={savingTimes}>
