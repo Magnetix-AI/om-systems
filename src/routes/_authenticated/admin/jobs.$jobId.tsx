@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,6 +28,7 @@ export const Route = createFileRoute("/_authenticated/admin/jobs/$jobId")({
 
 export default function AdminJobDetail() {
   const { jobId } = Route.useParams();
+  const router = useRouter();
   const qc = useQueryClient();
   const { data: job } = useQuery({
     queryKey: ["admin-job", jobId],
@@ -94,9 +95,16 @@ export default function AdminJobDetail() {
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-4">
-      <Link to="/admin/jobs" className="text-sm text-muted-foreground inline-flex items-center gap-1 hover:text-foreground">
-        <ArrowRight className="h-4 w-4" /> חזרה לקריאות
-      </Link>
+      <button
+        type="button"
+        onClick={() => {
+          if (window.history.length > 1) router.history.back();
+          else router.navigate({ to: "/admin/jobs" });
+        }}
+        className="text-sm text-muted-foreground inline-flex items-center gap-1 hover:text-foreground"
+      >
+        <ArrowRight className="h-4 w-4" /> חזרה
+      </button>
 
       <Card>
         <CardHeader>
