@@ -21,6 +21,35 @@ const toLocalInput = (t?: string | null) => {
 };
 const fromLocalInput = (v: string) => (v ? new Date(v).toISOString() : null);
 
+const APP_TIME_ZONE = "Asia/Jerusalem";
+
+const getDatePartsInAppTimeZone = (value: string | Date) => {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: APP_TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(new Date(value));
+  const v = Object.fromEntries(parts.filter(p => p.type !== "literal").map(p => [p.type, p.value]));
+  return { year: Number(v.year), month: Number(v.month), day: Number(v.day) };
+};
+const getTimeInAppTimeZone = (value: string | Date) =>
+  new Intl.DateTimeFormat("en-GB", { timeZone: APP_TIME_ZONE, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(value));
+const getTimeZoneOffsetMs = (date: Date, timeZone: string) => {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23",
+  }).formatToParts(date);
+  const v = Object.fromEntries(parts.filter(p => p.type !== "literal").map(p => [p.type, p.value]));
+  const zonedAsUtc = Date.UTC(Number(v.year), Number(v.month) - 1, Number(v.day), Number(v.hour), Number(v.minute), Number(v.second));
+  return zonedAsUtc - date.getTime();
+};
+const buildAttendanceTimestamp = (baseDate: string | Date, hhmm: string) => {
+  const [hour, minute] = hhmm.split(":").map(Number);
+  const { year, month, day } = getDatePartsInAppTimeZone(baseDate);
+  const wallTimeAsUtc = Date.UTC(year, month - 1, day, hour, minute, 0, 0);
+  const firstPass = wallTimeAsUtc - getTimeZoneOffsetMs(new Date(wallTimeAsUtc), APP_TIME_ZONE);
+  const finalPass = wallTimeAsUtc - getTimeZoneOffsetMs(new Date(firstPass), APP_TIME_ZONE);
+  return new Date(finalPass).toISOString();
+};
+
+
 export const Route = createFileRoute("/_authenticated/admin/jobs/$jobId")({
   ssr: false,
   component: AdminJobDetail,
