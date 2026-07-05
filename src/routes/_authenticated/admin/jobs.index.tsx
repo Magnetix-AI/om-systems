@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,13 +35,18 @@ function AdminJobs() {
   const [toDelete, setToDelete] = useState<{ id: string; title: string } | null>(null);
   const [editItem, setEditItem] = useState<EditItem | null>(null);
 
+  const [sortDir, setSortDir] = useState<"desc" | "asc">("desc");
+  const [technicianFilter, setTechnicianFilter] = useState<string>("__all");
+  const [clientFilter, setClientFilter] = useState<string>("__all");
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
 
   const { data: jobs = [] } = useQuery({
     queryKey: ["admin-jobs"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("jobs")
-        .select("id, title, status, scheduled_date, created_at, technician_id, client:clients(name)")
+        .select("id, title, status, scheduled_date, created_at, technician_id, client_id, client:clients(name)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       const techIds = Array.from(new Set((data ?? []).map((j: any) => j.technician_id).filter(Boolean)));
@@ -54,11 +59,50 @@ function AdminJobs() {
     },
   });
 
+  const technicianOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    jobs.forEach((j: any) => { if (j.technician_id && j.technician_name) map.set(j.technician_id, j.technician_name); });
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [jobs]);
+
+  const clientOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    jobs.forEach((j: any) => { if (j.client_id && j.client?.name) map.set(j.client_id, j.client.name); });
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [jobs]);
+
+  const filteredJobs = useMemo(() => {
+    const fromMs = dateFrom ? new Date(dateFrom).getTime() : null;
+    const toMs = dateTo ? new Date(dateTo).getTime() + 24 * 60 * 60 * 1000 : null;
+    const rows = jobs.filter((j: any) => {
+      if (technicianFilter !== "__all") {
+        if (technicianFilter === "__none" ? j.technician_id : j.technician_id !== technicianFilter) return false;
+      }
+      if (clientFilter !== "__all" && j.client_id !== clientFilter) return false;
+      const d = j.scheduled_date ?? j.created_at;
+      if (!d) return !fromMs && !toMs;
+      const t = new Date(d).getTime();
+      if (fromMs && t < fromMs) return false;
+      if (toMs && t >= toMs) return false;
+      return true;
+    });
+    return rows.sort((a: any, b: any) => {
+      const ta = new Date(a.scheduled_date ?? a.created_at).getTime();
+      const tb = new Date(b.scheduled_date ?? b.created_at).getTime();
+      return sortDir === "desc" ? tb - ta : ta - tb;
+    });
+  }, [jobs, technicianFilter, clientFilter, dateFrom, dateTo, sortDir]);
+
   const counts = {
-    open: jobs.filter((j: any) => j.status === "open").length,
-    in_progress: jobs.filter((j: any) => j.status === "in_progress").length,
-    completed: jobs.filter((j: any) => j.status === "completed").length,
+    open: filteredJobs.filter((j: any) => j.status === "open").length,
+    in_progress: filteredJobs.filter((j: any) => j.status === "in_progress").length,
+    completed: filteredJobs.filter((j: any) => j.status === "completed").length,
   };
+
+  const resetFilters = () => {
+    setSortDir("desc"); setTechnicianFilter("__all"); setClientFilter("__all"); setDateFrom(""); setDateTo("");
+  };
+
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
@@ -82,12 +126,58 @@ function AdminJobs() {
       </div>
 
       <Card>
-        <CardHeader><CardTitle>כל הקריאות</CardTitle></CardHeader>
+        <CardHeader className="space-y-3">
+          <CardTitle>כל הקריאות</CardTitle>
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs">מיון תאריך</Label>
+              <Select value={sortDir} onValueChange={(v: "desc" | "asc") => setSortDir(v)}>
+                <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="desc">מהחדש לישן</SelectItem>
+                  <SelectItem value="asc">מהישן לחדש</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">טכנאי</Label>
+              <Select value={technicianFilter} onValueChange={setTechnicianFilter}>
+                <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all">כל הטכנאים</SelectItem>
+                  <SelectItem value="__none">לא משויך</SelectItem>
+                  {technicianOptions.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">לקוח</Label>
+              <Select value={clientFilter} onValueChange={setClientFilter}>
+                <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all">כל הלקוחות</SelectItem>
+                  {clientOptions.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">מתאריך</Label>
+              <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-40" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">עד תאריך</Label>
+              <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-40" />
+            </div>
+            {(technicianFilter !== "__all" || clientFilter !== "__all" || dateFrom || dateTo || sortDir !== "desc") && (
+              <Button variant="outline" size="sm" onClick={resetFilters}>איפוס</Button>
+            )}
+          </div>
+        </CardHeader>
         <CardContent>
-          {jobs.length === 0 ? (
+          {filteredJobs.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground flex flex-col items-center gap-2">
               <Briefcase className="h-8 w-8 opacity-40" />
-              <p>אין קריאות עדיין. צור קריאה חדשה כדי להתחיל.</p>
+              <p>אין קריאות התואמות לסינון.</p>
             </div>
           ) : (
             <Table>
@@ -103,7 +193,8 @@ function AdminJobs() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {jobs.map((j: any) => (
+                {filteredJobs.map((j: any) => (
+
                   <TableRow key={j.id}>
                     <TableCell className="font-medium">
                       <Link to="/admin/jobs/$jobId" params={{ jobId: j.id }} className="hover:underline text-primary">
