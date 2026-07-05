@@ -448,13 +448,13 @@ function MonthGrid({ cursor, selected, items, onSelect, onAddOnDay, onItemClick,
   onItemReturnToUnscheduled: (i: CalendarItem) => void;
   onDropOnDay: (kind: "job" | "project", id: string, date: Date) => void;
 }) {
-  const days = getRange(cursor, "month");
+  const days = getRange(cursor, "month").filter(d => !isSaturday(d));
   return (
     <div>
-      <div className="grid grid-cols-7 mb-2 text-center text-xs font-semibold text-muted-foreground">
+      <div className="grid grid-cols-6 mb-2 text-center text-xs font-semibold text-muted-foreground">
         {WEEKDAY_LABELS.map(d => <div key={d} className="py-2">{d}</div>)}
       </div>
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-6 gap-1">
         {days.map(d => {
           const dayItems = items.filter(i => isSameDay(i.date, d));
           const inMonth = isSameMonth(d, cursor);
