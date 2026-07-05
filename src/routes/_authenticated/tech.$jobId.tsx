@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Trash2, Plus, ArrowRight, CheckCircle2, Search, Mic, MicOff, Phone } from "lucide-react";
 import { toast } from "sonner";
+import { AttachmentsManager } from "@/components/attachments-manager";
 import { AttachmentsGallery } from "@/components/attachments-gallery";
 
 const APP_TIME_ZONE = "Asia/Jerusalem";
