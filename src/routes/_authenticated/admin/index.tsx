@@ -432,7 +432,7 @@ function getRange(cursor: Date, view: ViewMode) {
   }
   if (view === "week") {
     const start = startOfWeek(cursor, { weekStartsOn: 0 });
-    return eachDayOfInterval({ start, end: addDays(start, 6) });
+    return eachDayOfInterval({ start, end: addDays(start, 5) });
   }
   return [cursor];
 }
