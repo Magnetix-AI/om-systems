@@ -7,34 +7,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Cable, ScanFace, ShieldCheck } from "lucide-react";
+import { Cable, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
-import {
-  getStoredFaceCred,
-  isFaceAuthSupported,
-  registerFaceCred,
-  verifyFaceCred,
-} from "@/lib/face-auth";
 import { adminLogin } from "@/lib/admin-auth.functions";
-
-
-const PENDING_FACE_KEY = "fieldops.pendingFaceFlow";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
   beforeLoad: async () => {
-    // While the face setup/verify dialog is pending we must NOT redirect away
-    // even though a session exists — otherwise the dialog disappears instantly.
-    if (typeof sessionStorage !== "undefined" && sessionStorage.getItem(PENDING_FACE_KEY)) return;
     const { data: { user } } = await supabase.auth.getUser();
     if (user) throw redirect({ to: "/" });
   },
   component: AuthPage,
 });
-
-// Admin credentials are NOT stored client-side. Admins sign in with their
-// own email/password; the `admin` role is granted server-side via the
-// `user_roles` table and enforced by RLS / `has_role()`.
 
 function AuthPage() {
   const navigate = useNavigate();
@@ -48,128 +32,24 @@ function AuthPage() {
   const [adminLoading, setAdminLoading] = useState(false);
   const adminLoginFn = useServerFn(adminLogin);
 
-  const [faceLoading, setFaceLoading] = useState(false);
-  const [faceSetupOpen, setFaceSetupOpen] = useState(false);
-  const [faceVerifyOpen, setFaceVerifyOpen] = useState(false);
-  const [faceError, setFaceError] = useState<string | null>(null);
-  const [pendingFaceSetup, setPendingFaceSetup] = useState<{ email: string; refreshToken: string } | null>(null);
-  const [pendingFaceVerify, setPendingFaceVerify] = useState<{ refreshToken: string } | null>(null);
-  const faceSupported = typeof window !== "undefined" && isFaceAuthSupported();
-  const hasFaceCred = typeof window !== "undefined" && !!getStoredFaceCred();
-
-  const finishLogin = () => {
-    try { sessionStorage.removeItem(PENDING_FACE_KEY); } catch { /* ignore */ }
-    toast.success("התחברת בהצלחה");
-    navigate({ to: "/" });
-  };
-
-  const runFaceVerify = async (refreshTokenOverride?: string) => {
-    setFaceLoading(true);
-    setFaceError(null);
-    try {
-      await verifyFaceCred(refreshTokenOverride || pendingFaceVerify?.refreshToken);
-      setFaceVerifyOpen(false);
-      setPendingFaceVerify(null);
-      finishLogin();
-    } catch (err: any) {
-      setFaceError(err?.message || "האימות נכשל");
-    } finally {
-      setFaceLoading(false);
-    }
-  };
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     const id = email.trim();
-    // Allow login via plain username — auto-map to internal email domain.
     const loginEmail = id.includes("@") ? id : `${id.toLowerCase()}@om-tech.local`;
-    const stored = getStoredFaceCred();
-    // Mark the face flow as pending BEFORE creating the session, so the
-    // auth-route beforeLoad doesn't redirect us away when onAuthStateChange
-    // invalidates the router.
-    const willNeedFaceFlow = faceSupported;
-    if (willNeedFaceFlow) {
-      try { sessionStorage.setItem(PENDING_FACE_KEY, "1"); } catch { /* ignore */ }
-    }
-    const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
+    const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
     setLoading(false);
     if (error) {
-      try { sessionStorage.removeItem(PENDING_FACE_KEY); } catch { /* ignore */ }
       return toast.error("שגיאה בהתחברות", { description: error.message });
     }
-    if (faceSupported && stored && stored.email === loginEmail) {
-      const refreshToken = data.session?.refresh_token;
-      if (!refreshToken) {
-        try { sessionStorage.removeItem(PENDING_FACE_KEY); } catch { /* ignore */ }
-        await supabase.auth.signOut();
-        return toast.error("שגיאה באימות זיהוי פנים", { description: "ההתחברות לא הושלמה. נסה להתחבר שוב." });
-      }
-      // Mandatory second factor: verify face for this device's enrolled user.
-      setPendingFaceVerify({ refreshToken });
-      setFaceVerifyOpen(true);
-      setTimeout(() => { runFaceVerify(refreshToken); }, 200);
-      return;
-    }
-    if (faceSupported && (!stored || stored.email !== loginEmail)) {
-      const refreshToken = data.session?.refresh_token;
-      if (!refreshToken) {
-        try { sessionStorage.removeItem(PENDING_FACE_KEY); } catch { /* ignore */ }
-        await supabase.auth.signOut();
-        return toast.error("שגיאה בהפעלת זיהוי פנים", { description: "ההתחברות לא הושלמה. נסה להתחבר שוב." });
-      }
-      setPendingFaceSetup({ email: loginEmail, refreshToken });
-      setFaceSetupOpen(true);
-      return;
-    }
-    finishLogin();
+    toast.success("התחברת בהצלחה");
+    navigate({ to: "/" });
   };
-
-
-  const handleFaceLogin = async () => {
-    setFaceLoading(true);
-    try {
-      // verifyFaceCred() internally refreshes the Supabase session via a
-      // stored refresh token — no password is involved.
-      await verifyFaceCred();
-      finishLogin();
-    } catch (err: any) {
-      toast.error("כניסה עם זיהוי פנים נכשלה", { description: err.message });
-    } finally {
-      setFaceLoading(false);
-    }
-  };
-
-  const handleEnableFace = async () => {
-    if (!pendingFaceSetup) return;
-    setFaceLoading(true);
-    try {
-      await registerFaceCred(pendingFaceSetup.email, pendingFaceSetup.refreshToken);
-      toast.success("זיהוי פנים הופעל בהצלחה");
-      setFaceSetupOpen(false);
-      setPendingFaceSetup(null);
-      finishLogin();
-    } catch (err: any) {
-      toast.error("הגדרת זיהוי פנים נכשלה", { description: err.message });
-    } finally {
-      setFaceLoading(false);
-    }
-  };
-
-  const skipFaceSetup = () => {
-    setFaceSetupOpen(false);
-    setPendingFaceSetup(null);
-    finishLogin();
-  };
-
 
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAdminLoading(true);
     try {
-      // Server validates username+password against env secrets and returns
-      // a real Supabase session for the admin account. Nothing sensitive
-      // lives in the client bundle.
       const result = await adminLoginFn({
         data: { username: adminUser, password: adminPass },
       });
@@ -223,17 +103,6 @@ function AuthPage() {
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "מתחבר..." : "התחבר כטכנאי"}
             </Button>
-            {faceSupported && hasFaceCred && (
-              <button
-                type="button"
-                onClick={handleFaceLogin}
-                disabled={faceLoading}
-                className="w-full flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-              >
-                <ScanFace className="h-3.5 w-3.5" />
-                {faceLoading ? "מאמת..." : "כניסה עם זיהוי פנים"}
-              </button>
-            )}
           </form>
           <div className="relative my-5">
             <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
@@ -270,76 +139,6 @@ function AuthPage() {
           </form>
         </DialogContent>
       </Dialog>
-
-      <Dialog open={faceSetupOpen} onOpenChange={() => { /* mandatory — cannot dismiss */ }}>
-        <DialogContent dir="rtl" className="sm:max-w-sm" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
-          <DialogHeader>
-            <DialogTitle className="text-right flex items-center gap-2">
-              <ScanFace className="h-5 w-5" /> הגדרת זיהוי פנים
-            </DialogTitle>
-            <DialogDescription className="text-right">
-              בכניסה הראשונית למערכת חובה להגדיר זיהוי פנים / טביעת אצבע במכשיר זה. בכניסות הבאות יידרש אימות ביומטרי נוסף לאחר הסיסמה.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex gap-2">
-            <Button className="flex-1" onClick={handleEnableFace} disabled={faceLoading}>
-              {faceLoading ? "מגדיר..." : "הפעל זיהוי פנים"}
-            </Button>
-            <Button
-              variant="outline"
-              className="flex-1"
-              disabled={faceLoading}
-              onClick={async () => {
-                try { sessionStorage.removeItem(PENDING_FACE_KEY); } catch { /* ignore */ }
-                await supabase.auth.signOut();
-                setFaceSetupOpen(false);
-                setPendingFaceSetup(null);
-                toast.info("ההגדרה בוטלה");
-              }}
-            >
-              ביטול
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={faceVerifyOpen} onOpenChange={() => { /* mandatory — cannot dismiss */ }}>
-        <DialogContent dir="rtl" className="sm:max-w-sm" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
-          <DialogHeader>
-            <DialogTitle className="text-right flex items-center gap-2">
-              <ScanFace className="h-5 w-5" /> אימות זיהוי פנים
-            </DialogTitle>
-            <DialogDescription className="text-right">
-              שלב אבטחה נוסף: יש לאמת את זהותך באמצעות זיהוי פנים / טביעת אצבע במכשיר זה.
-            </DialogDescription>
-          </DialogHeader>
-          {faceError && (
-            <p className="text-sm text-destructive text-right">{faceError}</p>
-          )}
-          <div className="flex gap-2">
-            <Button className="flex-1" onClick={() => runFaceVerify()} disabled={faceLoading}>
-              {faceLoading ? "מאמת..." : faceError ? "נסה שוב" : "אמת זיהוי פנים"}
-            </Button>
-            <Button
-              variant="outline"
-              className="flex-1"
-              disabled={faceLoading}
-              onClick={async () => {
-                try { sessionStorage.removeItem(PENDING_FACE_KEY); } catch { /* ignore */ }
-                await supabase.auth.signOut();
-                setFaceVerifyOpen(false);
-                setFaceError(null);
-                setPendingFaceVerify(null);
-                toast.info("האימות בוטל");
-              }}
-            >
-              ביטול
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
-
   );
 }
-
