@@ -437,7 +437,8 @@ function getRange(cursor: Date, view: ViewMode) {
   return [cursor];
 }
 
-const WEEKDAY_LABELS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
+const WEEKDAY_LABELS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי"];
+const isSaturday = (d: Date) => d.getDay() === 6;
 
 function MonthGrid({ cursor, selected, items, onSelect, onAddOnDay, onItemClick, onItemRemove, onItemReturnToUnscheduled, onDropOnDay }: {
   cursor: Date; selected: Date; items: CalendarItem[]; onSelect: (d: Date) => void;
