@@ -432,12 +432,13 @@ function getRange(cursor: Date, view: ViewMode) {
   }
   if (view === "week") {
     const start = startOfWeek(cursor, { weekStartsOn: 0 });
-    return eachDayOfInterval({ start, end: addDays(start, 6) });
+    return eachDayOfInterval({ start, end: addDays(start, 5) });
   }
   return [cursor];
 }
 
-const WEEKDAY_LABELS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
+const WEEKDAY_LABELS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי"];
+const isSaturday = (d: Date) => d.getDay() === 6;
 
 function MonthGrid({ cursor, selected, items, onSelect, onAddOnDay, onItemClick, onItemRemove, onItemReturnToUnscheduled, onDropOnDay }: {
   cursor: Date; selected: Date; items: CalendarItem[]; onSelect: (d: Date) => void;
@@ -447,13 +448,13 @@ function MonthGrid({ cursor, selected, items, onSelect, onAddOnDay, onItemClick,
   onItemReturnToUnscheduled: (i: CalendarItem) => void;
   onDropOnDay: (kind: "job" | "project", id: string, date: Date) => void;
 }) {
-  const days = getRange(cursor, "month");
+  const days = getRange(cursor, "month").filter(d => !isSaturday(d));
   return (
     <div>
-      <div className="grid grid-cols-7 mb-2 text-center text-xs font-semibold text-muted-foreground">
+      <div className="grid grid-cols-6 mb-2 text-center text-xs font-semibold text-muted-foreground">
         {WEEKDAY_LABELS.map(d => <div key={d} className="py-2">{d}</div>)}
       </div>
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-6 gap-1">
         {days.map(d => {
           const dayItems = items.filter(i => isSameDay(i.date, d));
           const inMonth = isSameMonth(d, cursor);
@@ -577,7 +578,7 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
 
   return (
     <div className="overflow-x-auto">
-      <div className="grid min-w-full" style={{ gridTemplateColumns: "56px repeat(7, minmax(160px, 1fr))" }}>
+      <div className="grid min-w-full" style={{ gridTemplateColumns: "56px repeat(6, minmax(160px, 1fr))" }}>
         {/* Header row */}
         <div />
         {days.map(d => {
