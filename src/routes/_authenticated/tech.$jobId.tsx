@@ -308,6 +308,7 @@ function JobDetail() {
           </CardContent>
         </Card>
         <AttachmentsGallery jobId={jobId} />
+        <AttachmentsManager jobId={jobId} />
 
 
         {existing.length > 0 && (
