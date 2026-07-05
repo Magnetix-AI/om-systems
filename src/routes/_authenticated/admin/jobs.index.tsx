@@ -126,12 +126,58 @@ function AdminJobs() {
       </div>
 
       <Card>
-        <CardHeader><CardTitle>כל הקריאות</CardTitle></CardHeader>
+        <CardHeader className="space-y-3">
+          <CardTitle>כל הקריאות</CardTitle>
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs">מיון תאריך</Label>
+              <Select value={sortDir} onValueChange={(v: "desc" | "asc") => setSortDir(v)}>
+                <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="desc">מהחדש לישן</SelectItem>
+                  <SelectItem value="asc">מהישן לחדש</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">טכנאי</Label>
+              <Select value={technicianFilter} onValueChange={setTechnicianFilter}>
+                <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all">כל הטכנאים</SelectItem>
+                  <SelectItem value="__none">לא משויך</SelectItem>
+                  {technicianOptions.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">לקוח</Label>
+              <Select value={clientFilter} onValueChange={setClientFilter}>
+                <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all">כל הלקוחות</SelectItem>
+                  {clientOptions.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">מתאריך</Label>
+              <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-40" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">עד תאריך</Label>
+              <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-40" />
+            </div>
+            {(technicianFilter !== "__all" || clientFilter !== "__all" || dateFrom || dateTo || sortDir !== "desc") && (
+              <Button variant="outline" size="sm" onClick={resetFilters}>איפוס</Button>
+            )}
+          </div>
+        </CardHeader>
         <CardContent>
-          {jobs.length === 0 ? (
+          {filteredJobs.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground flex flex-col items-center gap-2">
               <Briefcase className="h-8 w-8 opacity-40" />
-              <p>אין קריאות עדיין. צור קריאה חדשה כדי להתחיל.</p>
+              <p>אין קריאות התואמות לסינון.</p>
             </div>
           ) : (
             <Table>
@@ -147,7 +193,8 @@ function AdminJobs() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {jobs.map((j: any) => (
+                {filteredJobs.map((j: any) => (
+
                   <TableRow key={j.id}>
                     <TableCell className="font-medium">
                       <Link to="/admin/jobs/$jobId" params={{ jobId: j.id }} className="hover:underline text-primary">
