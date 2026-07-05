@@ -578,7 +578,7 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
 
   return (
     <div className="overflow-x-auto">
-      <div className="grid min-w-full" style={{ gridTemplateColumns: "56px repeat(7, minmax(160px, 1fr))" }}>
+      <div className="grid min-w-full" style={{ gridTemplateColumns: "56px repeat(6, minmax(160px, 1fr))" }}>
         {/* Header row */}
         <div />
         {days.map(d => {
