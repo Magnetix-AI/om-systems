@@ -116,20 +116,21 @@ export const adminLogin = createServerFn({ method: "POST" })
       adminUserId = signIn.data.user!.id;
     }
 
-    const { data: roleRow } = await supabaseAdmin
+    // Ensure the admin role is granted AND any leftover non-admin roles
+    // (e.g. the default 'technician' from handle_new_user) are removed,
+    // otherwise use-current-user's maybeSingle() returns null for >1 rows
+    // and the account falls back to the technician dashboard.
+    await supabaseAdmin
       .from("user_roles")
-      .select("role")
+      .upsert(
+        { user_id: adminUserId, role: "admin" },
+        { onConflict: "user_id,role" },
+      );
+    await supabaseAdmin
+      .from("user_roles")
+      .delete()
       .eq("user_id", adminUserId)
-      .eq("role", "admin")
-      .maybeSingle();
-    if (!roleRow) {
-      await supabaseAdmin
-        .from("user_roles")
-        .upsert(
-          { user_id: adminUserId, role: "admin" },
-          { onConflict: "user_id,role" },
-        );
-    }
+      .neq("role", "admin");
 
     // Make sure the profile name reflects the account label.
     await supabaseAdmin
