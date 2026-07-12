@@ -454,7 +454,7 @@ function MonthGrid({ cursor, selected, items, onSelect, onAddOnDay, onItemClick,
       <div className="grid grid-cols-6 mb-2 text-center text-xs font-semibold text-muted-foreground">
         {WEEKDAY_LABELS.map(d => <div key={d} className="py-2">{d}</div>)}
       </div>
-      <div className="grid grid-cols-6 gap-1">
+      <div className="grid grid-cols-6 gap-2.5">
         {days.map(d => {
           const dayItems = items.filter(i => isSameDay(i.date, d));
           const inMonth = isSameMonth(d, cursor);
@@ -578,7 +578,7 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
 
   return (
     <div className="overflow-x-auto">
-      <div className="grid min-w-full" style={{ gridTemplateColumns: "56px repeat(6, minmax(160px, 1fr))" }}>
+      <div className="grid min-w-full gap-x-2" style={{ gridTemplateColumns: "56px repeat(6, minmax(160px, 1fr))" }}>
         {/* Header row */}
         <div />
         {days.map(d => {
@@ -654,7 +654,10 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
           return (
             <div
               key={d.toISOString()}
-              className="relative border-l border-b"
+              className={cn(
+                "relative border rounded-md bg-secondary/20",
+                isToday(d) && "bg-primary/5 border-primary/30",
+              )}
               style={{ height: HOUR_PX * hours.length }}
               onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
               onDrop={(e) => {
