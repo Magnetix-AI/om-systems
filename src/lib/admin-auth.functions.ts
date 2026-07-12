@@ -1,18 +1,17 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-// Server-side admin login. The fixed username/password live ONLY in server
-// secrets (ADMIN_USERNAME / ADMIN_PASSWORD / ADMIN_EMAIL) — never in the
-// client bundle. If the credentials match, we sign in as the admin user
-// via Supabase Auth and return the session tokens for the client to install
-// with `supabase.auth.setSession(...)`.
+// Server-side admin login. Admin credentials live ONLY in server secrets
+// (ADMIN_USERNAME / ADMIN_PASSWORD / ADMIN_EMAIL and the ADMIN2_* set) —
+// never in the client bundle. Multiple admin accounts can be defined; each
+// resolves to its own Supabase auth user, so different admins can be signed
+// in concurrently in different browsers/sessions.
 
 const InputSchema = z.object({
   username: z.string().min(1).max(128),
   password: z.string().min(1).max(256),
 });
 
-// Constant-time string compare to avoid timing leaks on the username/password.
 function safeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
   let mismatch = 0;
@@ -22,36 +21,56 @@ function safeEqual(a: string, b: string): boolean {
   return mismatch === 0;
 }
 
+type AdminAccount = { username: string; password: string; email: string; fullName: string };
+
+function loadAccounts(): AdminAccount[] {
+  const list: AdminAccount[] = [];
+  if (process.env.ADMIN_USERNAME && process.env.ADMIN_PASSWORD && process.env.ADMIN_EMAIL) {
+    list.push({
+      username: process.env.ADMIN_USERNAME,
+      password: process.env.ADMIN_PASSWORD,
+      email: process.env.ADMIN_EMAIL,
+      fullName: "מנהל מערכת",
+    });
+  }
+  if (process.env.ADMIN2_USERNAME && process.env.ADMIN2_PASSWORD && process.env.ADMIN2_EMAIL) {
+    list.push({
+      username: process.env.ADMIN2_USERNAME,
+      password: process.env.ADMIN2_PASSWORD,
+      email: process.env.ADMIN2_EMAIL,
+      fullName: process.env.ADMIN2_USERNAME,
+    });
+  }
+  return list;
+}
+
 export const adminLogin = createServerFn({ method: "POST" })
   .inputValidator((input) => InputSchema.parse(input))
   .handler(async ({ data }) => {
-    const expectedUser = process.env.ADMIN_USERNAME;
-    const expectedPass = process.env.ADMIN_PASSWORD;
-    const adminEmail = process.env.ADMIN_EMAIL;
-    if (!expectedUser || !expectedPass || !adminEmail) {
+    const accounts = loadAccounts();
+    if (accounts.length === 0) {
       throw new Error("Admin credentials are not configured on the server");
     }
 
-    const userOk = safeEqual(data.username, expectedUser);
-    const passOk = safeEqual(data.password, expectedPass);
-    if (!userOk || !passOk) {
-      // Expected failure — return a result instead of throwing so it doesn't
-      // surface as an uncaught runtime error in the client.
+    // Match against all configured admin accounts in constant time-ish fashion.
+    let matched: AdminAccount | null = null;
+    for (const acc of accounts) {
+      const userOk = safeEqual(data.username, acc.username);
+      const passOk = safeEqual(data.password, acc.password);
+      if (userOk && passOk) matched = acc;
+    }
+    if (!matched) {
       return { ok: false as const, error: "פרטי כניסה שגויים" };
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Try to sign in as the admin user. If the account doesn't exist yet
-    // (first-time bootstrap), create it then sign in.
     let signIn = await supabaseAdmin.auth.signInWithPassword({
-      email: adminEmail,
-      password: expectedPass,
+      email: matched.email,
+      password: matched.password,
     });
 
-    // Helper: find an existing auth user by email via the admin API.
     const findUserByEmail = async (email: string) => {
-      // listUsers is paginated; the admin email is unique so first page is enough.
       const { data, error } = await supabaseAdmin.auth.admin.listUsers({
         page: 1,
         perPage: 200,
@@ -64,38 +83,31 @@ export const adminLogin = createServerFn({ method: "POST" })
     let adminUserId: string | null = null;
 
     if (signIn.error || !signIn.data.session) {
-      // Either the user doesn't exist yet, or its password drifted from the
-      // configured secret. Resolve both cases.
-      const existing = await findUserByEmail(adminEmail);
+      const existing = await findUserByEmail(matched.email);
 
       if (!existing) {
-        // First-time bootstrap: create the admin user.
         const created = await supabaseAdmin.auth.admin.createUser({
-          email: adminEmail,
-          password: expectedPass,
+          email: matched.email,
+          password: matched.password,
           email_confirm: true,
-          user_metadata: { full_name: "מנהל מערכת" },
+          user_metadata: { full_name: matched.fullName },
         });
         if (created.error || !created.data.user) {
           throw new Error(created.error?.message || "Failed to bootstrap admin user");
         }
         adminUserId = created.data.user.id;
       } else {
-        // Account exists but the stored password no longer matches the
-        // configured secret — re-sync it so the fixed credentials work again.
         const updated = await supabaseAdmin.auth.admin.updateUserById(existing.id, {
-          password: expectedPass,
+          password: matched.password,
           email_confirm: true,
         });
-        if (updated.error) {
-          throw new Error(updated.error.message);
-        }
+        if (updated.error) throw new Error(updated.error.message);
         adminUserId = existing.id;
       }
 
       signIn = await supabaseAdmin.auth.signInWithPassword({
-        email: adminEmail,
-        password: expectedPass,
+        email: matched.email,
+        password: matched.password,
       });
       if (signIn.error || !signIn.data.session) {
         throw new Error(signIn.error?.message || "Failed to sign in as admin");
@@ -104,7 +116,6 @@ export const adminLogin = createServerFn({ method: "POST" })
       adminUserId = signIn.data.user!.id;
     }
 
-    // Ensure the admin role is granted (handle_new_user only assigns 'technician').
     const { data: roleRow } = await supabaseAdmin
       .from("user_roles")
       .select("role")
@@ -119,6 +130,12 @@ export const adminLogin = createServerFn({ method: "POST" })
           { onConflict: "user_id,role" },
         );
     }
+
+    // Make sure the profile name reflects the account label.
+    await supabaseAdmin
+      .from("profiles")
+      .update({ full_name: matched.fullName })
+      .eq("id", adminUserId);
 
     return {
       ok: true as const,
