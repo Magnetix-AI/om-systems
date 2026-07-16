@@ -258,22 +258,12 @@ function layoutEvents<T extends { startMin: number; endMin: number }>(
 
   const flush = () => {
     if (!cluster.length) return;
-    const cols: { end: number }[] = [];
-    const assign = new Map<T, number>();
-    for (const it of cluster) {
-      let idx = cols.findIndex((c) => c.end <= it.startMin);
-      if (idx === -1) {
-        idx = cols.length;
-        cols.push({ end: it.endMin });
-      } else {
-        cols[idx].end = it.endMin;
-      }
-      assign.set(it, idx);
-    }
-    const total = cols.length;
-    for (const it of cluster) {
-      out.push({ ...it, col: assign.get(it)!, cols: total });
-    }
+    // Layer by start time: earliest = back (col 0), latest = front (highest col).
+    const ordered = [...cluster].sort((a, b) => a.startMin - b.startMin);
+    const total = ordered.length;
+    ordered.forEach((it, idx) => {
+      out.push({ ...it, col: idx, cols: total });
+    });
     cluster = [];
     clusterEnd = -Infinity;
   };
