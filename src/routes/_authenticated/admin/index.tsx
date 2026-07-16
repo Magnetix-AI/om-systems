@@ -676,19 +676,24 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
               {dayItems.map(it => {
                 const startMin = it.date.getHours() * 60 + it.date.getMinutes() - START_HOUR * 60;
                 const durMin = it.end ? Math.max(30, (it.end.getTime() - it.date.getTime()) / 60000) : 60;
-                const top = (startMin / 60) * HOUR_PX;
+                const baseTop = (startMin / 60) * HOUR_PX;
                 const height = (durMin / 60) * HOUR_PX;
                 const color = it.technician_color || (it.kind === "project" ? "#a78bfa" : "#3b82f6");
                 const lay = layout.get(it.kind + it.id) ?? { col: 0, cols: 1 };
-                const OFFSET = 14; // px per overlap column - Google Calendar style stagger
-                const leftPx = lay.col * OFFSET + 2;
-                const rightPx = 2;
+                // Layered stacking: base card (col 0) is on top and full-width.
+                // Each subsequent overlapping card sits behind and peeks out with a
+                // small strip on the right side so its header stays readable.
+                const OFFSET_X = 16; // px horizontal strip revealed per layer
+                const OFFSET_Y = 14; // px vertical shift so same-start cards don't align exactly
+                const leftPx = 2;
+                const rightPx = 2 + Math.max(0, (lay.cols - 1 - lay.col)) * OFFSET_X;
+                const top = baseTop + lay.col * OFFSET_Y;
                 return (
                   <ContextMenu key={it.kind + it.id}>
                     <ContextMenuTrigger asChild>
                       <div
                         className="absolute group/item"
-                        style={{ top, height, left: `${leftPx}px`, right: `${rightPx}px`, zIndex: 10 + lay.col }}
+                        style={{ top, height, left: `${leftPx}px`, right: `${rightPx}px`, zIndex: 10 + (lay.cols - lay.col) }}
                         draggable={it.kind === "job"}
                         onDragStart={(e) => {
                           e.dataTransfer.effectAllowed = "move";
