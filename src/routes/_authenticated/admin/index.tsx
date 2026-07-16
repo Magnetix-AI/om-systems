@@ -705,22 +705,12 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
                           }}
                           title={`${it.title} · ${it.technician_name ?? "ללא טכנאי"}${it.client_name ? " · " + it.client_name : ""}`}
                         >
-                          <div className="font-semibold truncate leading-tight text-black">{it.title}</div>
-                          <div className="truncate leading-tight text-black/80">
+                          <div className="font-semibold leading-tight text-black break-words whitespace-normal">
+                            {it.technician_name ? `${it.technician_name} - ${it.title}` : it.title}
+                          </div>
+                          <div className="leading-tight text-black/80">
                             {format(it.date, "HH:mm")}{it.end ? `–${format(it.end, "HH:mm")}` : ""}
                           </div>
-                          {it.client_name && (
-                            <div className="truncate leading-tight text-[10px] text-black/80">{it.client_name}</div>
-                          )}
-                          {it.technician_name && (
-                            <div className="truncate leading-tight text-[10px] text-black/80">{it.technician_name}</div>
-                          )}
-                          {it.client_address && height > 90 && (
-                            <div className="truncate leading-tight text-[10px] text-black/70">{it.client_address}</div>
-                          )}
-                          {it.description && height > 110 && (
-                            <div className="line-clamp-2 leading-tight text-[10px] mt-0.5 text-black/70">{it.description}</div>
-                          )}
                         </button>
 
                         <button
