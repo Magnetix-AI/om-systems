@@ -680,14 +680,15 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
                 const height = (durMin / 60) * HOUR_PX;
                 const color = it.technician_color || (it.kind === "project" ? "#a78bfa" : "#3b82f6");
                 const lay = layout.get(it.kind + it.id) ?? { col: 0, cols: 1 };
-                // Layered stacking: base card (col 0) is on top and full-width.
-                // Each subsequent overlapping card sits behind and peeks out with a
-                // small strip on the right side so its header stays readable.
-                const OFFSET_X = 16; // px horizontal strip revealed per layer
-                const OFFSET_Y = 14; // px vertical shift so same-start cards don't align exactly
+                // Layered stacking: the first card is the readable top layer.
+                // Cards behind it remain clickable in the revealed strip, but their
+                // text is hidden so it never bleeds into the visible card text.
+                const OFFSET_X = 18; // px horizontal strip revealed per layer
+                const OFFSET_Y = 12; // px vertical shift so same-start cards don't align exactly
                 const leftPx = 2;
                 const rightPx = 2 + Math.max(0, (lay.cols - 1 - lay.col)) * OFFSET_X;
                 const top = baseTop + lay.col * OFFSET_Y;
+                const isTopLayer = lay.col === 0;
                 return (
                   <ContextMenu key={it.kind + it.id}>
                     <ContextMenuTrigger asChild>
@@ -703,24 +704,38 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
                         <button
                           onClick={(e) => { e.stopPropagation(); onItemClick(it); }}
                           className="w-full h-full rounded text-right text-[11px] text-black px-1.5 py-1 shadow-sm overflow-hidden hover:shadow-md transition flex flex-col gap-0.5"
-                          style={{ background: `${color}40`, borderRight: `3px solid ${color}` }}
+                          style={{
+                            background: `linear-gradient(rgba(255,255,255,0.62), rgba(255,255,255,0.62)), ${color}`,
+                            borderRight: `3px solid ${color}`,
+                            boxShadow: isTopLayer
+                              ? "0 2px 8px rgba(15, 23, 42, 0.14)"
+                              : "0 1px 4px rgba(15, 23, 42, 0.12)",
+                          }}
                           title={`${it.title} · ${it.technician_name ?? "ללא טכנאי"}${it.client_name ? " · " + it.client_name : ""}`}
                         >
-                          <div className="font-semibold truncate leading-tight text-black">{it.title}</div>
-                          <div className="truncate leading-tight text-black/80">
-                            {format(it.date, "HH:mm")}{it.end ? `–${format(it.end, "HH:mm")}` : ""}
-                          </div>
-                          {it.client_name && (
-                            <div className="truncate leading-tight text-[10px] text-black/80">{it.client_name}</div>
-                          )}
-                          {it.technician_name && (
-                            <div className="truncate leading-tight text-[10px] text-black/80">{it.technician_name}</div>
-                          )}
-                          {it.client_address && height > 90 && (
-                            <div className="truncate leading-tight text-[10px] text-black/70">{it.client_address}</div>
-                          )}
-                          {it.description && height > 110 && (
-                            <div className="line-clamp-2 leading-tight text-[10px] mt-0.5 text-black/70">{it.description}</div>
+                          {isTopLayer ? (
+                            <>
+                              <div className="font-semibold truncate leading-tight text-black">{it.title}</div>
+                              <div className="truncate leading-tight text-black/80">
+                                {format(it.date, "HH:mm")}{it.end ? `–${format(it.end, "HH:mm")}` : ""}
+                              </div>
+                              {it.client_name && (
+                                <div className="truncate leading-tight text-[10px] text-black/80">{it.client_name}</div>
+                              )}
+                              {it.technician_name && (
+                                <div className="truncate leading-tight text-[10px] text-black/80">{it.technician_name}</div>
+                              )}
+                              {it.client_address && height > 90 && (
+                                <div className="truncate leading-tight text-[10px] text-black/70">{it.client_address}</div>
+                              )}
+                              {it.description && height > 110 && (
+                                <div className="line-clamp-2 leading-tight text-[10px] mt-0.5 text-black/70">{it.description}</div>
+                              )}
+                            </>
+                          ) : (
+                            <span className="sr-only">
+                              {it.title} {format(it.date, "HH:mm")}{it.end ? `–${format(it.end, "HH:mm")}` : ""}
+                            </span>
                           )}
                         </button>
                         <button
