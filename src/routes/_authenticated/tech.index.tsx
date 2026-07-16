@@ -204,9 +204,12 @@ function DayTimeGrid({ date, jobs }: { date: Date; jobs: Job[] }) {
                 {positioned.map((j) => {
                   const top = Math.max(0, (j.startMin / 60) * HOUR_PX);
                   const height = Math.max(28, ((j.endMin - j.startMin) / 60) * HOUR_PX);
-                  const widthPct = 100 / j.cols;
-                  const rightPct = j.col * widthPct;
-                  const timeText = `${format(j.start, "HH:mm")} – ${format(j.end, "HH:mm")}`;
+                  // Layered: earliest in cluster = back (col 0, full width),
+                  // later cards stack on top with a right strip of the back card visible.
+                  const OFFSET_X = 26;
+                  const leftPx = 2;
+                  const rightPx = 2 + j.col * OFFSET_X;
+                  const timeText = `${format(j.start, "HH:mm")}–${format(j.end, "HH:mm")}`;
 
                   return (
                     <Link
@@ -220,28 +223,19 @@ function DayTimeGrid({ date, jobs }: { date: Date; jobs: Job[] }) {
                       style={{
                         top,
                         height,
-                        right: `calc(${rightPct}% + 2px)`,
-                        width: `calc(${widthPct}% - 4px)`,
+                        left: `${leftPx}px`,
+                        right: `${rightPx}px`,
                         minHeight: 28,
+                        zIndex: 10 + j.col,
                       }}
                       title={j.title}
                     >
-                      <div className="font-semibold leading-tight truncate">{j.title}</div>
-                      <div className="flex items-center gap-1 opacity-90 truncate">
-                        <Clock className="h-3 w-3 shrink-0" />
+                      <div className="font-semibold leading-tight break-words whitespace-normal">
+                        {j.title}
+                      </div>
+                      <div className="leading-tight opacity-80">
                         {timeText}
                       </div>
-                      {j.client?.name && (
-                        <div className="flex items-center gap-1 opacity-90 truncate">
-                          <Briefcase className="h-3 w-3 shrink-0" />
-                          {j.client.name}
-                        </div>
-                      )}
-                      {j.description && height > 48 && (
-                        <div className="mt-1 opacity-80 line-clamp-2 leading-tight">
-                          {j.description}
-                        </div>
-                      )}
                     </Link>
                   );
                 })}
