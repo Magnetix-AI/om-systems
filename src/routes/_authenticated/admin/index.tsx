@@ -680,13 +680,15 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
                 const height = (durMin / 60) * HOUR_PX;
                 const color = it.technician_color || (it.kind === "project" ? "#a78bfa" : "#3b82f6");
                 const lay = layout.get(it.kind + it.id) ?? { col: 0, cols: 1 };
-                const widthPct = 100 / lay.cols;
+                const OFFSET = 14; // px per overlap column - Google Calendar style stagger
+                const leftPx = lay.col * OFFSET + 2;
+                const rightPx = 2;
                 return (
                   <ContextMenu key={it.kind + it.id}>
                     <ContextMenuTrigger asChild>
                       <div
                         className="absolute group/item"
-                        style={{ top, height, left: `calc(${lay.col * widthPct}% + 2px)`, width: `calc(${widthPct}% - 4px)` }}
+                        style={{ top, height, left: `${leftPx}px`, right: `${rightPx}px`, zIndex: 10 + lay.col }}
                         draggable={it.kind === "job"}
                         onDragStart={(e) => {
                           e.dataTransfer.effectAllowed = "move";
