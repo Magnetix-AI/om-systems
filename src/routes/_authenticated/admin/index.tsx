@@ -629,9 +629,9 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
           };
           const flush = () => {
             if (!cluster.length) return;
-            // Layer within a cluster by duration: longest = back (col 0),
-            // shortest = front (highest col). All cards share the same column.
-            const ordered = [...cluster].sort((a, b) => durOf(b) - durOf(a));
+            // Layer within a cluster by start time: earliest = back (col 0),
+            // latest = front (highest col). All cards share the same column.
+            const ordered = [...cluster].sort((a, b) => a.date.getTime() - b.date.getTime());
             const total = ordered.length;
             ordered.forEach((it, idx) => {
               layout.set(it.kind + it.id, { col: idx, cols: total });
