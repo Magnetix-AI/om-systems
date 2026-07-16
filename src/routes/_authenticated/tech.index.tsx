@@ -7,7 +7,7 @@ import { useCurrentUser } from "@/hooks/use-current-user";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, Briefcase, History } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, History } from "lucide-react";
 import {
   addDays, addWeeks, eachDayOfInterval, endOfWeek, format,
   isSameDay, startOfWeek, isToday,
