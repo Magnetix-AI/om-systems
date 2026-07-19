@@ -579,13 +579,14 @@ function MonthGrid({ cursor, selected, items, onSelect, onAddOnDay, onItemClick,
 }
 
 
-function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove, onItemReturnToUnscheduled, onAddOnDay, onDropOnDay }: {
+function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove, onItemReturnToUnscheduled, onAddOnDay, onDropOnDay, onMoveJob }: {
   cursor: Date; selected: Date; items: CalendarItem[]; onSelect: (d: Date) => void;
   onItemClick: (i: CalendarItem) => void;
   onItemRemove: (i: CalendarItem) => void;
   onItemReturnToUnscheduled: (i: CalendarItem) => void;
   onAddOnDay: (d: Date) => void;
   onDropOnDay: (kind: "job" | "project", id: string, date: Date) => void;
+  onMoveJob: (jobId: string, newStart: Date) => void;
 }) {
   const days = getRange(cursor, "week");
   const HOUR_PX = 64;
@@ -595,7 +596,7 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
 
   return (
     <div className="overflow-x-auto">
-      <div className="grid min-w-full gap-x-1" style={{ gridTemplateColumns: "48px repeat(6, minmax(180px, 1fr))" }}>
+      <div className="grid min-w-full gap-x-1" style={{ gridTemplateColumns: "48px repeat(6, minmax(240px, 1fr))" }}>
         {/* Header row */}
         <div />
         {days.map(d => {
