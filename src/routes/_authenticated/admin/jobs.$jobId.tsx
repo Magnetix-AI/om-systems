@@ -122,6 +122,20 @@ export default function AdminJobDetail() {
   };
 
 
+  const [savingStatus, setSavingStatus] = useState(false);
+  const changeStatus = async (newStatus: string) => {
+    setSavingStatus(true);
+    const payload: any = { status: newStatus };
+    if (newStatus === "completed" && !(job as any)?.completed_at) payload.completed_at = new Date().toISOString();
+    if (newStatus !== "completed") payload.completed_at = null;
+    const { error } = await supabase.from("jobs").update(payload).eq("id", jobId);
+    setSavingStatus(false);
+    if (error) { toast.error("שגיאה בעדכון סטטוס"); return; }
+    toast.success("סטטוס עודכן");
+    qc.invalidateQueries({ queryKey: ["admin-job", jobId] });
+  };
+
+
   if (!job) return <div className="p-6 text-center text-muted-foreground">טוען...</div>;
 
 
