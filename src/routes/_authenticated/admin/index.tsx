@@ -640,11 +640,6 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
           const layout = new Map<string, { col: number; cols: number }>();
           let cluster: typeof sorted = [];
           let clusterEnd = 0;
-          const durOf = (it: typeof sorted[number]) => {
-            const s = it.date.getTime();
-            const e = (it.end ?? new Date(s + 60 * 60000)).getTime();
-            return e - s;
-          };
           const flush = () => {
             if (!cluster.length) return;
             // Proper side-by-side column assignment: greedy first-fit.
