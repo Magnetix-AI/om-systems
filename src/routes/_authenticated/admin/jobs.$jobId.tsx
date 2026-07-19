@@ -157,6 +157,17 @@ export default function AdminJobDetail() {
           <div className="flex items-center gap-2 flex-wrap">
             <CardTitle>{job.title}</CardTitle>
             <Badge variant="outline" className={statusColor(job.status)}>{statusLabel(job.status)}</Badge>
+            <div className="mr-auto flex items-center gap-2">
+              <Label className="text-xs">סטטוס:</Label>
+              <Select value={job.status} onValueChange={changeStatus} disabled={savingStatus}>
+                <SelectTrigger className="h-8 w-36"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="open">פתוחה</SelectItem>
+                  <SelectItem value="in_progress">בטיפול</SelectItem>
+                  <SelectItem value="completed">הושלמה</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           {job.description && <p className="text-sm text-muted-foreground">{job.description}</p>}
           <div className="text-sm text-muted-foreground mt-2 space-y-0.5">
