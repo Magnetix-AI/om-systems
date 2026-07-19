@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { statusLabel, statusColor } from "@/components/app-shell";
@@ -121,6 +122,20 @@ export default function AdminJobDetail() {
   };
 
 
+  const [savingStatus, setSavingStatus] = useState(false);
+  const changeStatus = async (newStatus: string) => {
+    setSavingStatus(true);
+    const payload: any = { status: newStatus };
+    if (newStatus === "completed" && !(job as any)?.completed_at) payload.completed_at = new Date().toISOString();
+    if (newStatus !== "completed") payload.completed_at = null;
+    const { error } = await supabase.from("jobs").update(payload).eq("id", jobId);
+    setSavingStatus(false);
+    if (error) { toast.error("שגיאה בעדכון סטטוס"); return; }
+    toast.success("סטטוס עודכן");
+    qc.invalidateQueries({ queryKey: ["admin-job", jobId] });
+  };
+
+
   if (!job) return <div className="p-6 text-center text-muted-foreground">טוען...</div>;
 
 
@@ -142,6 +157,17 @@ export default function AdminJobDetail() {
           <div className="flex items-center gap-2 flex-wrap">
             <CardTitle>{job.title}</CardTitle>
             <Badge variant="outline" className={statusColor(job.status)}>{statusLabel(job.status)}</Badge>
+            <div className="mr-auto flex items-center gap-2">
+              <Label className="text-xs">סטטוס:</Label>
+              <Select value={job.status} onValueChange={changeStatus} disabled={savingStatus}>
+                <SelectTrigger className="h-8 w-36"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="open">פתוחה</SelectItem>
+                  <SelectItem value="in_progress">בטיפול</SelectItem>
+                  <SelectItem value="completed">הושלמה</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           {job.description && <p className="text-sm text-muted-foreground">{job.description}</p>}
           <div className="text-sm text-muted-foreground mt-2 space-y-0.5">
