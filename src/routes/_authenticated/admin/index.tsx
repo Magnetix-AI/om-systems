@@ -1140,6 +1140,22 @@ function UnscheduledPanel({ items, categories, onEdit, onDelete, onCollapse }: {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!newJobCat} onOpenChange={(o) => { if (!o) { setNewJobCat(null); setNewJobTitle(""); setNewJobDesc(""); } }}>
+        <DialogContent dir="rtl" className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>קריאה חדשה בקטגוריה "{newJobCat?.name}"</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Input value={newJobTitle} onChange={(e) => setNewJobTitle(e.target.value)} placeholder="כותרת הקריאה" autoFocus />
+            <Textarea value={newJobDesc} onChange={(e) => setNewJobDesc(e.target.value)} placeholder="תיאור (אופציונלי)" rows={2} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNewJobCat(null)}>ביטול</Button>
+            <Button onClick={createUnscheduledJob} disabled={creatingJob}>{creatingJob ? "יוצר..." : "צור"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
