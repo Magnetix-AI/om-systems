@@ -977,6 +977,9 @@ function UnscheduledPanel({ items, categories, onEdit, onDelete, onCollapse }: {
             </div>
           </ContextMenuTrigger>
           <ContextMenuContent>
+            <ContextMenuItem onClick={() => { setNewJobCat(cat); setNewJobTitle(""); setNewJobDesc(""); }}>
+              <Plus className="h-3.5 w-3.5 ml-2" /> קריאה חדשה בקטגוריה
+            </ContextMenuItem>
             <ContextMenuItem onClick={() => { setAddParent(cat); setAddName(""); }}>
               <Plus className="h-3.5 w-3.5 ml-2" /> הוסף תת-קטגוריה
             </ContextMenuItem>
