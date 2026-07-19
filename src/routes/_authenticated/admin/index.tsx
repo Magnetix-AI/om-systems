@@ -816,6 +816,28 @@ function UnscheduledPanel({ items, categories, onEdit, onDelete, onCollapse }: {
   const [renameValue, setRenameValue] = useState("");
   const [addParent, setAddParent] = useState<JobCategory | "root" | null>(null);
   const [addName, setAddName] = useState("");
+  const [newJobCat, setNewJobCat] = useState<JobCategory | null>(null);
+  const [newJobTitle, setNewJobTitle] = useState("");
+  const [newJobDesc, setNewJobDesc] = useState("");
+  const [creatingJob, setCreatingJob] = useState(false);
+
+  const createUnscheduledJob = async () => {
+    if (!newJobCat) return;
+    const t = newJobTitle.trim();
+    if (!t) return toast.error("יש להזין כותרת");
+    setCreatingJob(true);
+    const { error } = await supabase.from("jobs").insert({
+      title: t,
+      description: newJobDesc.trim() || null,
+      category_id: newJobCat.id,
+      status: "open",
+    });
+    setCreatingJob(false);
+    if (error) return toast.error("שגיאה ביצירה", { description: error.message });
+    toast.success("נוצרה קריאה");
+    setNewJobCat(null); setNewJobTitle(""); setNewJobDesc("");
+    invalidateAll();
+  };
 
   const buckets = useMemo(() => {
     const m = new Map<string, CalendarItem[]>();
@@ -955,6 +977,9 @@ function UnscheduledPanel({ items, categories, onEdit, onDelete, onCollapse }: {
             </div>
           </ContextMenuTrigger>
           <ContextMenuContent>
+            <ContextMenuItem onClick={() => { setNewJobCat(cat); setNewJobTitle(""); setNewJobDesc(""); }}>
+              <Plus className="h-3.5 w-3.5 ml-2" /> קריאה חדשה בקטגוריה
+            </ContextMenuItem>
             <ContextMenuItem onClick={() => { setAddParent(cat); setAddName(""); }}>
               <Plus className="h-3.5 w-3.5 ml-2" /> הוסף תת-קטגוריה
             </ContextMenuItem>
@@ -1112,6 +1137,22 @@ function UnscheduledPanel({ items, categories, onEdit, onDelete, onCollapse }: {
               if (renameTarget) await renameCategory(renameTarget.id, renameValue);
               setRenameTarget(null);
             }}>שמור</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!newJobCat} onOpenChange={(o) => { if (!o) { setNewJobCat(null); setNewJobTitle(""); setNewJobDesc(""); } }}>
+        <DialogContent dir="rtl" className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>קריאה חדשה בקטגוריה "{newJobCat?.name}"</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Input value={newJobTitle} onChange={(e) => setNewJobTitle(e.target.value)} placeholder="כותרת הקריאה" autoFocus />
+            <Textarea value={newJobDesc} onChange={(e) => setNewJobDesc(e.target.value)} placeholder="תיאור (אופציונלי)" rows={2} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNewJobCat(null)}>ביטול</Button>
+            <Button onClick={createUnscheduledJob} disabled={creatingJob}>{creatingJob ? "יוצר..." : "צור"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
