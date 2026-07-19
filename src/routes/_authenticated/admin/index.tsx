@@ -647,13 +647,23 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
           };
           const flush = () => {
             if (!cluster.length) return;
-            // Layer within a cluster by start time: earliest = back (col 0),
-            // latest = front (highest col). All cards share the same column.
+            // Proper side-by-side column assignment: greedy first-fit.
             const ordered = [...cluster].sort((a, b) => a.date.getTime() - b.date.getTime());
-            const total = ordered.length;
-            ordered.forEach((it, idx) => {
-              layout.set(it.kind + it.id, { col: idx, cols: total });
-            });
+            const colsEnd: number[] = [];
+            const cols = new Map<string, number>();
+            for (const it of ordered) {
+              const s = it.date.getTime();
+              const e = (it.end ?? new Date(s + 60 * 60000)).getTime();
+              let placed = -1;
+              for (let c = 0; c < colsEnd.length; c++) {
+                if (colsEnd[c] <= s) { placed = c; break; }
+              }
+              if (placed === -1) { placed = colsEnd.length; colsEnd.push(0); }
+              colsEnd[placed] = e;
+              cols.set(it.kind + it.id, placed);
+            }
+            const total = colsEnd.length;
+            for (const [k, c] of cols) layout.set(k, { col: c, cols: total });
             cluster = [];
             clusterEnd = 0;
           };
@@ -679,7 +689,19 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
                 const raw = e.dataTransfer.getData("application/x-cal-item");
                 if (!raw) return;
                 try {
-                  const parsed = JSON.parse(raw) as { kind: "job" | "project"; id: string };
+                  const parsed = JSON.parse(raw) as { kind: "job" | "project"; id: string; fromCalendar?: boolean };
+                  if (parsed.fromCalendar && parsed.kind === "job") {
+                    const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+                    const y = e.clientY - rect.top;
+                    const totalMin = (END_HOUR - START_HOUR) * 60;
+                    const raw15 = Math.round((y / HOUR_PX) * 60 / 15) * 15;
+                    const minutesFromStart = Math.max(0, Math.min(totalMin - 15, raw15));
+                    const newStart = new Date(d);
+                    newStart.setHours(START_HOUR, 0, 0, 0);
+                    newStart.setMinutes(minutesFromStart);
+                    onMoveJob(parsed.id, newStart);
+                    return;
+                  }
                   onDropOnDay(parsed.kind, parsed.id, d);
                 } catch { /* ignore */ }
               }}
@@ -694,19 +716,21 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
                 const height = (durMin / 60) * HOUR_PX;
                 const color = it.technician_color || (it.kind === "project" ? "#a78bfa" : "#3b82f6");
                 const lay = layout.get(it.kind + it.id) ?? { col: 0, cols: 1 };
-                // Longest-duration card is at the back (col 0, full width).
-                // Shorter cards stack on top, anchored to the left so a strip
-                // of the longer card behind them stays visible on the right.
-                const OFFSET_X = 26; // px right strip revealed per layer
-                const leftPx = 2;
-                const rightPx = 2 + lay.col * OFFSET_X;
+                // Side-by-side columns: each overlapping card gets an equal share.
+                const widthPct = 100 / lay.cols;
+                const leftPct = lay.col * widthPct;
                 const top = baseTop;
                 return (
                   <ContextMenu key={it.kind + it.id}>
                     <ContextMenuTrigger asChild>
                       <div
                         className="absolute group/item"
-                        style={{ top, height, left: `${leftPx}px`, right: `${rightPx}px`, zIndex: 10 + lay.col }}
+                        style={{
+                          top, height,
+                          left: `calc(${leftPct}% + 2px)`,
+                          width: `calc(${widthPct}% - 4px)`,
+                          zIndex: 10 + lay.col,
+                        }}
                         draggable={it.kind === "job"}
                         onDragStart={(e) => {
                           e.dataTransfer.effectAllowed = "move";
