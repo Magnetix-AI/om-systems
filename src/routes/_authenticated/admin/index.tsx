@@ -365,6 +365,7 @@ function AdminMain() {
                 onItemRemove={handleCalendarRemove}
                 onItemReturnToUnscheduled={handleReturnToUnscheduled}
                 onAddOnDay={setNewJobDate}
+                onMoveJob={handleMoveJob}
                 onDropOnDay={(kind, id, date) => {
                   const all = [...items, ...unscheduled];
                   const found = all.find(i => i.kind === kind && i.id === id);
