@@ -148,6 +148,22 @@ function AdminMain() {
     qc.invalidateQueries({ queryKey: ["main-projects"] });
   };
 
+  // Move a job to a new start time (drag within calendar). Preserves duration.
+  const handleMoveJob = async (jobId: string, newStart: Date) => {
+    const { data: job } = await supabase.from("jobs").select("start_time, end_time, scheduled_date").eq("id", jobId).maybeSingle();
+    const prevStart = job?.start_time ? new Date(job.start_time) : (job?.scheduled_date ? new Date(job.scheduled_date) : null);
+    const prevEnd = job?.end_time ? new Date(job.end_time) : null;
+    const durMs = prevStart && prevEnd ? Math.max(15 * 60000, prevEnd.getTime() - prevStart.getTime()) : 60 * 60000;
+    const newEnd = new Date(newStart.getTime() + durMs);
+    const iso = newStart.toISOString();
+    const { error } = await supabase.from("jobs").update({
+      scheduled_date: iso, start_time: iso, end_time: newEnd.toISOString(),
+    }).eq("id", jobId);
+    if (error) return toast.error("שגיאה בהעברה", { description: error.message });
+    toast.success("הקריאה הועברה");
+    qc.invalidateQueries({ queryKey: ["main-jobs"] });
+  };
+
   const range = useMemo(() => getRange(cursor, view), [cursor, view]);
 
   const { data: jobs = [] } = useQuery({
@@ -349,6 +365,7 @@ function AdminMain() {
                 onItemRemove={handleCalendarRemove}
                 onItemReturnToUnscheduled={handleReturnToUnscheduled}
                 onAddOnDay={setNewJobDate}
+                onMoveJob={handleMoveJob}
                 onDropOnDay={(kind, id, date) => {
                   const all = [...items, ...unscheduled];
                   const found = all.find(i => i.kind === kind && i.id === id);
@@ -562,13 +579,14 @@ function MonthGrid({ cursor, selected, items, onSelect, onAddOnDay, onItemClick,
 }
 
 
-function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove, onItemReturnToUnscheduled, onAddOnDay, onDropOnDay }: {
+function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove, onItemReturnToUnscheduled, onAddOnDay, onDropOnDay, onMoveJob }: {
   cursor: Date; selected: Date; items: CalendarItem[]; onSelect: (d: Date) => void;
   onItemClick: (i: CalendarItem) => void;
   onItemRemove: (i: CalendarItem) => void;
   onItemReturnToUnscheduled: (i: CalendarItem) => void;
   onAddOnDay: (d: Date) => void;
   onDropOnDay: (kind: "job" | "project", id: string, date: Date) => void;
+  onMoveJob: (jobId: string, newStart: Date) => void;
 }) {
   const days = getRange(cursor, "week");
   const HOUR_PX = 64;
@@ -578,7 +596,7 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
 
   return (
     <div className="overflow-x-auto">
-      <div className="grid min-w-full gap-x-1" style={{ gridTemplateColumns: "48px repeat(6, minmax(180px, 1fr))" }}>
+      <div className="grid min-w-full gap-x-1" style={{ gridTemplateColumns: "48px repeat(6, minmax(240px, 1fr))" }}>
         {/* Header row */}
         <div />
         {days.map(d => {
@@ -622,20 +640,25 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
           const layout = new Map<string, { col: number; cols: number }>();
           let cluster: typeof sorted = [];
           let clusterEnd = 0;
-          const durOf = (it: typeof sorted[number]) => {
-            const s = it.date.getTime();
-            const e = (it.end ?? new Date(s + 60 * 60000)).getTime();
-            return e - s;
-          };
           const flush = () => {
             if (!cluster.length) return;
-            // Layer within a cluster by start time: earliest = back (col 0),
-            // latest = front (highest col). All cards share the same column.
+            // Proper side-by-side column assignment: greedy first-fit.
             const ordered = [...cluster].sort((a, b) => a.date.getTime() - b.date.getTime());
-            const total = ordered.length;
-            ordered.forEach((it, idx) => {
-              layout.set(it.kind + it.id, { col: idx, cols: total });
-            });
+            const colsEnd: number[] = [];
+            const cols = new Map<string, number>();
+            for (const it of ordered) {
+              const s = it.date.getTime();
+              const e = (it.end ?? new Date(s + 60 * 60000)).getTime();
+              let placed = -1;
+              for (let c = 0; c < colsEnd.length; c++) {
+                if (colsEnd[c] <= s) { placed = c; break; }
+              }
+              if (placed === -1) { placed = colsEnd.length; colsEnd.push(0); }
+              colsEnd[placed] = e;
+              cols.set(it.kind + it.id, placed);
+            }
+            const total = colsEnd.length;
+            for (const [k, c] of cols) layout.set(k, { col: c, cols: total });
             cluster = [];
             clusterEnd = 0;
           };
@@ -661,7 +684,19 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
                 const raw = e.dataTransfer.getData("application/x-cal-item");
                 if (!raw) return;
                 try {
-                  const parsed = JSON.parse(raw) as { kind: "job" | "project"; id: string };
+                  const parsed = JSON.parse(raw) as { kind: "job" | "project"; id: string; fromCalendar?: boolean };
+                  if (parsed.fromCalendar && parsed.kind === "job") {
+                    const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+                    const y = e.clientY - rect.top;
+                    const totalMin = (END_HOUR - START_HOUR) * 60;
+                    const raw15 = Math.round((y / HOUR_PX) * 60 / 15) * 15;
+                    const minutesFromStart = Math.max(0, Math.min(totalMin - 15, raw15));
+                    const newStart = new Date(d);
+                    newStart.setHours(START_HOUR, 0, 0, 0);
+                    newStart.setMinutes(minutesFromStart);
+                    onMoveJob(parsed.id, newStart);
+                    return;
+                  }
                   onDropOnDay(parsed.kind, parsed.id, d);
                 } catch { /* ignore */ }
               }}
@@ -676,19 +711,21 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
                 const height = (durMin / 60) * HOUR_PX;
                 const color = it.technician_color || (it.kind === "project" ? "#a78bfa" : "#3b82f6");
                 const lay = layout.get(it.kind + it.id) ?? { col: 0, cols: 1 };
-                // Longest-duration card is at the back (col 0, full width).
-                // Shorter cards stack on top, anchored to the left so a strip
-                // of the longer card behind them stays visible on the right.
-                const OFFSET_X = 26; // px right strip revealed per layer
-                const leftPx = 2;
-                const rightPx = 2 + lay.col * OFFSET_X;
+                // Side-by-side columns: each overlapping card gets an equal share.
+                const widthPct = 100 / lay.cols;
+                const leftPct = lay.col * widthPct;
                 const top = baseTop;
                 return (
                   <ContextMenu key={it.kind + it.id}>
                     <ContextMenuTrigger asChild>
                       <div
                         className="absolute group/item"
-                        style={{ top, height, left: `${leftPx}px`, right: `${rightPx}px`, zIndex: 10 + lay.col }}
+                        style={{
+                          top, height,
+                          left: `calc(${leftPct}% + 2px)`,
+                          width: `calc(${widthPct}% - 4px)`,
+                          zIndex: 10 + lay.col,
+                        }}
                         draggable={it.kind === "job"}
                         onDragStart={(e) => {
                           e.dataTransfer.effectAllowed = "move";
