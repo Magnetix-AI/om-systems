@@ -148,6 +148,23 @@ function AdminMain() {
     qc.invalidateQueries({ queryKey: ["main-projects"] });
   };
 
+  // Move a job to a new start time (drag within calendar). Preserves duration.
+  const handleMoveJob = async (jobId: string, newStart: Date) => {
+    const job = jobs.find((j: any) => j.id === jobId);
+    if (!job) return;
+    const prevStart = job.start_time ? new Date(job.start_time) : (job.scheduled_date ? new Date(job.scheduled_date) : null);
+    const prevEnd = job.end_time ? new Date(job.end_time) : null;
+    const durMs = prevStart && prevEnd ? Math.max(15 * 60000, prevEnd.getTime() - prevStart.getTime()) : 60 * 60000;
+    const newEnd = new Date(newStart.getTime() + durMs);
+    const iso = newStart.toISOString();
+    const { error } = await supabase.from("jobs").update({
+      scheduled_date: iso, start_time: iso, end_time: newEnd.toISOString(),
+    }).eq("id", jobId);
+    if (error) return toast.error("שגיאה בהעברה", { description: error.message });
+    toast.success("הקריאה הועברה");
+    qc.invalidateQueries({ queryKey: ["main-jobs"] });
+  };
+
   const range = useMemo(() => getRange(cursor, view), [cursor, view]);
 
   const { data: jobs = [] } = useQuery({
