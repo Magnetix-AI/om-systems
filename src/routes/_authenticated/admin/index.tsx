@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -593,6 +593,33 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
   const START_HOUR = 6;
   const END_HOUR = 22;
   const hours = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i);
+  // Per-card horizontal width overrides (in px, applied to `right` offset).
+  // Positive = card narrower on the right side; negative = card wider.
+  const [widthDeltas, setWidthDeltas] = useState<Record<string, number>>(() => {
+    if (typeof window === "undefined") return {};
+    try { return JSON.parse(localStorage.getItem("cal_width_deltas") || "{}"); } catch { return {}; }
+  });
+  const resizeRef = useRef<{ id: string; startX: number; startDelta: number } | null>(null);
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      const r = resizeRef.current;
+      if (!r) return;
+      // In RTL layout the visual right edge is the "start" (right:0). Dragging
+      // rightward (increasing clientX) should extend the card to the right,
+      // which means decreasing the `right` offset.
+      const delta = r.startDelta - (e.clientX - r.startX);
+      setWidthDeltas(prev => ({ ...prev, [r.id]: delta }));
+    };
+    const onUp = () => {
+      if (resizeRef.current) {
+        resizeRef.current = null;
+        try { localStorage.setItem("cal_width_deltas", JSON.stringify(widthDeltas)); } catch { /* ignore */ }
+      }
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+  }, [widthDeltas]);
 
   return (
     <div className="overflow-x-auto">
@@ -715,7 +742,9 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
                 const MAX_STEPS = 4;
                 const step = Math.min(lay.col, MAX_STEPS);
                 const leftPx = 2;
-                const rightPx = 2 + step * OFFSET;
+                const key = it.kind + it.id;
+                const delta = widthDeltas[key] ?? 0;
+                const rightPx = Math.max(-400, Math.min(400, 2 + step * OFFSET + delta));
                 const top = baseTop;
                 return (
                   <ContextMenu key={it.kind + it.id}>
@@ -760,6 +789,26 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
                         >
                           <X className="h-3 w-3" />
                         </button>
+
+                        {/* Right-edge resize handle (RTL: visually on the right side of the card) */}
+                        <div
+                          role="separator"
+                          title="גרור להרחבה/הקטנה"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            resizeRef.current = { id: key, startX: e.clientX, startDelta: delta };
+                          }}
+                          onDoubleClick={(e) => {
+                            e.stopPropagation();
+                            setWidthDeltas(prev => {
+                              const n = { ...prev }; delete n[key];
+                              try { localStorage.setItem("cal_width_deltas", JSON.stringify(n)); } catch { /* ignore */ }
+                              return n;
+                            });
+                          }}
+                          className="absolute top-0 bottom-0 right-0 w-1.5 cursor-ew-resize opacity-0 group-hover/item:opacity-100 bg-primary/40 hover:bg-primary transition"
+                        />
                       </div>
                     </ContextMenuTrigger>
                     <ContextMenuContent>
