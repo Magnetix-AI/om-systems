@@ -850,18 +850,27 @@ function DayGrid({ cursor, items, onItemClick }: {
                 {String(h).padStart(2, "0")}:00
               </div>
               <div className="flex-1 p-1 flex flex-col gap-1">
-                {hourItems.map(it => (
-                  <button
-                    key={it.kind + it.id}
-                    onClick={() => onItemClick(it)}
-                    className={cn(
-                      "text-right text-xs rounded px-2 py-1 hover:opacity-80",
-                      it.kind === "project" ? "bg-accent/40" : "bg-primary/15 text-primary"
-                    )}
-                  >
-                    <span className="font-semibold">{format(it.date, "HH:mm")}</span> · {it.title}
-                  </button>
-                ))}
+                {hourItems.map(it => {
+                  const color = it.technician_color || (it.kind === "project" ? "#a78bfa" : "#3b82f6");
+                  return (
+                    <button
+                      key={it.kind + it.id}
+                      onClick={() => onItemClick(it)}
+                      className="text-right text-xs rounded px-2 py-1 hover:opacity-90 transition text-black flex items-center gap-2"
+                      style={{
+                        background: `linear-gradient(rgba(255,255,255,0.65), rgba(255,255,255,0.65)), ${color}`,
+                        borderRight: `3px solid ${color}`,
+                      }}
+                      title={`${it.title} · ${it.technician_name ?? "ללא טכנאי"}`}
+                    >
+                      <span className="font-semibold">{format(it.date, "HH:mm")}</span>
+                      <span className="truncate">{it.title}</span>
+                      <span className="ms-auto text-[11px] text-black/70 whitespace-nowrap">
+                        {it.technician_name ?? "ללא טכנאי"}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           );
