@@ -593,6 +593,33 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
   const START_HOUR = 6;
   const END_HOUR = 22;
   const hours = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i);
+  // Per-card horizontal width overrides (in px, applied to `right` offset).
+  // Positive = card narrower on the right side; negative = card wider.
+  const [widthDeltas, setWidthDeltas] = useState<Record<string, number>>(() => {
+    if (typeof window === "undefined") return {};
+    try { return JSON.parse(localStorage.getItem("cal_width_deltas") || "{}"); } catch { return {}; }
+  });
+  const resizeRef = useRef<{ id: string; startX: number; startDelta: number } | null>(null);
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      const r = resizeRef.current;
+      if (!r) return;
+      // In RTL layout the visual right edge is the "start" (right:0). Dragging
+      // rightward (increasing clientX) should extend the card to the right,
+      // which means decreasing the `right` offset.
+      const delta = r.startDelta - (e.clientX - r.startX);
+      setWidthDeltas(prev => ({ ...prev, [r.id]: delta }));
+    };
+    const onUp = () => {
+      if (resizeRef.current) {
+        resizeRef.current = null;
+        try { localStorage.setItem("cal_width_deltas", JSON.stringify(widthDeltas)); } catch { /* ignore */ }
+      }
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+  }, [widthDeltas]);
 
   return (
     <div className="overflow-x-auto">
