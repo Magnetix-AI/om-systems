@@ -707,12 +707,15 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
                 const height = (durMin / 60) * HOUR_PX;
                 const color = it.technician_color || (it.kind === "project" ? "#a78bfa" : "#3b82f6");
                 const lay = layout.get(it.kind + it.id) ?? { col: 0, cols: 1 };
-                // Layered (Google Calendar style): earliest = back, later = front.
-                // Each later card offsets ~24px to the right (in RTL that's `right`),
-                // exposing the right edge of the card underneath so all layers remain visible.
-                const OFFSET = 24;
+                // Layered (Google Calendar style): later start = more front.
+                // Cap the horizontal offset so front cards keep enough width
+                // to display their details; extra layers stack at the same
+                // offset but with a higher zIndex.
+                const OFFSET = 20;
+                const MAX_STEPS = 4;
+                const step = Math.min(lay.col, MAX_STEPS);
                 const leftPx = 2;
-                const rightPx = 2 + lay.col * OFFSET;
+                const rightPx = 2 + step * OFFSET;
                 const top = baseTop;
                 return (
                   <ContextMenu key={it.kind + it.id}>
