@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,7 +21,6 @@ export const Route = createFileRoute("/auth")({
 });
 
 function AuthPage() {
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -70,14 +69,16 @@ function AuthPage() {
         toast.error("שגיאה בהתחברות מנהל", { description: result.error });
         return;
       }
-      const { error } = await supabase.auth.setSession({
+      const { data: sessionData, error } = await supabase.auth.setSession({
         access_token: result.access_token,
         refresh_token: result.refresh_token,
       });
       if (error) throw new Error(error.message);
+      const user = sessionData.user ?? (await supabase.auth.getUser()).data.user;
+      if (!user) throw new Error("לא נמצאה התחברות פעילה");
       toast.success("התחברת כמנהל");
       setAdminOpen(false);
-      window.location.replace(await getPostLoginPath(result.user.id));
+      window.location.replace(await getPostLoginPath(user.id));
     } catch (err: any) {
       toast.error("שגיאה בהתחברות מנהל", { description: err?.message });
     } finally {
