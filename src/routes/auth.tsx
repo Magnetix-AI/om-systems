@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,17 +11,26 @@ import { Cable, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { adminLogin } from "@/lib/admin-auth.functions";
 
+const ADMIN_SESSION_KEY = "admin_session_started_at";
+const LAST_ACTIVITY_KEY = "fieldops.lastActivity";
+
 export const Route = createFileRoute("/auth")({
   ssr: false,
   beforeLoad: async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) throw redirect({ to: "/" });
+    if (user) {
+      const { data: roleRow } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      throw redirect({ to: roleRow?.role === "admin" ? "/admin" : "/tech" });
+    }
   },
   component: AuthPage,
 });
 
 function AuthPage() {
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -32,18 +41,32 @@ function AuthPage() {
   const [adminLoading, setAdminLoading] = useState(false);
   const adminLoginFn = useServerFn(adminLogin);
 
+  const getPostLoginPath = async (userId: string) => {
+    const { data: roleRow } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .maybeSingle();
+    return roleRow?.role === "admin" ? "/admin" : "/tech";
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     const id = email.trim();
     const loginEmail = id.includes("@") ? id : `${id.toLowerCase()}@om-tech.local`;
-    const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
-    setLoading(false);
-    if (error) {
-      return toast.error("שגיאה בהתחברות", { description: error.message });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
+      if (error) throw error;
+      const user = data.user ?? (await supabase.auth.getUser()).data.user;
+      if (!user) throw new Error("לא נמצאה התחברות פעילה");
+      localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
+      toast.success("התחברת בהצלחה");
+      window.location.replace(await getPostLoginPath(user.id));
+    } catch (err: any) {
+      setLoading(false);
+      toast.error("שגיאה בהתחברות", { description: err?.message });
     }
-    toast.success("התחברת בהצלחה");
-    window.location.assign("/");
   };
 
   const handleAdminLogin = async (e: React.FormEvent) => {
@@ -57,14 +80,18 @@ function AuthPage() {
         toast.error("שגיאה בהתחברות מנהל", { description: result.error });
         return;
       }
-      const { error } = await supabase.auth.setSession({
+      const { data: sessionData, error } = await supabase.auth.setSession({
         access_token: result.access_token,
         refresh_token: result.refresh_token,
       });
       if (error) throw new Error(error.message);
+      const user = sessionData.user ?? (await supabase.auth.getUser()).data.user;
+      if (!user) throw new Error("לא נמצאה התחברות פעילה");
+      localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
+      localStorage.setItem(ADMIN_SESSION_KEY, String(Date.now()));
       toast.success("התחברת כמנהל");
       setAdminOpen(false);
-      window.location.assign("/");
+      window.location.replace(await getPostLoginPath(user.id));
     } catch (err: any) {
       toast.error("שגיאה בהתחברות מנהל", { description: err?.message });
     } finally {
