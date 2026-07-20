@@ -32,18 +32,31 @@ function AuthPage() {
   const [adminLoading, setAdminLoading] = useState(false);
   const adminLoginFn = useServerFn(adminLogin);
 
+  const getPostLoginPath = async (userId: string) => {
+    const { data: roleRow } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .maybeSingle();
+    return roleRow?.role === "admin" ? "/admin" : "/tech";
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     const id = email.trim();
     const loginEmail = id.includes("@") ? id : `${id.toLowerCase()}@om-tech.local`;
-    const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
-    setLoading(false);
-    if (error) {
-      return toast.error("שגיאה בהתחברות", { description: error.message });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
+      if (error) throw error;
+      const user = data.user ?? (await supabase.auth.getUser()).data.user;
+      if (!user) throw new Error("לא נמצאה התחברות פעילה");
+      toast.success("התחברת בהצלחה");
+      window.location.replace(await getPostLoginPath(user.id));
+    } catch (err: any) {
+      setLoading(false);
+      toast.error("שגיאה בהתחברות", { description: err?.message });
     }
-    toast.success("התחברת בהצלחה");
-    window.location.assign("/");
   };
 
   const handleAdminLogin = async (e: React.FormEvent) => {
@@ -64,7 +77,7 @@ function AuthPage() {
       if (error) throw new Error(error.message);
       toast.success("התחברת כמנהל");
       setAdminOpen(false);
-      window.location.assign("/");
+      window.location.replace(await getPostLoginPath(result.user.id));
     } catch (err: any) {
       toast.error("שגיאה בהתחברות מנהל", { description: err?.message });
     } finally {
