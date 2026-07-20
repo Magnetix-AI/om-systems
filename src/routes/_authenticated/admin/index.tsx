@@ -1206,8 +1206,8 @@ function DayDetailsPanel({ date, items, onEdit, onDelete, onCollapse }: {
   onCollapse: () => void;
 }) {
   return (
-    <Card>
-      <CardHeader className="pb-3">
+    <Card className="sticky top-4 h-[calc(100vh-6rem)] flex flex-col">
+      <CardHeader className="pb-3 shrink-0">
         <CardTitle className="text-base flex items-center gap-2">
           <button type="button" onClick={onCollapse} title="מזער" className="h-6 w-6 rounded hover:bg-muted flex items-center justify-center shrink-0">
             <ChevronsLeft className="h-4 w-4" />
@@ -1217,7 +1217,7 @@ function DayDetailsPanel({ date, items, onEdit, onDelete, onCollapse }: {
         </CardTitle>
         <p className="text-xs text-muted-foreground">{items.length} פריטים</p>
       </CardHeader>
-      <CardContent className="space-y-2 max-h-[calc(100vh-260px)] overflow-y-auto">
+      <CardContent className="space-y-2 flex-1 min-h-0 overflow-y-auto">
         {items.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-6">אין פריטים ביום זה</p>
         ) : items.map(it => (
