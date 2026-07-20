@@ -642,23 +642,19 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
           let clusterEnd = 0;
           const flush = () => {
             if (!cluster.length) return;
-            // Proper side-by-side column assignment: greedy first-fit.
-            const ordered = [...cluster].sort((a, b) => a.date.getTime() - b.date.getTime());
-            const colsEnd: number[] = [];
-            const cols = new Map<string, number>();
-            for (const it of ordered) {
-              const s = it.date.getTime();
-              const e = (it.end ?? new Date(s + 60 * 60000)).getTime();
-              let placed = -1;
-              for (let c = 0; c < colsEnd.length; c++) {
-                if (colsEnd[c] <= s) { placed = c; break; }
-              }
-              if (placed === -1) { placed = colsEnd.length; colsEnd.push(0); }
-              colsEnd[placed] = e;
-              cols.set(it.kind + it.id, placed);
-            }
-            const total = colsEnd.length;
-            for (const [k, c] of cols) layout.set(k, { col: c, cols: total });
+            // Layering: later start = more front. Same start: earlier end (shorter) = more front.
+            const ordered = [...cluster].sort((a, b) => {
+              const sa = a.date.getTime();
+              const sb = b.date.getTime();
+              if (sa !== sb) return sa - sb; // earlier start goes to back
+              const ea = (a.end ?? new Date(sa + 60 * 60000)).getTime();
+              const eb = (b.end ?? new Date(sb + 60 * 60000)).getTime();
+              return eb - ea; // longer (later end) goes to back; shorter to front
+            });
+            const total = ordered.length;
+            ordered.forEach((it, idx) => {
+              layout.set(it.kind + it.id, { col: idx, cols: total });
+            });
             cluster = [];
             clusterEnd = 0;
           };
