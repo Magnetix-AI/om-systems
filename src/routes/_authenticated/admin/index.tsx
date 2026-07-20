@@ -789,6 +789,26 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
                         >
                           <X className="h-3 w-3" />
                         </button>
+
+                        {/* Right-edge resize handle (RTL: visually on the right side of the card) */}
+                        <div
+                          role="separator"
+                          title="גרור להרחבה/הקטנה"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            resizeRef.current = { id: key, startX: e.clientX, startDelta: delta };
+                          }}
+                          onDoubleClick={(e) => {
+                            e.stopPropagation();
+                            setWidthDeltas(prev => {
+                              const n = { ...prev }; delete n[key];
+                              try { localStorage.setItem("cal_width_deltas", JSON.stringify(n)); } catch { /* ignore */ }
+                              return n;
+                            });
+                          }}
+                          className="absolute top-0 bottom-0 right-0 w-1.5 cursor-ew-resize opacity-0 group-hover/item:opacity-100 bg-primary/40 hover:bg-primary transition"
+                        />
                       </div>
                     </ContextMenuTrigger>
                     <ContextMenuContent>
