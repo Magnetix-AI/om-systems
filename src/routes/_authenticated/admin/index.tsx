@@ -742,7 +742,9 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
                 const MAX_STEPS = 4;
                 const step = Math.min(lay.col, MAX_STEPS);
                 const leftPx = 2;
-                const rightPx = 2 + step * OFFSET;
+                const key = it.kind + it.id;
+                const delta = widthDeltas[key] ?? 0;
+                const rightPx = Math.max(-400, Math.min(400, 2 + step * OFFSET + delta));
                 const top = baseTop;
                 return (
                   <ContextMenu key={it.kind + it.id}>
