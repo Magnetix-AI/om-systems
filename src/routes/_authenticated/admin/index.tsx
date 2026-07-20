@@ -837,44 +837,108 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
 function DayGrid({ cursor, items, onItemClick }: {
   cursor: Date; items: CalendarItem[]; onItemClick: (i: CalendarItem) => void;
 }) {
-  const hours = Array.from({ length: 24 }, (_, i) => i);
+  const HOUR_PX = 64;
+  const START_HOUR = 6;
+  const END_HOUR = 22;
+  const hours = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i);
+
+  const dayItems = items;
+  const sorted = [...dayItems].sort((a, b) => a.date.getTime() - b.date.getTime());
+  const layout = new Map<string, { col: number; cols: number }>();
+  let cluster: typeof sorted = [];
+  let clusterEnd = 0;
+  const flush = () => {
+    if (!cluster.length) return;
+    const ordered = [...cluster].sort((a, b) => {
+      const sa = a.date.getTime();
+      const sb = b.date.getTime();
+      if (sa !== sb) return sa - sb;
+      const ea = (a.end ?? new Date(sa + 60 * 60000)).getTime();
+      const eb = (b.end ?? new Date(sb + 60 * 60000)).getTime();
+      return eb - ea;
+    });
+    const total = ordered.length;
+    ordered.forEach((it, idx) => {
+      layout.set(it.kind + it.id, { col: idx, cols: total });
+    });
+    cluster = [];
+    clusterEnd = 0;
+  };
+  for (const it of sorted) {
+    const s = it.date.getTime();
+    const e = (it.end ?? new Date(s + 60 * 60000)).getTime();
+    if (cluster.length && s >= clusterEnd) flush();
+    cluster.push(it);
+    clusterEnd = Math.max(clusterEnd, e);
+  }
+  flush();
+
   return (
     <div>
       <div className="text-center font-bold text-lg mb-3">{format(cursor, "EEEE, d בMMMM", { locale: he })}</div>
-      <div className="border rounded-lg divide-y max-h-[600px] overflow-y-auto">
-        {hours.map(h => {
-          const hourItems = items.filter(i => i.date.getHours() === h);
-          return (
-            <div key={h} className="flex min-h-[48px]">
-              <div className="w-16 shrink-0 text-xs text-muted-foreground p-2 text-left border-l">
-                {String(h).padStart(2, "0")}:00
-              </div>
-              <div className="flex-1 p-1 flex flex-col gap-1">
-                {hourItems.map(it => {
-                  const color = it.technician_color || (it.kind === "project" ? "#a78bfa" : "#3b82f6");
-                  return (
-                    <button
-                      key={it.kind + it.id}
-                      onClick={() => onItemClick(it)}
-                      className="text-right text-xs rounded px-2 py-1 hover:opacity-90 transition text-black flex items-center gap-2"
-                      style={{
-                        background: `linear-gradient(rgba(255,255,255,0.65), rgba(255,255,255,0.65)), ${color}`,
-                        borderRight: `3px solid ${color}`,
-                      }}
-                      title={`${it.title} · ${it.technician_name ?? "ללא טכנאי"}`}
-                    >
-                      <span className="font-semibold">{format(it.date, "HH:mm")}</span>
-                      <span className="truncate">{it.title}</span>
-                      <span className="ms-auto text-[11px] text-black/70 whitespace-nowrap">
-                        {it.technician_name ?? "ללא טכנאי"}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+      <div className="grid w-full gap-x-1" style={{ gridTemplateColumns: "48px minmax(0, 1fr)" }}>
+        <div className="relative border-l">
+          {hours.map(h => (
+            <div key={h} style={{ height: HOUR_PX }} className="text-[10px] text-muted-foreground text-left pl-1 border-b">
+              {String(h).padStart(2, "0")}:00
             </div>
-          );
-        })}
+          ))}
+        </div>
+        <div
+          className={cn(
+            "relative border rounded-md bg-secondary/20",
+            isToday(cursor) && "bg-primary/5 border-primary/30",
+          )}
+          style={{ height: HOUR_PX * hours.length }}
+        >
+          {hours.map(h => (
+            <div key={h} style={{ height: HOUR_PX }} className="border-b border-dashed border-border/40" />
+          ))}
+          {dayItems.map(it => {
+            const startMin = it.date.getHours() * 60 + it.date.getMinutes() - START_HOUR * 60;
+            const durMin = it.end ? Math.max(30, (it.end.getTime() - it.date.getTime()) / 60000) : 60;
+            const top = Math.max(0, (startMin / 60) * HOUR_PX);
+            const height = (durMin / 60) * HOUR_PX;
+            const color = it.technician_color || (it.kind === "project" ? "#a78bfa" : "#3b82f6");
+            const lay = layout.get(it.kind + it.id) ?? { col: 0, cols: 1 };
+            const OFFSET = 40;
+            const MAX_STEPS = 6;
+            const step = Math.min(lay.col, MAX_STEPS);
+            const leftPx = 2;
+            const rightPx = 2 + step * OFFSET;
+            return (
+              <div
+                key={it.kind + it.id}
+                className="absolute group/item hover:z-50"
+                style={{
+                  top, height,
+                  left: `${leftPx}px`,
+                  right: `${rightPx}px`,
+                  zIndex: 10 + lay.col,
+                }}
+              >
+                <button
+                  onClick={() => onItemClick(it)}
+                  className="w-full h-full rounded text-right text-[11px] text-black px-2 py-1 shadow-sm overflow-hidden hover:shadow-md transition flex flex-col gap-0.5"
+                  style={{
+                    background: `linear-gradient(rgba(255,255,255,0.62), rgba(255,255,255,0.62)), ${color}`,
+                    borderRight: `3px solid ${color}`,
+                    boxShadow: "0 2px 8px rgba(15, 23, 42, 0.14)",
+                  }}
+                  title={`${it.title} · ${it.technician_name ?? "ללא טכנאי"}${it.client_name ? " · " + it.client_name : ""}`}
+                >
+                  <div className="font-semibold leading-tight text-black break-words whitespace-normal">
+                    {it.technician_name ? `${it.technician_name} - ${it.title}` : it.title}
+                  </div>
+                  <div className="leading-tight text-black/80">
+                    {format(it.date, "HH:mm")}{it.end ? `–${format(it.end, "HH:mm")}` : ""}
+                    {it.client_name ? ` · ${it.client_name}` : ""}
+                  </div>
+                </button>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
