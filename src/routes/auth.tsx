@@ -43,7 +43,7 @@ function AuthPage() {
       return toast.error("שגיאה בהתחברות", { description: error.message });
     }
     toast.success("התחברת בהצלחה");
-    navigate({ to: "/" });
+    window.location.assign("/");
   };
 
   const handleAdminLogin = async (e: React.FormEvent) => {
@@ -64,7 +64,7 @@ function AuthPage() {
       if (error) throw new Error(error.message);
       toast.success("התחברת כמנהל");
       setAdminOpen(false);
-      navigate({ to: "/" });
+      window.location.assign("/");
     } catch (err: any) {
       toast.error("שגיאה בהתחברות מנהל", { description: err?.message });
     } finally {
