@@ -15,7 +15,14 @@ export const Route = createFileRoute("/auth")({
   ssr: false,
   beforeLoad: async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) throw redirect({ to: "/" });
+    if (user) {
+      const { data: roleRow } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      throw redirect({ to: roleRow?.role === "admin" ? "/admin" : "/tech" });
+    }
   },
   component: AuthPage,
 });
