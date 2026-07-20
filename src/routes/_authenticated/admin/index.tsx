@@ -711,19 +711,22 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
                 const height = (durMin / 60) * HOUR_PX;
                 const color = it.technician_color || (it.kind === "project" ? "#a78bfa" : "#3b82f6");
                 const lay = layout.get(it.kind + it.id) ?? { col: 0, cols: 1 };
-                // Side-by-side columns: each overlapping card gets an equal share.
-                const widthPct = 100 / lay.cols;
-                const leftPct = lay.col * widthPct;
+                // Layered (Google Calendar style): earliest = back, later = front.
+                // Each later card offsets ~24px to the right (in RTL that's `right`),
+                // exposing the right edge of the card underneath so all layers remain visible.
+                const OFFSET = 24;
+                const leftPx = 2;
+                const rightPx = 2 + lay.col * OFFSET;
                 const top = baseTop;
                 return (
                   <ContextMenu key={it.kind + it.id}>
                     <ContextMenuTrigger asChild>
                       <div
-                        className="absolute group/item"
+                        className="absolute group/item hover:z-50"
                         style={{
                           top, height,
-                          left: `calc(${leftPct}% + 2px)`,
-                          width: `calc(${widthPct}% - 4px)`,
+                          left: `${leftPx}px`,
+                          right: `${rightPx}px`,
                           zIndex: 10 + lay.col,
                         }}
                         draggable={it.kind === "job"}
