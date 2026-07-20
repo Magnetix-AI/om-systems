@@ -43,7 +43,7 @@ function AuthPage() {
       return toast.error("שגיאה בהתחברות", { description: error.message });
     }
     toast.success("התחברת בהצלחה");
-    navigate({ to: "/" });
+    window.location.assign("/");
   };
 
   const handleAdminLogin = async (e: React.FormEvent) => {
