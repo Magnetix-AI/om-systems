@@ -155,9 +155,10 @@ function TechDashboard() {
 
 function DayTimeGrid({ date, jobs }: { date: Date; jobs: Job[] }) {
   const positioned = useMemo<PositionedJob[]>(() => {
-    const dayJobs = (jobs as Job[]).filter(j =>
-      j.scheduled_date && isSameDay(new Date(j.scheduled_date), date)
-    );
+    const dayJobs = (jobs as Job[]).filter(j => {
+      const ref = j.scheduled_date ?? j.start_time;
+      return ref && isSameDay(new Date(ref), date);
+    });
     const events = dayJobs.map((j) => {
       const start = j.start_time ? new Date(j.start_time) : (j.scheduled_date ? new Date(j.scheduled_date) : new Date(date));
       const end = j.end_time ? new Date(j.end_time) : new Date(start.getTime() + 60 * 60000);
