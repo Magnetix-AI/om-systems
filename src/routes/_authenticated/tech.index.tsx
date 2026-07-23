@@ -43,23 +43,37 @@ type PositionedJob = Job & {
 function TechDashboard() {
   const { data: user } = useCurrentUser();
   const userId = user?.id;
+  const qc = useQueryClient();
   const [view, setView] = useState<ViewMode>("day");
   const [cursor, setCursor] = useState(new Date());
 
   const { data: jobs = [], isLoading } = useQuery({
     queryKey: ["tech-jobs", userId],
     enabled: !!userId,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchOnMount: "always",
     queryFn: async () => {
       const { data, error } = await supabase
         .from("jobs")
         .select("id, title, description, status, scheduled_date, start_time, end_time, completed_at, client:clients(name, address)")
         .eq("technician_id", userId!)
-        .not("scheduled_date", "is", null)
-        .order("scheduled_date", { ascending: true });
+        .or("scheduled_date.not.is.null,start_time.not.is.null")
+        .order("scheduled_date", { ascending: true, nullsFirst: false });
       if (error) throw error;
       return data ?? [];
     },
   });
+
+  useEffect(() => {
+    if (!userId) return;
+    const ch = supabase
+      .channel(`tech-jobs-${userId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "jobs", filter: `technician_id=eq.${userId}` },
+        () => qc.invalidateQueries({ queryKey: ["tech-jobs", userId] }))
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [userId, qc]);
 
   const days = useMemo(() => {
     if (view === "day") return [cursor];
