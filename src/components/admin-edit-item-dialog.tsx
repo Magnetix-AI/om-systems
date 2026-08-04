@@ -187,14 +187,14 @@ export function AdminEditItemDialog({
 
   return (
     <Dialog open={!!item} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent dir="rtl" className="max-w-lg">
+      <DialogContent dir="rtl" className="max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>עריכת {item.kind === "project" ? "פרוייקט" : "קריאה"}</DialogTitle>
         </DialogHeader>
         {loading ? (
           <div className="py-8 text-center text-sm text-muted-foreground">טוען...</div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-3 flex-1 overflow-y-auto pl-1 -ml-1">
             <div className="space-y-1.5">
               <Label>כותרת</Label>
               <Input value={title} onChange={e => setTitle(e.target.value)} />
@@ -284,7 +284,7 @@ export function AdminEditItemDialog({
             </div>
           </div>
         )}
-        <DialogFooter>
+        <DialogFooter className="shrink-0 border-t pt-3">
           <Button variant="outline" onClick={onClose}>ביטול</Button>
           <Button onClick={handleSave} disabled={saving || loading}>{saving ? "שומר..." : "שמור"}</Button>
         </DialogFooter>
