@@ -1100,7 +1100,7 @@ function UnscheduledPanel({ items, categories, onEdit, onDelete, onCollapse }: {
   const renderNode = (cat: JobCategory, depth = 0) => {
     const kids = childrenOf.get(cat.id) ?? [];
     const own = buckets.get(cat.id) ?? [];
-    const isOpen = expanded[cat.id] ?? true;
+    const isOpen = expanded[cat.id] ?? false;
     const hasContent = kids.length > 0 || own.length > 0;
     return (
       <div key={cat.id}>
