@@ -14,6 +14,7 @@ import {
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ProjectPicker } from "@/components/project-picker";
+import { AttachmentsManager } from "@/components/attachments-manager";
 
 export type EditItem = {
   kind: "job" | "project";
@@ -275,6 +276,12 @@ export function AdminEditItemDialog({
                 </Select>
               </div>
             )}
+            <div className="space-y-1.5 border rounded-md p-2">
+              <Label className="font-semibold text-sm">תמונות וקבצים</Label>
+              {item.kind === "job"
+                ? <AttachmentsManager jobId={item.id} />
+                : <AttachmentsManager projectId={item.id} />}
+            </div>
           </div>
         )}
         <DialogFooter>
