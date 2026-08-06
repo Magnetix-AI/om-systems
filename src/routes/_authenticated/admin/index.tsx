@@ -741,7 +741,10 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
                 const OFFSET = 20;
                 const MAX_STEPS = 4;
                 const step = Math.min(lay.col, MAX_STEPS);
-                const leftPx = 2;
+                // Each new layer is slightly narrower than the one behind it,
+                // so a newer card never fully covers the previous one.
+                const SHRINK = 8;
+                const leftPx = 2 + Math.min(lay.col, 10) * SHRINK;
                 const key = it.kind + it.id;
                 const delta = widthDeltas[key] ?? 0;
                 const rightPx = Math.max(-400, Math.min(400, 2 + step * OFFSET + delta));
@@ -904,7 +907,7 @@ function DayGrid({ cursor, items, onItemClick }: {
             const OFFSET = 40;
             const MAX_STEPS = 6;
             const step = Math.min(lay.col, MAX_STEPS);
-            const leftPx = 2;
+            const leftPx = 2 + Math.min(lay.col, 10) * 10;
             const rightPx = 2 + step * OFFSET;
             return (
               <div
