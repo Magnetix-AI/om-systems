@@ -735,19 +735,15 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
                 const color = it.technician_color || (it.kind === "project" ? "#a78bfa" : "#3b82f6");
                 const lay = layout.get(it.kind + it.id) ?? { col: 0, cols: 1 };
                 // Layered (Google Calendar style): later start = more front.
-                // Cap the horizontal offset so front cards keep enough width
-                // to display their details; extra layers stack at the same
-                // offset but with a higher zIndex.
-                const OFFSET = 20;
-                const MAX_STEPS = 4;
-                const step = Math.min(lay.col, MAX_STEPS);
-                // Each new layer is slightly narrower than the one behind it,
-                // so a newer card never fully covers the previous one.
-                const SHRINK = 8;
-                const leftPx = 2 + Math.min(lay.col, 10) * SHRINK;
+                // All cards are pinned to the LEFT edge; every new layer ends
+                // a bit further left on the right side, so a strip of every
+                // card behind it always stays visible (nothing is covered).
+                const STEP_PCT = 9;
+                const MAX_PCT = 63;
+                const rightPct = Math.min(lay.col * STEP_PCT, MAX_PCT);
+                const leftPx = 2;
                 const key = it.kind + it.id;
                 const delta = widthDeltas[key] ?? 0;
-                const rightPx = Math.max(-400, Math.min(400, 2 + step * OFFSET + delta));
                 const top = baseTop;
                 return (
                   <ContextMenu key={it.kind + it.id}>
@@ -757,7 +753,7 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
                         style={{
                           top, height,
                           left: `${leftPx}px`,
-                          right: `${rightPx}px`,
+                          right: `calc(2px + ${rightPct}% + ${delta}px)`,
                           zIndex: 10 + lay.col,
                         }}
                         draggable={it.kind === "job"}
