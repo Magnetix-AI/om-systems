@@ -882,6 +882,17 @@ function DayGrid({ cursor, items, onItemClick }: {
     clusterEnd = Math.max(clusterEnd, e);
   }
   flush();
+  // Global stacking order: earlier start = further back.
+  const zRank = new Map<string, number>();
+  [...dayItems]
+    .sort((a, b) => {
+      const sa = a.date.getTime(), sb = b.date.getTime();
+      if (sa !== sb) return sa - sb;
+      const ea = (a.end ?? new Date(sa + 3600000)).getTime();
+      const eb = (b.end ?? new Date(sb + 3600000)).getTime();
+      return eb - ea;
+    })
+    .forEach((it, idx) => zRank.set(it.kind + it.id, idx));
 
   return (
     <div>
