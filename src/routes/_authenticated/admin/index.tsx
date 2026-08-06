@@ -765,7 +765,7 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
                           top, height,
                           left: `${leftPx}px`,
                           right: `calc(2px + ${rightPct}% + ${delta}px)`,
-                          zIndex: 10 + lay.col,
+                          zIndex: 10 + (zRank.get(key) ?? lay.col),
                         }}
                         draggable={it.kind === "job"}
                         onDragStart={(e) => {
