@@ -693,6 +693,17 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
             clusterEnd = Math.max(clusterEnd, e);
           }
           flush();
+          // Global stacking order for the whole day: earlier start = further back.
+          const zRank = new Map<string, number>();
+          [...dayItems]
+            .sort((a, b) => {
+              const sa = a.date.getTime(), sb = b.date.getTime();
+              if (sa !== sb) return sa - sb;
+              const ea = (a.end ?? new Date(sa + 3600000)).getTime();
+              const eb = (b.end ?? new Date(sb + 3600000)).getTime();
+              return eb - ea;
+            })
+            .forEach((it, idx) => zRank.set(it.kind + it.id, idx));
           return (
             <div
               key={d.toISOString()}
@@ -754,7 +765,7 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
                           top, height,
                           left: `${leftPx}px`,
                           right: `calc(2px + ${rightPct}% + ${delta}px)`,
-                          zIndex: 10 + lay.col,
+                          zIndex: 10 + (zRank.get(key) ?? lay.col),
                         }}
                         draggable={it.kind === "job"}
                         onDragStart={(e) => {
@@ -871,6 +882,17 @@ function DayGrid({ cursor, items, onItemClick }: {
     clusterEnd = Math.max(clusterEnd, e);
   }
   flush();
+  // Global stacking order: earlier start = further back.
+  const zRank = new Map<string, number>();
+  [...dayItems]
+    .sort((a, b) => {
+      const sa = a.date.getTime(), sb = b.date.getTime();
+      if (sa !== sb) return sa - sb;
+      const ea = (a.end ?? new Date(sa + 3600000)).getTime();
+      const eb = (b.end ?? new Date(sb + 3600000)).getTime();
+      return eb - ea;
+    })
+    .forEach((it, idx) => zRank.set(it.kind + it.id, idx));
 
   return (
     <div>
@@ -910,7 +932,7 @@ function DayGrid({ cursor, items, onItemClick }: {
                   top, height,
                   left: `${leftPx}px`,
                   right: `calc(2px + ${rightPct}%)`,
-                  zIndex: 10 + lay.col,
+                  zIndex: 10 + (zRank.get(it.kind + it.id) ?? lay.col),
                 }}
               >
                 <button
