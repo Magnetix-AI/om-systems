@@ -932,7 +932,7 @@ function DayGrid({ cursor, items, onItemClick }: {
                   top, height,
                   left: `${leftPx}px`,
                   right: `calc(2px + ${rightPct}%)`,
-                  zIndex: 10 + lay.col,
+                  zIndex: 10 + (zRank.get(it.kind + it.id) ?? lay.col),
                 }}
               >
                 <button
