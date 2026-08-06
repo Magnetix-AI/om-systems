@@ -907,7 +907,7 @@ function DayGrid({ cursor, items, onItemClick }: {
             const OFFSET = 40;
             const MAX_STEPS = 6;
             const step = Math.min(lay.col, MAX_STEPS);
-            const leftPx = 2;
+            const leftPx = 2 + Math.min(lay.col, 10) * 10;
             const rightPx = 2 + step * OFFSET;
             return (
               <div
