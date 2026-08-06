@@ -900,11 +900,8 @@ function DayGrid({ cursor, items, onItemClick }: {
             const height = (durMin / 60) * HOUR_PX;
             const color = it.technician_color || (it.kind === "project" ? "#a78bfa" : "#3b82f6");
             const lay = layout.get(it.kind + it.id) ?? { col: 0, cols: 1 };
-            const OFFSET = 40;
-            const MAX_STEPS = 6;
-            const step = Math.min(lay.col, MAX_STEPS);
-            const leftPx = 2 + Math.min(lay.col, 10) * 10;
-            const rightPx = 2 + step * OFFSET;
+            const rightPct = Math.min(lay.col * 6, 60);
+            const leftPx = 2;
             return (
               <div
                 key={it.kind + it.id}
@@ -912,7 +909,7 @@ function DayGrid({ cursor, items, onItemClick }: {
                 style={{
                   top, height,
                   left: `${leftPx}px`,
-                  right: `${rightPx}px`,
+                  right: `calc(2px + ${rightPct}%)`,
                   zIndex: 10 + lay.col,
                 }}
               >
