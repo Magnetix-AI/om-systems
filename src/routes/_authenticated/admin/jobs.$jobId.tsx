@@ -56,7 +56,7 @@ export const Route = createFileRoute("/_authenticated/admin/jobs/$jobId")({
   component: AdminJobDetail,
 });
 
-export default function AdminJobDetail() {
+function AdminJobDetail() {
   const { jobId } = Route.useParams();
   const router = useRouter();
   const qc = useQueryClient();
