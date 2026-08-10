@@ -289,7 +289,7 @@ function JobDetail() {
                 {job.client.address && <div className="text-muted-foreground">{job.client.address}</div>}
               </div>
             )}
-            {((job as any).site_contact_name || (job as any).site_contact_phone) && (
+            {((job as any).site_contact_name || (job as any).site_contact_phone || (job as any).site_contact_address) && (
               <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 space-y-1">
                 <div className="font-semibold">איש קשר בשטח</div>
                 {(job as any).site_contact_name && <div>{(job as any).site_contact_name}</div>}
@@ -303,8 +303,12 @@ function JobDetail() {
                     {(job as any).site_contact_phone}
                   </a>
                 )}
+                {(job as any).site_contact_address && (
+                  <div className="text-muted-foreground">כתובת: {(job as any).site_contact_address}</div>
+                )}
               </div>
             )}
+
           </CardContent>
         </Card>
         <AttachmentsGallery jobId={jobId} />
