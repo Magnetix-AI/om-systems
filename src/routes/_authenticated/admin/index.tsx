@@ -76,10 +76,26 @@ type JobCategory = {
   sort_order: number;
 };
 
+const CAL_STATE_KEY = "admin-calendar-state";
+const readCalState = () => {
+  if (typeof window === "undefined") return null;
+  try { return JSON.parse(sessionStorage.getItem(CAL_STATE_KEY) || "null"); } catch { return null; }
+};
+
 function AdminMain() {
-  const [view, setView] = useState<ViewMode>("week");
-  const [cursor, setCursor] = useState(new Date());
-  const [selected, setSelected] = useState<Date>(new Date());
+  const saved = typeof window !== "undefined" ? readCalState() : null;
+  const [view, setView] = useState<ViewMode>(saved?.view ?? "week");
+  const [cursor, setCursor] = useState(saved?.cursor ? new Date(saved.cursor) : new Date());
+  const [selected, setSelected] = useState<Date>(saved?.selected ? new Date(saved.selected) : new Date());
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(CAL_STATE_KEY, JSON.stringify({
+        view, cursor: cursor.toISOString(), selected: selected.toISOString(),
+      }));
+    } catch { /* ignore */ }
+  }, [view, cursor, selected]);
+
   const [editItem, setEditItem] = useState<CalendarItem | null>(null);
   const [viewJobId, setViewJobId] = useState<string | null>(null);
   const [toDelete, setToDelete] = useState<CalendarItem | null>(null);
