@@ -1045,8 +1045,13 @@ function UnscheduledPanel({ items, categories, onEdit, onDelete, onCollapse }: {
   }, [items, defaultCat]);
 
   const childrenOf = useMemo(() => {
+    const sorted = [...categories].sort((a, b) => {
+      if (a.is_default && !b.is_default) return -1;
+      if (!a.is_default && b.is_default) return 1;
+      return (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.name.localeCompare(b.name);
+    });
     const m = new Map<string | null, JobCategory[]>();
-    for (const c of categories) {
+    for (const c of sorted) {
       const k = c.parent_id;
       if (!m.has(k)) m.set(k, []);
       m.get(k)!.push(c);
