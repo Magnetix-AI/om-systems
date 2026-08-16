@@ -1246,6 +1246,44 @@ function UnscheduledPanel({ items, categories, onEdit, onDelete, onCollapse }: {
 
   const roots = childrenOf.get(null) ?? [];
 
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const autoScrollRef = useRef<{ raf: number | null; speed: number }>({ raf: null, speed: 0 });
+
+  const stopAutoScroll = () => {
+    if (autoScrollRef.current.raf !== null) cancelAnimationFrame(autoScrollRef.current.raf);
+    autoScrollRef.current.raf = null;
+    autoScrollRef.current.speed = 0;
+  };
+
+  const stepAutoScroll = () => {
+    const el = scrollRef.current;
+    const st = autoScrollRef.current;
+    if (!el || !st.speed) { stopAutoScroll(); return; }
+    el.scrollTop += st.speed;
+    st.raf = requestAnimationFrame(stepAutoScroll);
+  };
+
+  const handleAutoScroll = (clientY: number) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const zone = 60;
+    let speed = 0;
+    if (clientY < rect.top + zone) {
+      speed = -Math.ceil(((rect.top + zone - clientY) / zone) * 14);
+    } else if (clientY > rect.bottom - zone) {
+      speed = Math.ceil(((clientY - (rect.bottom - zone)) / zone) * 14);
+    }
+    autoScrollRef.current.speed = speed;
+    if (speed && autoScrollRef.current.raf === null) {
+      autoScrollRef.current.raf = requestAnimationFrame(stepAutoScroll);
+    } else if (!speed) {
+      stopAutoScroll();
+    }
+  };
+
+  useEffect(() => stopAutoScroll, []);
+
   return (
     <Card className="bg-warning/5 border-warning/30">
       <CardHeader className="pb-3">
@@ -1259,13 +1297,21 @@ function UnscheduledPanel({ items, categories, onEdit, onDelete, onCollapse }: {
         </CardTitle>
       </CardHeader>
       <CardContent
+        ref={scrollRef}
         className="space-y-1 max-h-[calc(100vh-260px)] overflow-y-auto"
-        onDragOver={(e) => { if (e.dataTransfer.types.includes("application/x-cat")) e.preventDefault(); }}
+        onDragOver={(e) => {
+          handleAutoScroll(e.clientY);
+          if (e.dataTransfer.types.includes("application/x-cat")) e.preventDefault();
+        }}
+        onDragLeave={stopAutoScroll}
+        onDragEnd={stopAutoScroll}
         onDrop={(e) => {
+          stopAutoScroll();
           const catId = e.dataTransfer.getData("application/x-cat");
           if (catId) { e.preventDefault(); reparent(catId, null); }
         }}
       >
+
         <div className="flex items-center justify-between mb-2">
           <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => { setAddParent("root"); setAddName(""); }}>
             <Plus className="h-3 w-3 ml-1" /> קטגוריה חדשה
