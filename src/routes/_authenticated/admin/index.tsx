@@ -606,7 +606,7 @@ function WeekGrid({ cursor, selected, items, onSelect, onItemClick, onItemRemove
 }) {
   const days = getRange(cursor, "week");
   const HOUR_PX = 64;
-  const START_HOUR = 6;
+  const START_HOUR = 4;
   const END_HOUR = 22;
   const hours = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i);
   // Per-card horizontal width overrides (in px, applied to `right` offset).
@@ -864,7 +864,7 @@ function DayGrid({ cursor, items, onItemClick }: {
   cursor: Date; items: CalendarItem[]; onItemClick: (i: CalendarItem) => void;
 }) {
   const HOUR_PX = 64;
-  const START_HOUR = 6;
+  const START_HOUR = 4;
   const END_HOUR = 22;
   const hours = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i);
 
