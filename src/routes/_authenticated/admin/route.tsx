@@ -5,6 +5,7 @@ import { AppShell } from "@/components/app-shell";
 import { Briefcase, Package, FileText, Users, FolderKanban, History, LayoutDashboard, UserCog } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { isMobileDevice } from "@/lib/device";
 
 const ADMIN_SESSION_KEY = "admin_session_started_at";
 const ADMIN_MAX_MS = 4 * 60 * 60 * 1000; // 4 hours
