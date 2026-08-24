@@ -38,6 +38,7 @@ export function AppShell({ children, nav }: { children?: ReactNode; nav?: ReactN
                 {user?.role === "admin" ? "מנהל" : "טכנאי"}
               </div>
             </div>
+            <PushNotificationsToggle />
             <Button variant="ghost" size="icon" onClick={handleLogout} title="התנתק">
               <LogOut className="h-4 w-4" />
             </Button>
