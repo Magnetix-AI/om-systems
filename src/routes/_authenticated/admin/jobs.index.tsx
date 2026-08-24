@@ -135,9 +135,18 @@ function AdminJobs() {
         <StatCard label="הושלמו" value={counts.completed} tone="success" />
       </div>
 
+      <div className="flex flex-wrap gap-2">
+        <Button variant={showUnscheduled ? "outline" : "default"} size="sm" onClick={() => setShowUnscheduled(false)}>
+          כל הקריאות
+        </Button>
+        <Button variant={showUnscheduled ? "default" : "outline"} size="sm" onClick={() => setShowUnscheduled(true)}>
+          קריאות לא מתואמות ({jobs.filter(isUnscheduledJob).length})
+        </Button>
+      </div>
+
       <Card>
         <CardHeader className="space-y-3">
-          <CardTitle>כל הקריאות</CardTitle>
+          <CardTitle>{showUnscheduled ? "קריאות לא מתואמות" : "כל הקריאות"}</CardTitle>
           <div className="flex flex-wrap items-end gap-3">
             <div className="space-y-1">
               <Label className="text-xs">מיון תאריך</Label>
