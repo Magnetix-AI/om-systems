@@ -12,8 +12,8 @@ export const savePushSubscription = createServerFn({ method: "POST" })
     return input;
   })
   .handler(async ({ data, context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.from("push_subscriptions").upsert(
+    // Use the caller's own authenticated client so RLS (user_id = auth.uid()) is satisfied.
+    const { error } = await context.supabase.from("push_subscriptions").upsert(
       {
         user_id: context.userId,
         endpoint: data.endpoint,
@@ -34,8 +34,7 @@ export const deletePushSubscription = createServerFn({ method: "POST" })
     return input;
   })
   .handler(async ({ data, context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await supabaseAdmin
+    await context.supabase
       .from("push_subscriptions")
       .delete()
       .eq("endpoint", data.endpoint)
