@@ -278,6 +278,7 @@ function AdminMain() {
           status: p.status,
           completed_at: null,
           category_id: null,
+          created_at: p.created_at,
         };
       });
     return [...jobItems, ...projItems];
