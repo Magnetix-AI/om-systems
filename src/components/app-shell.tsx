@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { Cable, LogOut } from "lucide-react";
 import type { ReactNode } from "react";
+import { PushNotificationsToggle } from "@/components/push-notifications-toggle";
+import { unregisterPushOnLogout } from "@/hooks/use-push-notifications";
 
 export function AppShell({ children, nav }: { children?: ReactNode; nav?: ReactNode }) {
   const { data: user } = useCurrentUser();
@@ -12,6 +14,7 @@ export function AppShell({ children, nav }: { children?: ReactNode; nav?: ReactN
 
   const handleLogout = async () => {
     try { localStorage.removeItem("admin_session_started_at"); } catch {}
+    await unregisterPushOnLogout();
     await supabase.auth.signOut();
     router.invalidate();
     navigate({ to: "/auth" });
