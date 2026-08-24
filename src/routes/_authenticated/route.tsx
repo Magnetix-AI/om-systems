@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, redirect, useNavigate } from "@tanstack/react-
 import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { isMobileDevice } from "@/lib/device";
 
 const INACTIVITY_MS = 60 * 60 * 1000; // 1 hour
 const KEY = "fieldops.lastActivity";
@@ -11,8 +12,9 @@ export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async () => {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) throw redirect({ to: "/auth" });
-    // Inactivity check on navigation/load
+    // Inactivity check on navigation/load (skipped on mobile — stays signed in)
     try {
+      if (isMobileDevice()) { localStorage.setItem(KEY, String(Date.now())); return { user: data.user }; }
       const last = Number(localStorage.getItem(KEY) || 0);
       if (last && Date.now() - last > INACTIVITY_MS) {
         await supabase.auth.signOut();
@@ -33,6 +35,7 @@ function AuthedLayout() {
   const timerRef = useRef<number | null>(null);
 
   useEffect(() => {
+    if (isMobileDevice()) return; // mobile devices stay signed in
     const bump = () => {
       localStorage.setItem(KEY, String(Date.now()));
       schedule();
