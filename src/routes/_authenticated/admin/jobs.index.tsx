@@ -71,10 +71,13 @@ function AdminJobs() {
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
   }, [jobs]);
 
+  const isUnscheduledJob = (j: any) => !j.scheduled_date || !j.technician_id;
+
   const filteredJobs = useMemo(() => {
     const fromMs = dateFrom ? new Date(dateFrom).getTime() : null;
     const toMs = dateTo ? new Date(dateTo).getTime() + 24 * 60 * 60 * 1000 : null;
     const rows = jobs.filter((j: any) => {
+      if (showUnscheduled && !isUnscheduledJob(j)) return false;
       if (technicianFilter !== "__all") {
         if (technicianFilter === "__none" ? j.technician_id : j.technician_id !== technicianFilter) return false;
       }
@@ -87,11 +90,17 @@ function AdminJobs() {
       return true;
     });
     return rows.sort((a: any, b: any) => {
-      const ta = new Date(a.created_at).getTime();
-      const tb = new Date(b.created_at).getTime();
+      const ta = a.scheduled_date ? new Date(a.scheduled_date).getTime() : null;
+      const tb = b.scheduled_date ? new Date(b.scheduled_date).getTime() : null;
+      if (ta === null && tb === null) {
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
+      if (ta === null) return 1;
+      if (tb === null) return -1;
       return sortDir === "desc" ? tb - ta : ta - tb;
     });
-  }, [jobs, technicianFilter, clientFilter, dateFrom, dateTo, sortDir]);
+  }, [jobs, technicianFilter, clientFilter, dateFrom, dateTo, sortDir, showUnscheduled]);
+
 
   const counts = {
     open: filteredJobs.filter((j: any) => j.status === "open").length,
