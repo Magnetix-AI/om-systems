@@ -63,6 +63,7 @@ type CalendarItem = {
   status: string;
   completed_at?: string | null;
   category_id: string | null;
+  created_at: string;
 };
 
 const isCompletedCalendarJob = (it: CalendarItem) =>
