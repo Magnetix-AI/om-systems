@@ -20,8 +20,8 @@ export const Route = createFileRoute("/api/public/hooks/job-notify")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const apikey = request.headers.get("apikey");
-        if (!apikey || apikey !== process.env["SUPABASE_ANON_KEY"]) {
+        const { isAuthorizedHookRequest } = await import("@/lib/hook-auth.server");
+        if (!isAuthorizedHookRequest(request)) {
           return new Response(JSON.stringify({ error: "unauthorized" }), {
             status: 401,
             headers: { "content-type": "application/json" },
