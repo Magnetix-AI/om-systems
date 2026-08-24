@@ -87,8 +87,8 @@ function AdminJobs() {
       return true;
     });
     return rows.sort((a: any, b: any) => {
-      const ta = new Date(a.scheduled_date ?? a.created_at).getTime();
-      const tb = new Date(b.scheduled_date ?? b.created_at).getTime();
+      const ta = new Date(a.created_at).getTime();
+      const tb = new Date(b.created_at).getTime();
       return sortDir === "desc" ? tb - ta : ta - tb;
     });
   }, [jobs, technicianFilter, clientFilter, dateFrom, dateTo, sortDir]);
