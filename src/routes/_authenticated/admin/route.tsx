@@ -43,6 +43,7 @@ function AdminLayout() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (isMobileDevice()) return; // mobile stays signed in
     const raw = localStorage.getItem(ADMIN_SESSION_KEY);
     const started = raw ? parseInt(raw, 10) : Date.now();
     if (!raw) localStorage.setItem(ADMIN_SESSION_KEY, String(started));
