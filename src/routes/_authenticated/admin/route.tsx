@@ -18,7 +18,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
       .from("user_roles").select("role").eq("user_id", user.id).maybeSingle();
     if (roleRow?.role !== "admin") throw redirect({ to: "/tech" });
 
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && !isMobileDevice()) {
       const raw = localStorage.getItem(ADMIN_SESSION_KEY);
       const started = raw ? parseInt(raw, 10) : NaN;
       if (!raw || Number.isNaN(started)) {
@@ -28,6 +28,9 @@ export const Route = createFileRoute("/_authenticated/admin")({
         await supabase.auth.signOut();
         throw redirect({ to: "/auth" });
       }
+    } else if (typeof window !== "undefined") {
+      // Mobile: never auto-expire
+      localStorage.removeItem(ADMIN_SESSION_KEY);
     }
   },
   component: AdminLayout,
