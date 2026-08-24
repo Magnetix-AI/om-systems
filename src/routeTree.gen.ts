@@ -24,6 +24,7 @@ import { Route as AuthenticatedAdminHistoryRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminProjectsIndexRouteImport } from './routes/_authenticated/admin/projects.index'
 import { Route as AuthenticatedAdminJobsIndexRouteImport } from './routes/_authenticated/admin/jobs.index'
 import { Route as AuthenticatedAdminClientsIndexRouteImport } from './routes/_authenticated/admin/clients.index'
+import { Route as ApiPublicHooksUnscheduledReminderRouteImport } from './routes/api/public/hooks/unscheduled-reminder'
 import { Route as ApiPublicHooksJobNotifyRouteImport } from './routes/api/public/hooks/job-notify'
 import { Route as AuthenticatedTechProjectsProjectIdRouteImport } from './routes/_authenticated/tech.projects.$projectId'
 import { Route as AuthenticatedAdminProjectsProjectIdRouteImport } from './routes/_authenticated/admin/projects.$projectId'
@@ -112,6 +113,12 @@ const AuthenticatedAdminClientsIndexRoute =
     path: '/clients/',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const ApiPublicHooksUnscheduledReminderRoute =
+  ApiPublicHooksUnscheduledReminderRouteImport.update({
+    id: '/api/public/hooks/unscheduled-reminder',
+    path: '/api/public/hooks/unscheduled-reminder',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksJobNotifyRoute = ApiPublicHooksJobNotifyRouteImport.update({
   id: '/api/public/hooks/job-notify',
   path: '/api/public/hooks/job-notify',
@@ -159,6 +166,7 @@ export interface FileRoutesByFullPath {
   '/admin/projects/$projectId': typeof AuthenticatedAdminProjectsProjectIdRoute
   '/tech/projects/$projectId': typeof AuthenticatedTechProjectsProjectIdRoute
   '/api/public/hooks/job-notify': typeof ApiPublicHooksJobNotifyRoute
+  '/api/public/hooks/unscheduled-reminder': typeof ApiPublicHooksUnscheduledReminderRoute
   '/admin/clients/': typeof AuthenticatedAdminClientsIndexRoute
   '/admin/jobs/': typeof AuthenticatedAdminJobsIndexRoute
   '/admin/projects/': typeof AuthenticatedAdminProjectsIndexRoute
@@ -179,6 +187,7 @@ export interface FileRoutesByTo {
   '/admin/projects/$projectId': typeof AuthenticatedAdminProjectsProjectIdRoute
   '/tech/projects/$projectId': typeof AuthenticatedTechProjectsProjectIdRoute
   '/api/public/hooks/job-notify': typeof ApiPublicHooksJobNotifyRoute
+  '/api/public/hooks/unscheduled-reminder': typeof ApiPublicHooksUnscheduledReminderRoute
   '/admin/clients': typeof AuthenticatedAdminClientsIndexRoute
   '/admin/jobs': typeof AuthenticatedAdminJobsIndexRoute
   '/admin/projects': typeof AuthenticatedAdminProjectsIndexRoute
@@ -202,6 +211,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/projects/$projectId': typeof AuthenticatedAdminProjectsProjectIdRoute
   '/_authenticated/tech/projects/$projectId': typeof AuthenticatedTechProjectsProjectIdRoute
   '/api/public/hooks/job-notify': typeof ApiPublicHooksJobNotifyRoute
+  '/api/public/hooks/unscheduled-reminder': typeof ApiPublicHooksUnscheduledReminderRoute
   '/_authenticated/admin/clients/': typeof AuthenticatedAdminClientsIndexRoute
   '/_authenticated/admin/jobs/': typeof AuthenticatedAdminJobsIndexRoute
   '/_authenticated/admin/projects/': typeof AuthenticatedAdminProjectsIndexRoute
@@ -225,6 +235,7 @@ export interface FileRouteTypes {
     | '/admin/projects/$projectId'
     | '/tech/projects/$projectId'
     | '/api/public/hooks/job-notify'
+    | '/api/public/hooks/unscheduled-reminder'
     | '/admin/clients/'
     | '/admin/jobs/'
     | '/admin/projects/'
@@ -245,6 +256,7 @@ export interface FileRouteTypes {
     | '/admin/projects/$projectId'
     | '/tech/projects/$projectId'
     | '/api/public/hooks/job-notify'
+    | '/api/public/hooks/unscheduled-reminder'
     | '/admin/clients'
     | '/admin/jobs'
     | '/admin/projects'
@@ -267,6 +279,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/projects/$projectId'
     | '/_authenticated/tech/projects/$projectId'
     | '/api/public/hooks/job-notify'
+    | '/api/public/hooks/unscheduled-reminder'
     | '/_authenticated/admin/clients/'
     | '/_authenticated/admin/jobs/'
     | '/_authenticated/admin/projects/'
@@ -277,6 +290,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ApiPublicHooksJobNotifyRoute: typeof ApiPublicHooksJobNotifyRoute
+  ApiPublicHooksUnscheduledReminderRoute: typeof ApiPublicHooksUnscheduledReminderRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -386,6 +400,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminClientsIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/api/public/hooks/unscheduled-reminder': {
+      id: '/api/public/hooks/unscheduled-reminder'
+      path: '/api/public/hooks/unscheduled-reminder'
+      fullPath: '/api/public/hooks/unscheduled-reminder'
+      preLoaderRoute: typeof ApiPublicHooksUnscheduledReminderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/job-notify': {
       id: '/api/public/hooks/job-notify'
       path: '/api/public/hooks/job-notify'
@@ -485,6 +506,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ApiPublicHooksJobNotifyRoute: ApiPublicHooksJobNotifyRoute,
+  ApiPublicHooksUnscheduledReminderRoute:
+    ApiPublicHooksUnscheduledReminderRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
