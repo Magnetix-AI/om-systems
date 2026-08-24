@@ -1045,6 +1045,9 @@ function UnscheduledPanel({ items, categories, onEdit, onDelete, onCollapse }: {
       if (!m.has(k)) m.set(k, []);
       m.get(k)!.push(it);
     }
+    for (const arr of m.values()) {
+      arr.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }
     return m;
   }, [items, defaultCat]);
 
