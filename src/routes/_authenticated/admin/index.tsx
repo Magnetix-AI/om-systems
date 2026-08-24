@@ -63,6 +63,7 @@ type CalendarItem = {
   status: string;
   completed_at?: string | null;
   category_id: string | null;
+  created_at: string;
 };
 
 const isCompletedCalendarJob = (it: CalendarItem) =>
@@ -187,7 +188,7 @@ function AdminMain() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("jobs")
-        .select("id, title, description, status, completed_at, scheduled_date, start_time, end_time, technician_id, category_id, client:clients(name, address)")
+        .select("id, title, description, status, completed_at, created_at, scheduled_date, start_time, end_time, technician_id, category_id, client:clients(name, address)")
         .order("scheduled_date", { ascending: true });
       if (error) throw error;
       return data ?? [];
@@ -199,7 +200,7 @@ function AdminMain() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("id, title, description, status, start_date, technician_id, client:clients(name, address)")
+        .select("id, title, description, status, start_date, created_at, technician_id, client:clients(name, address)")
         .order("start_date", { ascending: true });
       if (error) throw error;
       return data ?? [];
@@ -255,6 +256,7 @@ function AdminMain() {
           status: j.status,
           completed_at: j.completed_at ?? null,
           category_id: j.category_id ?? null,
+          created_at: j.created_at,
         };
       });
     const projItems = (projects as any[])
@@ -276,6 +278,7 @@ function AdminMain() {
           status: p.status,
           completed_at: null,
           category_id: null,
+          created_at: p.created_at,
         };
       });
     return [...jobItems, ...projItems];
@@ -301,6 +304,7 @@ function AdminMain() {
           status: j.status,
           completed_at: j.completed_at ?? null,
           category_id: j.category_id ?? null,
+          created_at: j.created_at,
         };
       });
   }, [jobs, techMap]);
@@ -1040,6 +1044,9 @@ function UnscheduledPanel({ items, categories, onEdit, onDelete, onCollapse }: {
       const k = it.category_id ?? defaultCat?.id ?? "uncat";
       if (!m.has(k)) m.set(k, []);
       m.get(k)!.push(it);
+    }
+    for (const arr of m.values()) {
+      arr.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     }
     return m;
   }, [items, defaultCat]);
