@@ -97,7 +97,7 @@ export function usePushNotifications() {
       });
 
       setState("on");
-      await sendTestPush({ data: undefined } as never).catch(() => undefined);
+      await sendTestPush().catch(() => undefined);
       return { ok: true };
     } catch (err) {
       console.error(err);
