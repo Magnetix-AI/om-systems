@@ -40,6 +40,7 @@ function AdminJobs() {
   const [clientFilter, setClientFilter] = useState<string>("__all");
   const [dateFrom, setDateFrom] = useState<string>("");
   const [dateTo, setDateTo] = useState<string>("");
+  const [showUnscheduled, setShowUnscheduled] = useState(false);
 
   const { data: jobs = [] } = useQuery({
     queryKey: ["admin-jobs"],
