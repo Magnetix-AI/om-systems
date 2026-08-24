@@ -1,0 +1,11 @@
+{
+  "name": "O.M Systems LTD",
+  "short_name": "O.M Systems",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0f172a",
+  "dir": "rtl",
+  "lang": "he"
+}
