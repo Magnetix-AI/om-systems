@@ -256,6 +256,7 @@ function AdminMain() {
           status: j.status,
           completed_at: j.completed_at ?? null,
           category_id: j.category_id ?? null,
+          created_at: j.created_at,
         };
       });
     const projItems = (projects as any[])
