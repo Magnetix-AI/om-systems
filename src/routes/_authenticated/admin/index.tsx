@@ -200,7 +200,7 @@ function AdminMain() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("id, title, description, status, start_date, technician_id, client:clients(name, address)")
+        .select("id, title, description, status, start_date, created_at, technician_id, client:clients(name, address)")
         .order("start_date", { ascending: true });
       if (error) throw error;
       return data ?? [];
