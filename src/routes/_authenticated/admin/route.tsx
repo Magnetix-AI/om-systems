@@ -81,7 +81,9 @@ function AdminLayout() {
                 key={t.to} to={t.to}
                 className={cn(
                   "px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 transition-colors",
-                  active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary"
+                  active
+                    ? "bg-header-hover text-header-foreground"
+                    : "text-header-muted hover:bg-header-hover hover:text-header-foreground"
                 )}
               >
                 <t.icon className="h-4 w-4" /> {t.label}
@@ -89,22 +91,24 @@ function AdminLayout() {
             );
           })}
         </nav>
+
       }
     >
-      <div className="md:hidden border-b bg-card">
+      <div className="md:hidden border-b border-header-border bg-header">
         <div className="flex overflow-x-auto px-2">
           {tabs.map(t => {
             const active = pathname === t.to;
             return (
               <Link key={t.to} to={t.to}
                 className={cn("px-3 py-3 text-sm whitespace-nowrap border-b-2",
-                  active ? "border-primary text-primary font-medium" : "border-transparent text-muted-foreground")}>
+                  active ? "border-header-foreground text-header-foreground font-medium" : "border-transparent text-header-muted")}>
                 {t.label}
               </Link>
             );
           })}
         </div>
       </div>
+
       <Outlet />
     </AppShell>
   );
