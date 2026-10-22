@@ -38,11 +38,23 @@ function AdminProducts() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [search, setSearch] = useState("");
-  const [selectedCat, setSelectedCat] = useState<string>(ALL);
+  const [selectedCat, setSelectedCatRaw] = useState<string>(ALL);
+  const [selectedMfr, setSelectedMfr] = useState<string | null>(null);
+  const setSelectedCat = (id: string) => { setSelectedCatRaw(id); setSelectedMfr(null); };
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["admin-products"],
-    queryFn: async () => (await supabase.from("products").select("*").order("name")).data ?? [],
+    queryFn: async () => {
+      const all: any[] = [];
+      for (let from = 0; ; from += 1000) {
+        const { data, error } = await supabase.from("products").select("*")
+          .eq("is_active", true).order("name").range(from, from + 999);
+        if (error) throw error;
+        all.push(...(data ?? []));
+        if (!data || data.length < 1000) break;
+      }
+      return all;
+    },
   });
 
   const { data: categories = [] } = useQuery<ProductCategory[]>({
@@ -87,11 +99,20 @@ function AdminProducts() {
       list = list.filter(p =>
         p.name.toLowerCase().includes(q) ||
         p.sku?.toLowerCase().includes(q) ||
+        p.model?.toLowerCase().includes(q) ||
         p.barcode?.includes(search),
       );
     }
     return list;
   }, [products, selectedCat, search, descendants]);
+
+  const isLeaf = selectedCat !== ALL && selectedCat !== UNCAT && !(childrenOf.get(selectedCat)?.length);
+  const manufacturers = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const p of filtered) { const k = p.manufacturer || "כללי"; m.set(k, (m.get(k) ?? 0) + 1); }
+    return [...m.entries()].sort((a, b) => a[0] === "כללי" ? 1 : b[0] === "כללי" ? -1 : a[0].localeCompare(b[0]));
+  }, [filtered]);
+  const visible = isLeaf && selectedMfr ? filtered.filter(p => (p.manufacturer || "כללי") === selectedMfr) : filtered;
 
   const productCountByCat = useMemo(() => {
     const m = new Map<string | null, number>();
