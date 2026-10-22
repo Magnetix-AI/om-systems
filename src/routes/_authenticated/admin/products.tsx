@@ -171,14 +171,26 @@ function AdminProducts() {
                 {selectedCat === ALL ? "כל המוצרים" :
                  selectedCat === UNCAT ? "ללא קטגוריה" :
                  categories.find(c => c.id === selectedCat)?.name ?? "מוצרים"}
-                {" "}({filtered.length})
+                {isLeaf && selectedMfr ? ` / ${selectedMfr}` : ""}
+                {" "}({visible.length})
               </CardTitle>
-              <Input placeholder="חפש לפי שם / מק״ט / ברקוד" value={search} onChange={e => setSearch(e.target.value)} className="max-w-xs" />
+              <Input placeholder="חפש לפי שם / דגם / מק״ט" value={search} onChange={e => setSearch(e.target.value)} className="max-w-xs" />
             </div>
           </CardHeader>
           <CardContent>
+            {isLeaf && manufacturers.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="text-sm text-muted-foreground self-center">יצרן:</span>
+                <Button size="sm" variant={selectedMfr === null ? "default" : "outline"} onClick={() => setSelectedMfr(null)}>הכל</Button>
+                {manufacturers.map(([m, n]) => (
+                  <Button key={m} size="sm" variant={selectedMfr === m ? "default" : "outline"} onClick={() => setSelectedMfr(m)}>
+                    {m} <span className="opacity-60 mr-1">({n})</span>
+                  </Button>
+                ))}
+              </div>
+            )}
             {isLoading ? <p className="text-center py-8 text-muted-foreground">טוען...</p>
-            : filtered.length === 0 ? (
+            : visible.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground flex flex-col items-center gap-2">
                 <Package className="h-8 w-8 opacity-40" /><p>אין מוצרים</p>
               </div>
@@ -187,17 +199,16 @@ function AdminProducts() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="text-right">שם המוצר</TableHead>
-                    <TableHead className="text-right">קטגוריה</TableHead>
+                    <TableHead className="text-right">דגם</TableHead>
                     <TableHead className="text-right">מק״ט</TableHead>
-                    <TableHead className="text-right">ברקוד</TableHead>
-                    <TableHead className="text-right">יחידה</TableHead>
+                    {!isLeaf && <TableHead className="text-right">קטגוריה</TableHead>}
+                    {!(isLeaf && selectedMfr) && <TableHead className="text-right">יצרן</TableHead>}
                     <TableHead className="text-right">מחיר</TableHead>
-                    <TableHead className="text-right">סטטוס</TableHead>
                     <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((p: any) => {
+                  {visible.slice(0, 500).map((p: any) => {
                     const cat = categories.find(c => c.id === p.category_id);
                     return (
                       <TableRow
@@ -210,16 +221,11 @@ function AdminProducts() {
                         className="cursor-grab active:cursor-grabbing"
                       >
                         <TableCell className="font-medium">{p.name}</TableCell>
-                        <TableCell className="text-muted-foreground">{cat?.name ?? p.category ?? "—"}</TableCell>
-                        <TableCell dir="ltr" className="text-sm">{p.sku ?? "—"}</TableCell>
-                        <TableCell dir="ltr" className="text-sm">{p.barcode ?? "—"}</TableCell>
-                        <TableCell>{p.unit}</TableCell>
+                        <TableCell dir="ltr" className="text-sm text-right">{p.model ?? ""}</TableCell>
+                        <TableCell dir="ltr" className="text-sm text-right">{p.sku ?? ""}</TableCell>
+                        {!isLeaf && <TableCell className="text-muted-foreground">{cat?.name ?? p.category ?? "—"}</TableCell>}
+                        {!(isLeaf && selectedMfr) && <TableCell className="text-muted-foreground">{p.manufacturer || "כללי"}</TableCell>}
                         <TableCell className="font-semibold">₪{Number(p.price).toFixed(2)}</TableCell>
-                        <TableCell>
-                          {p.is_active
-                            ? <Badge variant="outline" className="bg-success/10 text-success border-success/30">פעיל</Badge>
-                            : <Badge variant="outline">מושבת</Badge>}
-                        </TableCell>
                         <TableCell>
                           <div className="flex gap-1">
                             <Button variant="ghost" size="icon" onClick={() => { setEditing(p); setOpen(true); }}>
