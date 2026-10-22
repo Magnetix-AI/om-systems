@@ -12,6 +12,7 @@ import { Trash2, Plus, ArrowRight, CheckCircle2, Search, Mic, MicOff, Phone } fr
 import { toast } from "sonner";
 import { AttachmentsManager } from "@/components/attachments-manager";
 import { AttachmentsGallery } from "@/components/attachments-gallery";
+import { TechEquipmentPicker, useTechProducts } from "@/components/tech-equipment-picker";
 
 const APP_TIME_ZONE = "Asia/Jerusalem";
 
@@ -93,7 +94,7 @@ function JobDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("jobs")
-        .select("*, client:clients(*), items:job_items(id, product_id, quantity, unit_price, product:products(name, price, unit))")
+        .select("*, client:clients(*), items:job_items(id, product_id, quantity, unit_price, product:products(name, unit))")
         .eq("id", jobId).maybeSingle();
       if (error) throw error;
       return data;
@@ -168,7 +169,7 @@ function JobDetail() {
     try {
       const rows = products
         .filter((p: any) => (quantities[p.id] || 0) > 0)
-        .map((p: any) => ({ job_id: job.id, product_id: p.id, quantity: quantities[p.id], unit_price: Number(p.price) }));
+        .map((p: any) => ({ job_id: job.id, product_id: p.id, quantity: quantities[p.id], unit_price: 0 }));
       if (rows.length) {
         const { error: itemsErr } = await supabase.from("job_items").insert(rows);
         if (itemsErr) throw itemsErr;
