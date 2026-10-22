@@ -208,7 +208,7 @@ function AdminProducts() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {visible.slice(0, 500).map((p: any) => {
+                  {visible.map((p: any) => {
                     const cat = categories.find(c => c.id === p.category_id);
                     return (
                       <TableRow
