@@ -585,6 +585,8 @@ function ProductDialog({ product, categories, defaultCategoryId, onClose }: {
   const [name, setName] = useState(product?.name ?? "");
   const [sku, setSku] = useState(product?.sku ?? "");
   const [barcode, setBarcode] = useState(product?.barcode ?? "");
+  const [manufacturer, setManufacturer] = useState(product?.manufacturer ?? "");
+  const [model, setModel] = useState(product?.model ?? "");
   const [categoryId, setCategoryId] = useState<string | null>(product?.category_id ?? defaultCategoryId ?? null);
   const [unit, setUnit] = useState(product?.unit ?? "יח׳");
   const [price, setPrice] = useState(String(product?.price ?? "0"));
@@ -603,6 +605,8 @@ function ProductDialog({ product, categories, defaultCategoryId, onClose }: {
       name,
       sku: sku || null,
       barcode: barcode || null,
+      manufacturer: manufacturer.trim() || "כללי",
+      model: model.trim() || null,
       category_id: categoryId,
       category: categoryId ? categories.find(c => c.id === categoryId)?.name ?? null : null,
       unit,
@@ -631,6 +635,14 @@ function ProductDialog({ product, categories, defaultCategoryId, onClose }: {
           <div className="space-y-1.5">
             <Label>מק״ט (SKU)</Label>
             <Input value={sku} onChange={e => setSku(e.target.value)} dir="ltr" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>דגם</Label>
+            <Input value={model} onChange={e => setModel(e.target.value)} dir="ltr" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>יצרן</Label>
+            <Input value={manufacturer} onChange={e => setManufacturer(e.target.value)} placeholder="כללי" />
           </div>
           <div className="space-y-1.5">
             <Label>ברקוד</Label>
