@@ -38,11 +38,23 @@ function AdminProducts() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [search, setSearch] = useState("");
-  const [selectedCat, setSelectedCat] = useState<string>(ALL);
+  const [selectedCat, setSelectedCatRaw] = useState<string>(ALL);
+  const [selectedMfr, setSelectedMfr] = useState<string | null>(null);
+  const setSelectedCat = (id: string) => { setSelectedCatRaw(id); setSelectedMfr(null); };
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["admin-products"],
-    queryFn: async () => (await supabase.from("products").select("*").order("name")).data ?? [],
+    queryFn: async () => {
+      const all: any[] = [];
+      for (let from = 0; ; from += 1000) {
+        const { data, error } = await supabase.from("products").select("*")
+          .eq("is_active", true).order("name").range(from, from + 999);
+        if (error) throw error;
+        all.push(...(data ?? []));
+        if (!data || data.length < 1000) break;
+      }
+      return all;
+    },
   });
 
   const { data: categories = [] } = useQuery<ProductCategory[]>({
@@ -87,11 +99,20 @@ function AdminProducts() {
       list = list.filter(p =>
         p.name.toLowerCase().includes(q) ||
         p.sku?.toLowerCase().includes(q) ||
+        p.model?.toLowerCase().includes(q) ||
         p.barcode?.includes(search),
       );
     }
     return list;
   }, [products, selectedCat, search, descendants]);
+
+  const isLeaf = selectedCat !== ALL && selectedCat !== UNCAT && !(childrenOf.get(selectedCat)?.length);
+  const manufacturers = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const p of filtered) { const k = p.manufacturer || "כללי"; m.set(k, (m.get(k) ?? 0) + 1); }
+    return [...m.entries()].sort((a, b) => a[0] === "כללי" ? 1 : b[0] === "כללי" ? -1 : a[0].localeCompare(b[0]));
+  }, [filtered]);
+  const visible = isLeaf && selectedMfr ? filtered.filter(p => (p.manufacturer || "כללי") === selectedMfr) : filtered;
 
   const productCountByCat = useMemo(() => {
     const m = new Map<string | null, number>();
@@ -150,14 +171,26 @@ function AdminProducts() {
                 {selectedCat === ALL ? "כל המוצרים" :
                  selectedCat === UNCAT ? "ללא קטגוריה" :
                  categories.find(c => c.id === selectedCat)?.name ?? "מוצרים"}
-                {" "}({filtered.length})
+                {isLeaf && selectedMfr ? ` / ${selectedMfr}` : ""}
+                {" "}({visible.length})
               </CardTitle>
-              <Input placeholder="חפש לפי שם / מק״ט / ברקוד" value={search} onChange={e => setSearch(e.target.value)} className="max-w-xs" />
+              <Input placeholder="חפש לפי שם / דגם / מק״ט" value={search} onChange={e => setSearch(e.target.value)} className="max-w-xs" />
             </div>
           </CardHeader>
           <CardContent>
+            {isLeaf && manufacturers.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="text-sm text-muted-foreground self-center">יצרן:</span>
+                <Button size="sm" variant={selectedMfr === null ? "default" : "outline"} onClick={() => setSelectedMfr(null)}>הכל</Button>
+                {manufacturers.map(([m, n]) => (
+                  <Button key={m} size="sm" variant={selectedMfr === m ? "default" : "outline"} onClick={() => setSelectedMfr(m)}>
+                    {m} <span className="opacity-60 mr-1">({n})</span>
+                  </Button>
+                ))}
+              </div>
+            )}
             {isLoading ? <p className="text-center py-8 text-muted-foreground">טוען...</p>
-            : filtered.length === 0 ? (
+            : visible.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground flex flex-col items-center gap-2">
                 <Package className="h-8 w-8 opacity-40" /><p>אין מוצרים</p>
               </div>
@@ -166,17 +199,16 @@ function AdminProducts() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="text-right">שם המוצר</TableHead>
-                    <TableHead className="text-right">קטגוריה</TableHead>
+                    <TableHead className="text-right">דגם</TableHead>
                     <TableHead className="text-right">מק״ט</TableHead>
-                    <TableHead className="text-right">ברקוד</TableHead>
-                    <TableHead className="text-right">יחידה</TableHead>
+                    {!isLeaf && <TableHead className="text-right">קטגוריה</TableHead>}
+                    {!(isLeaf && selectedMfr) && <TableHead className="text-right">יצרן</TableHead>}
                     <TableHead className="text-right">מחיר</TableHead>
-                    <TableHead className="text-right">סטטוס</TableHead>
                     <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((p: any) => {
+                  {visible.map((p: any) => {
                     const cat = categories.find(c => c.id === p.category_id);
                     return (
                       <TableRow
@@ -189,16 +221,11 @@ function AdminProducts() {
                         className="cursor-grab active:cursor-grabbing"
                       >
                         <TableCell className="font-medium">{p.name}</TableCell>
-                        <TableCell className="text-muted-foreground">{cat?.name ?? p.category ?? "—"}</TableCell>
-                        <TableCell dir="ltr" className="text-sm">{p.sku ?? "—"}</TableCell>
-                        <TableCell dir="ltr" className="text-sm">{p.barcode ?? "—"}</TableCell>
-                        <TableCell>{p.unit}</TableCell>
+                        <TableCell dir="ltr" className="text-sm text-right">{p.model ?? ""}</TableCell>
+                        <TableCell dir="ltr" className="text-sm text-right">{p.sku ?? ""}</TableCell>
+                        {!isLeaf && <TableCell className="text-muted-foreground">{cat?.name ?? p.category ?? "—"}</TableCell>}
+                        {!(isLeaf && selectedMfr) && <TableCell className="text-muted-foreground">{p.manufacturer || "כללי"}</TableCell>}
                         <TableCell className="font-semibold">₪{Number(p.price).toFixed(2)}</TableCell>
-                        <TableCell>
-                          {p.is_active
-                            ? <Badge variant="outline" className="bg-success/10 text-success border-success/30">פעיל</Badge>
-                            : <Badge variant="outline">מושבת</Badge>}
-                        </TableCell>
                         <TableCell>
                           <div className="flex gap-1">
                             <Button variant="ghost" size="icon" onClick={() => { setEditing(p); setOpen(true); }}>
@@ -558,6 +585,8 @@ function ProductDialog({ product, categories, defaultCategoryId, onClose }: {
   const [name, setName] = useState(product?.name ?? "");
   const [sku, setSku] = useState(product?.sku ?? "");
   const [barcode, setBarcode] = useState(product?.barcode ?? "");
+  const [manufacturer, setManufacturer] = useState(product?.manufacturer ?? "");
+  const [model, setModel] = useState(product?.model ?? "");
   const [categoryId, setCategoryId] = useState<string | null>(product?.category_id ?? defaultCategoryId ?? null);
   const [unit, setUnit] = useState(product?.unit ?? "יח׳");
   const [price, setPrice] = useState(String(product?.price ?? "0"));
@@ -576,6 +605,8 @@ function ProductDialog({ product, categories, defaultCategoryId, onClose }: {
       name,
       sku: sku || null,
       barcode: barcode || null,
+      manufacturer: manufacturer.trim() || "כללי",
+      model: model.trim() || null,
       category_id: categoryId,
       category: categoryId ? categories.find(c => c.id === categoryId)?.name ?? null : null,
       unit,
@@ -604,6 +635,14 @@ function ProductDialog({ product, categories, defaultCategoryId, onClose }: {
           <div className="space-y-1.5">
             <Label>מק״ט (SKU)</Label>
             <Input value={sku} onChange={e => setSku(e.target.value)} dir="ltr" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>דגם</Label>
+            <Input value={model} onChange={e => setModel(e.target.value)} dir="ltr" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>יצרן</Label>
+            <Input value={manufacturer} onChange={e => setManufacturer(e.target.value)} placeholder="כללי" />
           </div>
           <div className="space-y-1.5">
             <Label>ברקוד</Label>
