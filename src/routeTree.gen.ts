@@ -9,40 +9,40 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
-import { Route as AuthenticatedTechIndexRouteImport } from './routes/_authenticated/tech.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
-import { Route as AuthenticatedTechHistoryRouteImport } from './routes/_authenticated/tech.history'
-import { Route as AuthenticatedTechJobIdRouteImport } from './routes/_authenticated/tech.$jobId'
-import { Route as AuthenticatedAdminTechniciansRouteImport } from './routes/_authenticated/admin/technicians'
-import { Route as AuthenticatedAdminReportsRouteImport } from './routes/_authenticated/admin/reports'
-import { Route as AuthenticatedAdminProductsRouteImport } from './routes/_authenticated/admin/products'
 import { Route as AuthenticatedAdminHistoryRouteImport } from './routes/_authenticated/admin/history'
-import { Route as AuthenticatedAdminProjectsIndexRouteImport } from './routes/_authenticated/admin/projects.index'
-import { Route as AuthenticatedAdminJobsIndexRouteImport } from './routes/_authenticated/admin/jobs.index'
+import { Route as AuthenticatedAdminProductsRouteImport } from './routes/_authenticated/admin/products'
+import { Route as AuthenticatedAdminReportsRouteImport } from './routes/_authenticated/admin/reports'
+import { Route as AuthenticatedAdminTechniciansRouteImport } from './routes/_authenticated/admin/technicians'
+import { Route as AuthenticatedTechIndexRouteImport } from './routes/_authenticated/tech.index'
+import { Route as AuthenticatedTechJobIdRouteImport } from './routes/_authenticated/tech.$jobId'
+import { Route as AuthenticatedTechHistoryRouteImport } from './routes/_authenticated/tech.history'
 import { Route as AuthenticatedAdminClientsIndexRouteImport } from './routes/_authenticated/admin/clients.index'
-import { Route as ApiPublicHooksUnscheduledReminderRouteImport } from './routes/api/public/hooks/unscheduled-reminder'
-import { Route as ApiPublicHooksJobNotifyRouteImport } from './routes/api/public/hooks/job-notify'
-import { Route as AuthenticatedTechProjectsProjectIdRouteImport } from './routes/_authenticated/tech.projects.$projectId'
-import { Route as AuthenticatedAdminProjectsProjectIdRouteImport } from './routes/_authenticated/admin/projects.$projectId'
-import { Route as AuthenticatedAdminJobsJobIdRouteImport } from './routes/_authenticated/admin/jobs.$jobId'
 import { Route as AuthenticatedAdminClientsClientIdRouteImport } from './routes/_authenticated/admin/clients.$clientId'
+import { Route as AuthenticatedAdminJobsIndexRouteImport } from './routes/_authenticated/admin/jobs.index'
+import { Route as AuthenticatedAdminJobsJobIdRouteImport } from './routes/_authenticated/admin/jobs.$jobId'
+import { Route as AuthenticatedAdminProjectsIndexRouteImport } from './routes/_authenticated/admin/projects.index'
+import { Route as AuthenticatedAdminProjectsProjectIdRouteImport } from './routes/_authenticated/admin/projects.$projectId'
+import { Route as AuthenticatedTechProjectsProjectIdRouteImport } from './routes/_authenticated/tech.projects.$projectId'
+import { Route as ApiPublicHooksJobNotifyRouteImport } from './routes/api/public/hooks/job-notify'
+import { Route as ApiPublicHooksUnscheduledReminderRouteImport } from './routes/api/public/hooks/unscheduled-reminder'
 
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminRouteRoute = AuthenticatedAdminRouteRouteImport.update({
@@ -50,37 +50,15 @@ const AuthenticatedAdminRouteRoute = AuthenticatedAdminRouteRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedTechIndexRoute = AuthenticatedTechIndexRouteImport.update({
-  id: '/tech/',
-  path: '/tech/',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthenticatedAdminRouteRoute,
 } as any)
-const AuthenticatedTechHistoryRoute =
-  AuthenticatedTechHistoryRouteImport.update({
-    id: '/tech/history',
-    path: '/tech/history',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedTechJobIdRoute = AuthenticatedTechJobIdRouteImport.update({
-  id: '/tech/$jobId',
-  path: '/tech/$jobId',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedAdminTechniciansRoute =
-  AuthenticatedAdminTechniciansRouteImport.update({
-    id: '/technicians',
-    path: '/technicians',
-    getParentRoute: () => AuthenticatedAdminRouteRoute,
-  } as any)
-const AuthenticatedAdminReportsRoute =
-  AuthenticatedAdminReportsRouteImport.update({
-    id: '/reports',
-    path: '/reports',
+const AuthenticatedAdminHistoryRoute =
+  AuthenticatedAdminHistoryRouteImport.update({
+    id: '/history',
+    path: '/history',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
 const AuthenticatedAdminProductsRoute =
@@ -89,16 +67,44 @@ const AuthenticatedAdminProductsRoute =
     path: '/products',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
-const AuthenticatedAdminHistoryRoute =
-  AuthenticatedAdminHistoryRouteImport.update({
-    id: '/history',
-    path: '/history',
+const AuthenticatedAdminReportsRoute =
+  AuthenticatedAdminReportsRouteImport.update({
+    id: '/reports',
+    path: '/reports',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
-const AuthenticatedAdminProjectsIndexRoute =
-  AuthenticatedAdminProjectsIndexRouteImport.update({
-    id: '/projects/',
-    path: '/projects/',
+const AuthenticatedAdminTechniciansRoute =
+  AuthenticatedAdminTechniciansRouteImport.update({
+    id: '/technicians',
+    path: '/technicians',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedTechIndexRoute = AuthenticatedTechIndexRouteImport.update({
+  id: '/tech/',
+  path: '/tech/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedTechJobIdRoute = AuthenticatedTechJobIdRouteImport.update({
+  id: '/tech/$jobId',
+  path: '/tech/$jobId',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedTechHistoryRoute =
+  AuthenticatedTechHistoryRouteImport.update({
+    id: '/tech/history',
+    path: '/tech/history',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminClientsIndexRoute =
+  AuthenticatedAdminClientsIndexRouteImport.update({
+    id: '/clients/',
+    path: '/clients/',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminClientsClientIdRoute =
+  AuthenticatedAdminClientsClientIdRouteImport.update({
+    id: '/clients/$clientId',
+    path: '/clients/$clientId',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
 const AuthenticatedAdminJobsIndexRoute =
@@ -107,28 +113,17 @@ const AuthenticatedAdminJobsIndexRoute =
     path: '/jobs/',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
-const AuthenticatedAdminClientsIndexRoute =
-  AuthenticatedAdminClientsIndexRouteImport.update({
-    id: '/clients/',
-    path: '/clients/',
+const AuthenticatedAdminJobsJobIdRoute =
+  AuthenticatedAdminJobsJobIdRouteImport.update({
+    id: '/jobs/$jobId',
+    path: '/jobs/$jobId',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
-const ApiPublicHooksUnscheduledReminderRoute =
-  ApiPublicHooksUnscheduledReminderRouteImport.update({
-    id: '/api/public/hooks/unscheduled-reminder',
-    path: '/api/public/hooks/unscheduled-reminder',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicHooksJobNotifyRoute = ApiPublicHooksJobNotifyRouteImport.update({
-  id: '/api/public/hooks/job-notify',
-  path: '/api/public/hooks/job-notify',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedTechProjectsProjectIdRoute =
-  AuthenticatedTechProjectsProjectIdRouteImport.update({
-    id: '/tech/projects/$projectId',
-    path: '/tech/projects/$projectId',
-    getParentRoute: () => AuthenticatedRouteRoute,
+const AuthenticatedAdminProjectsIndexRoute =
+  AuthenticatedAdminProjectsIndexRouteImport.update({
+    id: '/projects/',
+    path: '/projects/',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
 const AuthenticatedAdminProjectsProjectIdRoute =
   AuthenticatedAdminProjectsProjectIdRouteImport.update({
@@ -136,17 +131,22 @@ const AuthenticatedAdminProjectsProjectIdRoute =
     path: '/projects/$projectId',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
-const AuthenticatedAdminJobsJobIdRoute =
-  AuthenticatedAdminJobsJobIdRouteImport.update({
-    id: '/jobs/$jobId',
-    path: '/jobs/$jobId',
-    getParentRoute: () => AuthenticatedAdminRouteRoute,
+const AuthenticatedTechProjectsProjectIdRoute =
+  AuthenticatedTechProjectsProjectIdRouteImport.update({
+    id: '/tech/projects/$projectId',
+    path: '/tech/projects/$projectId',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAdminClientsClientIdRoute =
-  AuthenticatedAdminClientsClientIdRouteImport.update({
-    id: '/clients/$clientId',
-    path: '/clients/$clientId',
-    getParentRoute: () => AuthenticatedAdminRouteRoute,
+const ApiPublicHooksJobNotifyRoute = ApiPublicHooksJobNotifyRouteImport.update({
+  id: '/api/public/hooks/job-notify',
+  path: '/api/public/hooks/job-notify',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicHooksUnscheduledReminderRoute =
+  ApiPublicHooksUnscheduledReminderRouteImport.update({
+    id: '/api/public/hooks/unscheduled-reminder',
+    path: '/api/public/hooks/unscheduled-reminder',
+    getParentRoute: () => rootRouteImport,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -295,11 +295,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -309,11 +309,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin': {
@@ -323,53 +323,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/tech/': {
-      id: '/_authenticated/tech/'
-      path: '/tech'
-      fullPath: '/tech/'
-      preLoaderRoute: typeof AuthenticatedTechIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/admin/': {
       id: '/_authenticated/admin/'
       path: '/'
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
-      parentRoute: typeof AuthenticatedAdminRouteRoute
-    }
-    '/_authenticated/tech/history': {
-      id: '/_authenticated/tech/history'
-      path: '/tech/history'
-      fullPath: '/tech/history'
-      preLoaderRoute: typeof AuthenticatedTechHistoryRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/tech/$jobId': {
-      id: '/_authenticated/tech/$jobId'
-      path: '/tech/$jobId'
-      fullPath: '/tech/$jobId'
-      preLoaderRoute: typeof AuthenticatedTechJobIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/admin/technicians': {
-      id: '/_authenticated/admin/technicians'
-      path: '/technicians'
-      fullPath: '/admin/technicians'
-      preLoaderRoute: typeof AuthenticatedAdminTechniciansRouteImport
-      parentRoute: typeof AuthenticatedAdminRouteRoute
-    }
-    '/_authenticated/admin/reports': {
-      id: '/_authenticated/admin/reports'
-      path: '/reports'
-      fullPath: '/admin/reports'
-      preLoaderRoute: typeof AuthenticatedAdminReportsRouteImport
-      parentRoute: typeof AuthenticatedAdminRouteRoute
-    }
-    '/_authenticated/admin/products': {
-      id: '/_authenticated/admin/products'
-      path: '/products'
-      fullPath: '/admin/products'
-      preLoaderRoute: typeof AuthenticatedAdminProductsRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
     '/_authenticated/admin/history': {
@@ -379,11 +337,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminHistoryRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
-    '/_authenticated/admin/projects/': {
-      id: '/_authenticated/admin/projects/'
-      path: '/projects'
-      fullPath: '/admin/projects/'
-      preLoaderRoute: typeof AuthenticatedAdminProjectsIndexRouteImport
+    '/_authenticated/admin/products': {
+      id: '/_authenticated/admin/products'
+      path: '/products'
+      fullPath: '/admin/products'
+      preLoaderRoute: typeof AuthenticatedAdminProductsRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/reports': {
+      id: '/_authenticated/admin/reports'
+      path: '/reports'
+      fullPath: '/admin/reports'
+      preLoaderRoute: typeof AuthenticatedAdminReportsRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/technicians': {
+      id: '/_authenticated/admin/technicians'
+      path: '/technicians'
+      fullPath: '/admin/technicians'
+      preLoaderRoute: typeof AuthenticatedAdminTechniciansRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/tech/': {
+      id: '/_authenticated/tech/'
+      path: '/tech'
+      fullPath: '/tech/'
+      preLoaderRoute: typeof AuthenticatedTechIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/tech/$jobId': {
+      id: '/_authenticated/tech/$jobId'
+      path: '/tech/$jobId'
+      fullPath: '/tech/$jobId'
+      preLoaderRoute: typeof AuthenticatedTechJobIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/tech/history': {
+      id: '/_authenticated/tech/history'
+      path: '/tech/history'
+      fullPath: '/tech/history'
+      preLoaderRoute: typeof AuthenticatedTechHistoryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/clients/': {
+      id: '/_authenticated/admin/clients/'
+      path: '/clients'
+      fullPath: '/admin/clients/'
+      preLoaderRoute: typeof AuthenticatedAdminClientsIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/clients/$clientId': {
+      id: '/_authenticated/admin/clients/$clientId'
+      path: '/clients/$clientId'
+      fullPath: '/admin/clients/$clientId'
+      preLoaderRoute: typeof AuthenticatedAdminClientsClientIdRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
     '/_authenticated/admin/jobs/': {
@@ -393,33 +400,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminJobsIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
-    '/_authenticated/admin/clients/': {
-      id: '/_authenticated/admin/clients/'
-      path: '/clients'
-      fullPath: '/admin/clients/'
-      preLoaderRoute: typeof AuthenticatedAdminClientsIndexRouteImport
+    '/_authenticated/admin/jobs/$jobId': {
+      id: '/_authenticated/admin/jobs/$jobId'
+      path: '/jobs/$jobId'
+      fullPath: '/admin/jobs/$jobId'
+      preLoaderRoute: typeof AuthenticatedAdminJobsJobIdRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
-    '/api/public/hooks/unscheduled-reminder': {
-      id: '/api/public/hooks/unscheduled-reminder'
-      path: '/api/public/hooks/unscheduled-reminder'
-      fullPath: '/api/public/hooks/unscheduled-reminder'
-      preLoaderRoute: typeof ApiPublicHooksUnscheduledReminderRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/hooks/job-notify': {
-      id: '/api/public/hooks/job-notify'
-      path: '/api/public/hooks/job-notify'
-      fullPath: '/api/public/hooks/job-notify'
-      preLoaderRoute: typeof ApiPublicHooksJobNotifyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/tech/projects/$projectId': {
-      id: '/_authenticated/tech/projects/$projectId'
-      path: '/tech/projects/$projectId'
-      fullPath: '/tech/projects/$projectId'
-      preLoaderRoute: typeof AuthenticatedTechProjectsProjectIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+    '/_authenticated/admin/projects/': {
+      id: '/_authenticated/admin/projects/'
+      path: '/projects'
+      fullPath: '/admin/projects/'
+      preLoaderRoute: typeof AuthenticatedAdminProjectsIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
     }
     '/_authenticated/admin/projects/$projectId': {
       id: '/_authenticated/admin/projects/$projectId'
@@ -428,19 +421,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminProjectsProjectIdRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
-    '/_authenticated/admin/jobs/$jobId': {
-      id: '/_authenticated/admin/jobs/$jobId'
-      path: '/jobs/$jobId'
-      fullPath: '/admin/jobs/$jobId'
-      preLoaderRoute: typeof AuthenticatedAdminJobsJobIdRouteImport
-      parentRoute: typeof AuthenticatedAdminRouteRoute
+    '/_authenticated/tech/projects/$projectId': {
+      id: '/_authenticated/tech/projects/$projectId'
+      path: '/tech/projects/$projectId'
+      fullPath: '/tech/projects/$projectId'
+      preLoaderRoute: typeof AuthenticatedTechProjectsProjectIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/admin/clients/$clientId': {
-      id: '/_authenticated/admin/clients/$clientId'
-      path: '/clients/$clientId'
-      fullPath: '/admin/clients/$clientId'
-      preLoaderRoute: typeof AuthenticatedAdminClientsClientIdRouteImport
-      parentRoute: typeof AuthenticatedAdminRouteRoute
+    '/api/public/hooks/job-notify': {
+      id: '/api/public/hooks/job-notify'
+      path: '/api/public/hooks/job-notify'
+      fullPath: '/api/public/hooks/job-notify'
+      preLoaderRoute: typeof ApiPublicHooksJobNotifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/unscheduled-reminder': {
+      id: '/api/public/hooks/unscheduled-reminder'
+      path: '/api/public/hooks/unscheduled-reminder'
+      fullPath: '/api/public/hooks/unscheduled-reminder'
+      preLoaderRoute: typeof ApiPublicHooksUnscheduledReminderRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
