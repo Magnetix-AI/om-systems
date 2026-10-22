@@ -1,0 +1,1 @@
+ALTER TABLE public.products DROP CONSTRAINT IF EXISTS products_sku_key; CREATE INDEX IF NOT EXISTS idx_products_sku ON public.products(sku);

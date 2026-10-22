@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1792674949530,
+      "tag": "0000_products_manufacturer_model",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792674965124,
+      "tag": "0001_products_sku_not_unique",
+      "breakpoints": true
+    }
+  ]
+}
