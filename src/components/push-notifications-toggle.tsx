@@ -38,7 +38,7 @@ export function PushNotificationsToggle() {
           variant="ghost"
           size="icon"
           title="התראות"
-          className={state === "on" ? "text-primary" : undefined}
+          className={state === "on" ? "text-header-foreground" : "text-header-muted hover:bg-header-hover hover:text-header-foreground"}
         >
           {busy || !ready ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" />}
         </Button>
