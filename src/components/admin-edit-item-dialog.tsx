@@ -12,6 +12,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { printJob } from "@/lib/print-job";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ProjectPicker } from "@/components/project-picker";
 import { AttachmentsManager } from "@/components/attachments-manager";
@@ -286,7 +287,7 @@ export function AdminEditItemDialog({
         )}
         <DialogFooter className="shrink-0 border-t pt-3">
           {item.kind === "job" && (
-            <Button variant="outline" className="sm:ml-auto" onClick={() => import("@/lib/print-job").then(m => m.printJob(item.id)).catch((e: any) => toast.error("שגיאה בייצוא", { description: e.message }))}>
+            <Button variant="outline" className="sm:ml-auto" onClick={() => printJob(item.id).catch((e: any) => toast.error("שגיאה בייצוא", { description: e.message }))}>
               הדפסה / PDF
             </Button>
           )}
