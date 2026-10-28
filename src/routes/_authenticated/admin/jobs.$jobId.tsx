@@ -54,6 +54,14 @@ const buildAttendanceTimestamp = (baseDate: string | Date, hhmm: string) => {
 
 export const Route = createFileRoute("/_authenticated/admin/jobs/$jobId")({
   ssr: false,
+  head: () => ({ meta: [
+    { title: "פרטי קריאה | O.M Systems LTD" },
+    { name: "description", content: "פרטי הקריאה, עדכוני הטכנאי ותמונות מצורפות במערכת O.M Systems LTD." },
+    { property: "og:title", content: "פרטי קריאה | O.M Systems LTD" },
+    { property: "og:description", content: "פרטי הקריאה, עדכוני הטכנאי ותמונות מצורפות במערכת O.M Systems LTD." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: AdminJobDetail,
 });
 
