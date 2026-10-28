@@ -12,6 +12,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { printJob } from "@/lib/print-job";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ProjectPicker } from "@/components/project-picker";
 import { AttachmentsManager } from "@/components/attachments-manager";
@@ -285,6 +286,11 @@ export function AdminEditItemDialog({
           </div>
         )}
         <DialogFooter className="shrink-0 border-t pt-3">
+          {item.kind === "job" && (
+            <Button variant="outline" className="sm:ml-auto" onClick={() => printJob(item.id).catch((e: any) => toast.error("שגיאה בייצוא", { description: e.message }))}>
+              הדפסה / PDF
+            </Button>
+          )}
           <Button variant="outline" onClick={onClose}>ביטול</Button>
           <Button onClick={handleSave} disabled={saving || loading}>{saving ? "שומר..." : "שמור"}</Button>
         </DialogFooter>
