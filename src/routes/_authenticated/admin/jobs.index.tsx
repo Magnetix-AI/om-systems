@@ -410,7 +410,7 @@ function NewJobDialog({ onClose }: { onClose: () => void }) {
         </div>
         <div className="space-y-1.5">
           <Label>תיאור</Label>
-          <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} />
+          <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={8} className="min-h-[220px]" />
         </div>
         <div className="flex items-center gap-2">
           <input type="checkbox" id="newClient" checked={useNewClient} onChange={e => setUseNewClient(e.target.checked)} />

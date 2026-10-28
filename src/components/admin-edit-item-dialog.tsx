@@ -201,7 +201,7 @@ export function AdminEditItemDialog({
             </div>
             <div className="space-y-1.5">
               <Label>תיאור</Label>
-              <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} />
+              <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={10} className="min-h-[280px]" />
             </div>
             <div className="space-y-1.5">
               <Label>לקוח</Label>

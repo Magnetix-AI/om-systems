@@ -1593,7 +1593,7 @@ function NewJobOnDateDialog({ date, onClose, onCreated }: {
           </div>
           <div className="space-y-1.5">
             <Label>תיאור</Label>
-            <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} />
+            <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={8} className="min-h-[220px]" />
           </div>
 
           <div className="space-y-1.5">
