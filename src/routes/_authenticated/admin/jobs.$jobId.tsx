@@ -88,7 +88,6 @@ function AdminJobDetail() {
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [times, setTimes] = useState({ start_time: "", end_time: "", arrival_time: "", departure_time: "", completed_at: "" });
-  const [savingTimes, setSavingTimes] = useState(false);
   useEffect(() => {
     if (job) setNotes(job.technician_notes ?? "");
   }, [job?.id, job?.technician_notes]);
@@ -104,19 +103,11 @@ function AdminJobDetail() {
     });
   }, [job?.id, (job as any)?.start_time, (job as any)?.end_time, (job as any)?.arrival_time, (job as any)?.departure_time, (job as any)?.completed_at]);
 
-  const saveNotes = async () => {
+  const saveAll = async () => {
     setSaving(true);
-    const { error } = await supabase.from("jobs").update({ technician_notes: notes }).eq("id", jobId);
-    setSaving(false);
-    if (error) { toast.error("שגיאה בשמירה"); return; }
-    toast.success("הערות נשמרו");
-    qc.invalidateQueries({ queryKey: ["admin-job", jobId] });
-  };
-
-  const saveTimes = async () => {
-    setSavingTimes(true);
     const base = ((job as any)?.scheduled_date ?? (job as any)?.start_time ?? new Date().toISOString()) as string;
     const payload: any = {
+      technician_notes: notes,
       start_time: fromLocalInput(times.start_time),
       end_time: fromLocalInput(times.end_time),
       arrival_time: times.arrival_time ? buildAttendanceTimestamp(base, times.arrival_time) : null,
@@ -124,9 +115,9 @@ function AdminJobDetail() {
       completed_at: fromLocalInput(times.completed_at),
     };
     const { error } = await supabase.from("jobs").update(payload).eq("id", jobId);
-    setSavingTimes(false);
-    if (error) { toast.error("שגיאה בשמירת שעות"); return; }
-    toast.success("שעות עודכנו");
+    setSaving(false);
+    if (error) { toast.error("שגיאה בשמירה"); return; }
+    toast.success("הפרטים נשמרו");
     qc.invalidateQueries({ queryKey: ["admin-job", jobId] });
   };
 
@@ -227,21 +218,11 @@ function AdminJobDetail() {
               ))}
 
             </div>
-            <div className="flex justify-end">
-              <Button size="sm" onClick={saveTimes} disabled={savingTimes}>
-                {savingTimes ? "שומר..." : "שמור שעות"}
-              </Button>
-            </div>
           </div>
 
           <div className="space-y-2">
             <div className="font-medium">הערות טכנאי</div>
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} placeholder="אין הערות" />
-            <div className="flex justify-end">
-              <Button size="sm" onClick={saveNotes} disabled={saving || notes === (job.technician_notes ?? "")}>
-                {saving ? "שומר..." : "שמור הערות"}
-              </Button>
-            </div>
           </div>
 
           <div className="space-y-1">
@@ -257,6 +238,12 @@ function AdminJobDetail() {
             ) : (
               <div className="text-muted-foreground">אין פריטים</div>
             )}
+          </div>
+
+          <div className="flex justify-end border-t pt-3">
+            <Button onClick={saveAll} disabled={saving}>
+              {saving ? "שומר..." : "שמור"}
+            </Button>
           </div>
         </CardContent>
       </Card>
