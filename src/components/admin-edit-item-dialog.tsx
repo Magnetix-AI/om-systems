@@ -285,6 +285,11 @@ export function AdminEditItemDialog({
           </div>
         )}
         <DialogFooter className="shrink-0 border-t pt-3">
+          {item.kind === "job" && (
+            <Button variant="outline" className="sm:ml-auto" onClick={() => import("@/lib/print-job").then(m => m.printJob(item.id)).catch((e: any) => toast.error("שגיאה בייצוא", { description: e.message }))}>
+              הדפסה / PDF
+            </Button>
+          )}
           <Button variant="outline" onClick={onClose}>ביטול</Button>
           <Button onClick={handleSave} disabled={saving || loading}>{saving ? "שומר..." : "שמור"}</Button>
         </DialogFooter>

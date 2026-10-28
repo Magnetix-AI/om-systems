@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Printer } from "lucide-react";
+import { printJob } from "@/lib/print-job";
 import { toast } from "sonner";
 import { statusLabel, statusColor } from "@/components/app-shell";
 import { AttachmentsManager } from "@/components/attachments-manager";
@@ -158,6 +159,9 @@ function AdminJobDetail() {
             <CardTitle>{job.title}</CardTitle>
             <Badge variant="outline" className={statusColor(job.status)}>{statusLabel(job.status)}</Badge>
             <div className="mr-auto flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => printJob(job.id).catch((e: any) => toast.error("שגיאה בייצוא", { description: e.message }))}>
+                <Printer className="h-4 w-4 ml-1" /> הדפסה / PDF
+              </Button>
               <Label className="text-xs">סטטוס:</Label>
               <Select value={job.status} onValueChange={changeStatus} disabled={savingStatus}>
                 <SelectTrigger className="h-8 w-36"><SelectValue /></SelectTrigger>
