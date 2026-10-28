@@ -42,8 +42,8 @@ export async function printJob(jobId: string) {
 * { box-sizing: border-box; }
 body { font-family: Arial, "Segoe UI", sans-serif; color:#111; margin:0; padding:24px; background:#fff; }
 .logo { text-align:center; margin-bottom:18px; } .logo img { max-width:300px; height:auto; }
-h1 { font-size:30px; margin:0 0 6px; text-align:center; border-bottom:2px solid #1f5fa8; padding-bottom:12px; }
-.tech { text-align:center; font-size:18px; color:#333; margin:10px 0 20px; }
+h1 { font-size:42px; margin:0 0 6px; text-align:center; border-top:2px solid #1f5fa8; padding-top:14px; padding-bottom:12px; }
+.tech { text-align:center; font-size:34px; color:#333; margin:10px 0 20px; }
 table { width:100%; border-collapse:collapse; margin-bottom:20px; font-size:15px; }
 th, td { border:1px solid #ccc; padding:8px 10px; text-align:right; vertical-align:top; }
 th { background:#f1f4f8; width:28%; font-weight:600; }
