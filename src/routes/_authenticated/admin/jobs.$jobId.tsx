@@ -239,6 +239,12 @@ function AdminJobDetail() {
               <div className="text-muted-foreground">אין פריטים</div>
             )}
           </div>
+
+          <div className="flex justify-end border-t pt-3">
+            <Button onClick={saveAll} disabled={saving}>
+              {saving ? "שומר..." : "שמור"}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
