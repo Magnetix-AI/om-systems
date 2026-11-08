@@ -55,6 +55,7 @@ export function AdminEditItemDialog({
   const [siteContactName, setSiteContactName] = useState("");
   const [siteContactPhone, setSiteContactPhone] = useState("");
   const [siteContactAddress, setSiteContactAddress] = useState("");
+  const [clientContact, setClientContact] = useState<{ name: string; address: string }>({ name: "", address: "" });
   const [projectId, setProjectId] = useState<string | null>(null);
   const [status, setStatus] = useState<string>("open");
   const [useNewClient, setUseNewClient] = useState(false);
@@ -87,7 +88,7 @@ export function AdminEditItemDialog({
         if (item.kind === "job") {
           const { data, error } = await supabase
             .from("jobs")
-            .select("title, description, client_id, technician_id, start_time, end_time, scheduled_date, site_contact_name, site_contact_phone, site_contact_address, project_id, status")
+            .select("title, description, client_id, technician_id, start_time, end_time, scheduled_date, site_contact_name, site_contact_phone, site_contact_address, project_id, status, client:clients(name, contact_name, address)")
             .eq("id", item.id).single();
           if (error) throw error;
           if (cancelled || !data) return;
@@ -102,6 +103,10 @@ export function AdminEditItemDialog({
           setSiteContactAddress((data as any).site_contact_address ?? "");
           setProjectId((data as any).project_id ?? null);
           setStatus((data as any).status ?? "open");
+          setClientContact({
+            name: (data as any).client?.contact_name ?? "",
+            address: (data as any).client?.address ?? "",
+          });
         } else {
           const { data, error } = await supabase
             .from("projects")
@@ -118,6 +123,7 @@ export function AdminEditItemDialog({
           setSiteContactName("");
           setSiteContactPhone("");
           setSiteContactAddress("");
+          setClientContact({ name: "", address: "" });
         }
       } catch (e: any) {
         toast.error("שגיאה בטעינה", { description: e.message });
@@ -127,6 +133,11 @@ export function AdminEditItemDialog({
     })();
     return () => { cancelled = true; };
   }, [item?.id, item?.kind]);
+
+  const fillFromClient = () => {
+    if (!siteContactName.trim() && clientContact.name) setSiteContactName(clientContact.name);
+    if (!siteContactAddress.trim() && clientContact.address) setSiteContactAddress(clientContact.address);
+  };
 
   if (!item) return null;
 
@@ -226,6 +237,28 @@ export function AdminEditItemDialog({
                 </Select>
               )}
             </div>
+            {item.kind === "job" && (
+              <div className="space-y-1.5 border rounded-md p-2 bg-secondary/20">
+                <div className="flex items-center justify-between gap-2">
+                  <Label className="font-semibold text-sm">איש קשר בשטח</Label>
+                  {(clientContact.name || clientContact.address) && (
+                    <button type="button" onClick={fillFromClient} className="text-xs text-primary hover:underline">
+                      מלא ממידע הלקוח
+                    </button>
+                  )}
+                </div>
+                {(clientContact.name || clientContact.address) && (
+                  <div className="text-xs text-muted-foreground leading-relaxed">
+                    שמור אצל הלקוח: {[clientContact.name, clientContact.address].filter(Boolean).join(" · ")}
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-2">
+                  <Input placeholder="שם" value={siteContactName} onChange={e => setSiteContactName(e.target.value)} />
+                  <Input placeholder="טלפון" value={siteContactPhone} onChange={e => setSiteContactPhone(e.target.value)} dir="ltr" />
+                </div>
+                <Input placeholder="כתובת" value={siteContactAddress} onChange={e => setSiteContactAddress(e.target.value)} />
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label>טכנאי</Label>
               <Select value={techId} onValueChange={setTechId}>
@@ -248,16 +281,6 @@ export function AdminEditItemDialog({
                 </div>
               )}
             </div>
-            {item.kind === "job" && (
-              <div className="space-y-1.5 border rounded-md p-2 bg-secondary/20">
-                <Label className="font-semibold text-sm">איש קשר בשטח</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  <Input placeholder="שם" value={siteContactName} onChange={e => setSiteContactName(e.target.value)} />
-                  <Input placeholder="טלפון" value={siteContactPhone} onChange={e => setSiteContactPhone(e.target.value)} dir="ltr" />
-                </div>
-                <Input placeholder="כתובת" value={siteContactAddress} onChange={e => setSiteContactAddress(e.target.value)} />
-              </div>
-            )}
             {item.kind === "job" && (
               <div className="space-y-1.5">
                 <Label>שייוך לפרוייקט</Label>
