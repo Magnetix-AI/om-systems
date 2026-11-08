@@ -177,18 +177,20 @@ function AdminJobDetail() {
             </div>
           </div>
           {job.description && <p className="text-sm text-muted-foreground">{job.description}</p>}
-          <div className="text-sm text-muted-foreground mt-2 space-y-0.5">
+          <div className="text-sm text-muted-foreground mt-2 space-y-1">
             <div>לקוח: {job.client?.name ?? "—"}</div>
-            {(job as any).site_contact_name || (job as any).site_contact_phone ? (
-              <div className="flex items-center gap-2 flex-wrap">
-                <span>איש קשר בשטח: {(job as any).site_contact_name || "—"}</span>
-                {(job as any).site_contact_phone && (
-                  <a href={`tel:${(job as any).site_contact_phone}`} dir="ltr" className="text-primary hover:underline inline-flex items-center gap-1">
-                    {(job as any).site_contact_phone}
+            {(contactName || contactPhone || contactAddress) && (
+              <div className="mt-1 border rounded-md p-2.5 bg-secondary/20 space-y-1">
+                <div className="text-xs font-semibold text-foreground">איש קשר</div>
+                <div className="text-foreground">{contactName || "—"}</div>
+                {contactPhone && (
+                  <a href={`tel:${contactPhone}`} dir="ltr" className="block text-primary hover:underline w-fit">
+                    {contactPhone}
                   </a>
                 )}
+                {contactAddress && <div>{contactAddress}</div>}
               </div>
-            ) : null}
+            )}
             <div>טכנאי: {(job as any).technician_name ?? "לא משויך"}</div>
             {job.scheduled_date && <div>תאריך מתוכנן: {new Date(job.scheduled_date).toLocaleString("he-IL")}</div>}
           </div>
