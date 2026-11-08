@@ -74,7 +74,7 @@ function AdminJobDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("jobs")
-        .select("*, client:clients(name, address), items:job_items(id, quantity, unit_price, product:products(name, unit))")
+        .select("*, client:clients(name, contact_name, address), items:job_items(id, quantity, unit_price, product:products(name, unit))")
         .eq("id", jobId).maybeSingle();
       if (error) throw error;
       if (data?.technician_id) {
@@ -138,6 +138,10 @@ function AdminJobDetail() {
 
   if (!job) return <div className="p-6 text-center text-muted-foreground">טוען...</div>;
 
+  const j = job as any;
+  const contactName: string = j.site_contact_name || (job.client as any)?.contact_name || "";
+  const contactPhone: string = j.site_contact_phone || "";
+  const contactAddress: string = j.site_contact_address || (job.client as any)?.address || "";
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-4">

@@ -55,6 +55,7 @@ export function AdminEditItemDialog({
   const [siteContactName, setSiteContactName] = useState("");
   const [siteContactPhone, setSiteContactPhone] = useState("");
   const [siteContactAddress, setSiteContactAddress] = useState("");
+  const [clientContact, setClientContact] = useState<{ name: string; address: string }>({ name: "", address: "" });
   const [projectId, setProjectId] = useState<string | null>(null);
   const [status, setStatus] = useState<string>("open");
   const [useNewClient, setUseNewClient] = useState(false);
@@ -87,7 +88,7 @@ export function AdminEditItemDialog({
         if (item.kind === "job") {
           const { data, error } = await supabase
             .from("jobs")
-            .select("title, description, client_id, technician_id, start_time, end_time, scheduled_date, site_contact_name, site_contact_phone, site_contact_address, project_id, status")
+            .select("title, description, client_id, technician_id, start_time, end_time, scheduled_date, site_contact_name, site_contact_phone, site_contact_address, project_id, status, client:clients(name, contact_name, address)")
             .eq("id", item.id).single();
           if (error) throw error;
           if (cancelled || !data) return;
@@ -102,6 +103,10 @@ export function AdminEditItemDialog({
           setSiteContactAddress((data as any).site_contact_address ?? "");
           setProjectId((data as any).project_id ?? null);
           setStatus((data as any).status ?? "open");
+          setClientContact({
+            name: (data as any).client?.contact_name ?? "",
+            address: (data as any).client?.address ?? "",
+          });
         } else {
           const { data, error } = await supabase
             .from("projects")
@@ -118,6 +123,7 @@ export function AdminEditItemDialog({
           setSiteContactName("");
           setSiteContactPhone("");
           setSiteContactAddress("");
+          setClientContact({ name: "", address: "" });
         }
       } catch (e: any) {
         toast.error("שגיאה בטעינה", { description: e.message });
