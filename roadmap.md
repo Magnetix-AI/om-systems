@@ -6,5 +6,5 @@
 
 # Updated app icon
 
-- [ ] Replace Windows and mobile home-screen icons with the supplied logo.
-- [ ] Package and inspect a new Windows ZIP.
+- [x] Replace Windows and mobile home-screen icons with the supplied logo.
+- [x] Package and inspect a new Windows ZIP.
