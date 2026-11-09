@@ -8,3 +8,8 @@
 
 - [x] Replace Windows and mobile home-screen icons with the supplied logo.
 - [x] Package and inspect a new Windows ZIP.
+
+# Latest rounded icon
+
+- [ ] Update desktop and mobile icons from the latest supplied image.
+- [ ] Package and verify Windows ZIP v3.
