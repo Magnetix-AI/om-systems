@@ -345,27 +345,7 @@ function AdminMain() {
               <SelectItem value="day">יום</SelectItem>
             </SelectContent>
           </Select>
-          <Calendar
-            mode="single"
-            locale={he}
-            dir="rtl"
-            weekStartsOn={0}
-            selected={selected}
-            month={cursor}
-            onMonthChange={setCursor}
-            onSelect={(date) => {
-              if (!date) return;
-              setCursor(date);
-              setSelected(date);
-            }}
-            captionLayout="dropdown"
-            formatters={{ formatMonthDropdown: (date) => format(date, "MMMM", { locale: he }) }}
-            startMonth={new Date(1900, 0)}
-            endMonth={new Date(2100, 11)}
-            fixedWeeks
-            className="pointer-events-auto rounded-md border bg-card shadow-sm [--cell-size:2rem]"
-            classNames={{ today: "bg-secondary text-secondary-foreground rounded-full" }}
-          />
+
         </div>
       </div>
 
@@ -373,7 +353,7 @@ function AdminMain() {
         className="grid grid-cols-1 lg:grid-cols-[var(--left)_minmax(0,1fr)_var(--right)] gap-4"
         style={{
           ["--left" as any]: leftCollapsed ? "40px" : "280px",
-          ["--right" as any]: rightCollapsed ? "40px" : "340px",
+          ["--right" as any]: "340px",
         }}
       >
         {/* Unscheduled — LEFT side. In RTL with grid this column appears on the visual left. */}
@@ -421,12 +401,37 @@ function AdminMain() {
           </CardContent>
         </Card>
 
-        {/* Day details — RIGHT side */}
-        {rightCollapsed ? (
-          <CollapsedPanelBar side="right" label={format(selected, "d בMMMM", { locale: he })} count={dayItems.length} onExpand={() => setRightCollapsed(false)} />
-        ) : (
-          <DayDetailsPanel date={selected} items={dayItems} onEdit={handleCalendarItemClick} onDelete={setToDelete} onCollapse={() => setRightCollapsed(true)} />
-        )}
+        {/* Date navigator and selected day details — visual left in RTL. */}
+        <div className="min-w-0 flex flex-col items-stretch gap-4">
+          <Calendar
+            mode="single"
+            locale={he}
+            dir="rtl"
+            weekStartsOn={0}
+            selected={selected}
+            month={cursor}
+            onMonthChange={setCursor}
+            onSelect={(date) => {
+              if (!date) return;
+              setCursor(date);
+              setSelected(date);
+            }}
+            captionLayout="dropdown"
+            formatters={{ formatMonthDropdown: (date) => format(date, "MMMM", { locale: he }) }}
+            startMonth={new Date(1900, 0)}
+            endMonth={new Date(2100, 11)}
+            fixedWeeks
+            className="pointer-events-auto w-full rounded-md border bg-card shadow-sm [--cell-size:2rem]"
+            classNames={{ root: "w-full", today: "bg-secondary text-secondary-foreground rounded-full" }}
+          />
+          {rightCollapsed ? (
+            <div className="self-end">
+              <CollapsedPanelBar side="right" label={format(selected, "d בMMMM", { locale: he })} count={dayItems.length} onExpand={() => setRightCollapsed(false)} />
+            </div>
+          ) : (
+            <DayDetailsPanel date={selected} items={dayItems} onEdit={handleCalendarItemClick} onDelete={setToDelete} onCollapse={() => setRightCollapsed(true)} />
+          )}
+        </div>
       </div>
 
       <AdminEditItemDialog item={editItem} onClose={() => setEditItem(null)} invalidateKeys={[["main-jobs"], ["main-projects"]]} />
