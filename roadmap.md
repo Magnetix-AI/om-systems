@@ -11,5 +11,5 @@
 
 # Latest rounded icon
 
-- [ ] Update desktop and mobile icons from the latest supplied image.
-- [ ] Package and verify Windows ZIP v3.
+- [x] Update desktop and mobile icons from the latest supplied image.
+- [x] Package and verify Windows ZIP v3.
