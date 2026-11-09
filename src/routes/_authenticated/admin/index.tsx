@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/select";
 
 import {
-  ChevronRight, ChevronLeft, ChevronDown, ChevronsRight, ChevronsLeft, Calendar as CalendarIcon,
+  ChevronLeft, ChevronDown, ChevronsRight, ChevronsLeft, Calendar as CalendarIcon,
   AlertTriangle, Pencil, Trash2, Plus, X,
 } from "lucide-react";
 import {
@@ -24,7 +24,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  addDays, addMonths, addWeeks, eachDayOfInterval, endOfMonth, endOfWeek,
+  addDays, eachDayOfInterval, endOfMonth, endOfWeek,
   format, isSameDay, isSameMonth, startOfMonth, startOfWeek, isToday,
 } from "date-fns";
 import { he } from "date-fns/locale";
@@ -40,9 +40,18 @@ import { AdminEditItemDialog } from "@/components/admin-edit-item-dialog";
 import { AdminViewJobDialog } from "@/components/admin-view-job-dialog";
 import { ProjectPicker } from "@/components/project-picker";
 import { GlobalSearch } from "@/components/global-search";
+import { Calendar } from "@/components/ui/calendar";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   ssr: false,
+  head: () => ({ meta: [
+    { title: "יומן קריאות | O.M Systems LTD" },
+    { name: "description", content: "יומן הקריאות והפרויקטים של O.M Systems LTD עם בחירת תאריך ותצוגה יומית, שבועית וחודשית." },
+    { property: "og:title", content: "יומן קריאות | O.M Systems LTD" },
+    { property: "og:description", content: "ניהול יומן הקריאות והפרויקטים ובחירת תאריך ב־O.M Systems LTD." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: AdminMain,
 });
 
@@ -314,12 +323,9 @@ function AdminMain() {
     [items, selected],
   );
 
-  const navPrev = () => setCursor(c => view === "month" ? addMonths(c, -1) : view === "week" ? addWeeks(c, -1) : addDays(c, -1));
-  const navNext = () => setCursor(c => view === "month" ? addMonths(c, 1) : view === "week" ? addWeeks(c, 1) : addDays(c, 1));
-
   return (
     <div className="w-full mx-auto p-4 lg:p-6 space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-2">
+      <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <CalendarIcon className="h-6 w-6 text-primary" /> ראשי
@@ -329,13 +335,8 @@ function AdminMain() {
         <div className="flex-1 flex justify-center min-w-[220px] order-last lg:order-none w-full lg:w-auto">
           <GlobalSearch />
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-start gap-2 flex-wrap justify-end">
           <Button variant="outline" size="sm" onClick={() => { setCursor(new Date()); setSelected(new Date()); }}>היום</Button>
-          <Button variant="outline" size="icon" onClick={navPrev}><ChevronRight className="h-4 w-4" /></Button>
-          <div className="px-3 text-sm font-semibold min-w-[140px] text-center">
-            {format(cursor, view === "day" ? "PPP" : "MMMM yyyy", { locale: he })}
-          </div>
-          <Button variant="outline" size="icon" onClick={navNext}><ChevronLeft className="h-4 w-4" /></Button>
           <Select value={view} onValueChange={v => setView(v as ViewMode)}>
             <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -344,6 +345,27 @@ function AdminMain() {
               <SelectItem value="day">יום</SelectItem>
             </SelectContent>
           </Select>
+          <Calendar
+            mode="single"
+            locale={he}
+            dir="rtl"
+            weekStartsOn={0}
+            selected={selected}
+            month={cursor}
+            onMonthChange={setCursor}
+            onSelect={(date) => {
+              if (!date) return;
+              setCursor(date);
+              setSelected(date);
+            }}
+            captionLayout="dropdown"
+            formatters={{ formatMonthDropdown: (date) => format(date, "MMMM", { locale: he }) }}
+            startMonth={new Date(1900, 0)}
+            endMonth={new Date(2100, 11)}
+            fixedWeeks
+            className="pointer-events-auto rounded-md border bg-card shadow-sm [--cell-size:2rem]"
+            classNames={{ today: "bg-secondary text-secondary-foreground rounded-full" }}
+          />
         </div>
       </div>
 
