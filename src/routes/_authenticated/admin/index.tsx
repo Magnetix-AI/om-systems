@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/select";
 
 import {
-  ChevronRight, ChevronLeft, ChevronDown, ChevronsRight, ChevronsLeft, Calendar as CalendarIcon,
+  ChevronLeft, ChevronDown, ChevronsRight, ChevronsLeft, Calendar as CalendarIcon,
   AlertTriangle, Pencil, Trash2, Plus, X,
 } from "lucide-react";
 import {
@@ -24,7 +24,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  addDays, addMonths, addWeeks, eachDayOfInterval, endOfMonth, endOfWeek,
+  addDays, eachDayOfInterval, endOfMonth, endOfWeek,
   format, isSameDay, isSameMonth, startOfMonth, startOfWeek, isToday,
 } from "date-fns";
 import { he } from "date-fns/locale";
@@ -359,6 +359,7 @@ function AdminMain() {
               setSelected(date);
             }}
             captionLayout="dropdown"
+            formatters={{ formatMonthDropdown: (date) => format(date, "MMMM", { locale: he }) }}
             startMonth={new Date(1900, 0)}
             endMonth={new Date(2100, 11)}
             fixedWeeks
