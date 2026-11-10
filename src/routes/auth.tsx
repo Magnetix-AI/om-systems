@@ -11,11 +11,16 @@ import { Cable, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { adminLogin } from "@/lib/admin-auth.functions";
 
-const ADMIN_SESSION_KEY = "admin_session_started_at";
-const LAST_ACTIVITY_KEY = "fieldops.lastActivity";
-
 export const Route = createFileRoute("/auth")({
   ssr: false,
+  head: () => ({ meta: [
+    { title: "כניסה למערכת | O.M Systems LTD" },
+    { name: "description", content: "כניסת מנהלים וטכנאים למערכת קריאות השירות של O.M Systems LTD." },
+    { property: "og:title", content: "כניסה למערכת | O.M Systems LTD" },
+    { property: "og:description", content: "כניסת מנהלים וטכנאים למערכת קריאות השירות של O.M Systems LTD." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   beforeLoad: async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
@@ -60,7 +65,6 @@ function AuthPage() {
       if (error) throw error;
       const user = data.user ?? (await supabase.auth.getUser()).data.user;
       if (!user) throw new Error("לא נמצאה התחברות פעילה");
-      localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
       toast.success("התחברת בהצלחה");
       window.location.replace(await getPostLoginPath(user.id));
     } catch (err: any) {
@@ -87,8 +91,6 @@ function AuthPage() {
       if (error) throw new Error(error.message);
       const user = sessionData.user ?? (await supabase.auth.getUser()).data.user;
       if (!user) throw new Error("לא נמצאה התחברות פעילה");
-      localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
-      localStorage.setItem(ADMIN_SESSION_KEY, String(Date.now()));
       toast.success("התחברת כמנהל");
       setAdminOpen(false);
       window.location.replace(await getPostLoginPath(user.id));

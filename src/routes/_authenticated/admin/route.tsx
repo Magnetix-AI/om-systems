@@ -1,14 +1,8 @@
-import { createFileRoute, Outlet, Link, redirect, useRouterState, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { createFileRoute, Outlet, Link, redirect, useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/app-shell";
 import { Briefcase, Package, FileText, Users, FolderKanban, History, LayoutDashboard, UserCog } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
-import { isMobileDevice } from "@/lib/device";
-
-const ADMIN_SESSION_KEY = "admin_session_started_at";
-const ADMIN_MAX_MS = 4 * 60 * 60 * 1000; // 4 hours
 
 export const Route = createFileRoute("/_authenticated/admin")({
   ssr: false,
@@ -18,21 +12,6 @@ export const Route = createFileRoute("/_authenticated/admin")({
     const { data: roleRow } = await supabase
       .from("user_roles").select("role").eq("user_id", user.id).maybeSingle();
     if (roleRow?.role !== "admin") throw redirect({ to: "/tech" });
-
-    if (typeof window !== "undefined" && !isMobileDevice()) {
-      const raw = localStorage.getItem(ADMIN_SESSION_KEY);
-      const started = raw ? parseInt(raw, 10) : NaN;
-      if (!raw || Number.isNaN(started)) {
-        localStorage.setItem(ADMIN_SESSION_KEY, String(Date.now()));
-      } else if (Date.now() - started >= ADMIN_MAX_MS) {
-        localStorage.removeItem(ADMIN_SESSION_KEY);
-        await supabase.auth.signOut();
-        throw redirect({ to: "/auth" });
-      }
-    } else if (typeof window !== "undefined") {
-      // Mobile: never auto-expire
-      localStorage.removeItem(ADMIN_SESSION_KEY);
-    }
   },
   component: AdminLayout,
 });
@@ -40,25 +19,6 @@ export const Route = createFileRoute("/_authenticated/admin")({
 
 function AdminLayout() {
   const pathname = useRouterState({ select: s => s.location.pathname });
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (isMobileDevice()) return; // mobile stays signed in
-    const raw = localStorage.getItem(ADMIN_SESSION_KEY);
-    const started = raw ? parseInt(raw, 10) : Date.now();
-    if (!raw) localStorage.setItem(ADMIN_SESSION_KEY, String(started));
-    const remaining = Math.max(0, started + ADMIN_MAX_MS - Date.now());
-    const logout = async () => {
-      localStorage.removeItem(ADMIN_SESSION_KEY);
-      toast.warning("חלפו 4 שעות — מבוצע ניתוק אוטומטי");
-      await supabase.auth.signOut();
-      navigate({ to: "/auth" });
-    };
-    if (remaining === 0) { logout(); return; }
-    const t = setTimeout(logout, remaining);
-    return () => clearTimeout(t);
-  }, [navigate]);
-
 
   const tabs = [
     { to: "/admin", label: "ראשי", icon: LayoutDashboard },
