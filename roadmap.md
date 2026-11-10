@@ -13,3 +13,8 @@
 
 - [x] Update desktop and mobile icons from the latest supplied image.
 - [x] Package and verify Windows ZIP v3.
+
+# Desktop saved login
+
+- [ ] Add optional encrypted saved credentials for technician and admin login, without changing session expiry.
+- [ ] Test storage and login-form behavior; package and inspect Windows ZIP v4.
