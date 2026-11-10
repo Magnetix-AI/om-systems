@@ -22,5 +22,6 @@
 
 # Persistent sign-in
 
-- [ ] Remove inactivity and maximum-duration logout for all accounts and devices; retain authentication and role checks.
-- [ ] Test old session timestamps and authenticated navigation after elapsed time.
+- [x] Remove inactivity and maximum-duration logout for all accounts and devices; retain authentication and role checks.
+- [x] Test old session timestamps and signed-out / role access guards.
+- [ ] Verify persistent sign-in through the authenticated UI — no requesting-user account available for automatic sign-in; requires signing in through the preview.
