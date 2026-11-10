@@ -19,3 +19,9 @@
 - [x] Add optional encrypted saved credentials for technician and admin login, without changing session expiry.
 - [x] Test storage and login-form behavior; package and inspect Windows ZIP v4.
 - [ ] Verify real sign-in, OS encryption and reopening on Windows — requires a Windows computer unavailable in this sandbox.
+
+# Persistent sign-in
+
+- [x] Remove inactivity and maximum-duration logout for all accounts and devices; retain authentication and role checks.
+- [x] Test old session timestamps and signed-out / role access guards.
+- [ ] Verify persistent sign-in through the authenticated UI — no requesting-user account available for automatic sign-in; requires signing in through the preview.
