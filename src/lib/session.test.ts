@@ -1,3 +1,4 @@
+/// <reference types="bun" />
 import { afterEach, expect, mock, test } from "bun:test";
 
 let user: { id: string } | null = { id: "session-test" };
