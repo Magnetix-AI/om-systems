@@ -1,8 +1,11 @@
-const { app, BrowserWindow, Menu, shell, dialog } = require('electron');
+const { app, BrowserWindow, Menu, shell, dialog, ipcMain, safeStorage } = require('electron');
 const path = require('node:path');
 const { APP_URL, navigationAction } = require('./navigation.cjs');
+const { createCredentialStore } = require('./credentials.cjs');
 
 let mainWindow;
+let credentials;
+let pendingLogin;
 app.setName('O.M Systems LTD');
 const singleInstance = app.requestSingleInstanceLock();
 if (!singleInstance) app.quit();
@@ -45,11 +48,45 @@ async function loadApp() {
 }
 
 function createWindow() {
+  credentials = createCredentialStore(path.join(app.getPath('userData'), 'saved-login.bin'), safeStorage);
+  function trustedLogin(event) {
+    try {
+      const target = new URL(event.senderFrame.url);
+      return event.sender === mainWindow?.webContents && event.senderFrame === event.sender.mainFrame &&
+        target.origin === new URL(APP_URL).origin && target.pathname === '/auth';
+    } catch { return false; }
+  }
+  ipcMain.handle('desktop-login:read', (event, kind) => {
+    if (!trustedLogin(event) || !['admin', 'technician'].includes(kind)) return { available: false };
+    return { available: credentials.available(), credentials: credentials.get(kind) };
+  });
+  ipcMain.handle('desktop-login:remove', (event, kind) => {
+    if (!trustedLogin(event) || !['admin', 'technician'].includes(kind)) return;
+    pendingLogin = undefined;
+    credentials.remove(kind);
+  });
+  ipcMain.on('desktop-login:candidate', (event, value) => {
+    if (!trustedLogin(event) || !['admin', 'technician'].includes(value?.kind)) return;
+    pendingLogin = value.remember === true ? { ...value, capturedAt: Date.now() } : undefined;
+    if (!value.remember) credentials.remove(value.kind);
+  });
   mainWindow = new BrowserWindow({
     title: 'O.M Systems LTD', width: 1440, height: 960,
     minWidth: 900, minHeight: 640, show: false,
     icon: path.join(__dirname, 'icon.ico'),
-    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true },
+    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true,
+      preload: path.join(__dirname, 'preload.cjs') },
+  });
+  mainWindow.webContents.on('did-navigate', (_event, url) => {
+    if (!pendingLogin) return;
+    try {
+      const target = new URL(url);
+      if (target.origin === new URL(APP_URL).origin && /^\/(admin|tech)(\/|$)/.test(target.pathname) &&
+          Date.now() - pendingLogin.capturedAt < 120_000) {
+        credentials.save(pendingLogin.kind, pendingLogin);
+        pendingLogin = undefined;
+      } else if (target.pathname !== '/auth') pendingLogin = undefined;
+    } catch { pendingLogin = undefined; }
   });
   secureWindow(mainWindow);
   mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, callback, details) => {
@@ -66,6 +103,14 @@ function createWindow() {
     { label: 'מערכת', submenu: [
       { label: 'רענון', accelerator: 'CmdOrCtrl+R', click: () => mainWindow?.webContents.reload() },
       { label: 'פתיחה בדפדפן', click: () => shell.openExternal(APP_URL) },
+      { label: 'מחיקת פרטי התחברות שמורים', click: async () => {
+        if (!mainWindow) return;
+        const result = await dialog.showMessageBox(mainWindow, {
+          type: 'question', title: 'פרטי התחברות', message: 'למחוק את פרטי ההתחברות השמורים במחשב זה?',
+          buttons: ['ביטול', 'מחק'], defaultId: 0, cancelId: 0,
+        });
+        if (result.response === 1) { pendingLogin = undefined; credentials.clear(); }
+      } },
       { type: 'separator' }, { role: 'quit', label: 'יציאה' },
     ] },
     { label: 'עריכה', submenu: [

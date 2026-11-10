@@ -13,3 +13,9 @@
 
 - [x] Update desktop and mobile icons from the latest supplied image.
 - [x] Package and verify Windows ZIP v3.
+
+# Desktop saved login
+
+- [x] Add optional encrypted saved credentials for technician and admin login, without changing session expiry.
+- [x] Test storage and login-form behavior; package and inspect Windows ZIP v4.
+- [ ] Verify real sign-in, OS encryption and reopening on Windows — requires a Windows computer unavailable in this sandbox.
